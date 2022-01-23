@@ -108,6 +108,9 @@ typedef struct sector_s
     //SOM: pointer to water sector
     struct sector_s*    watersector;
 
+    //Tails 05-24-2000 : pointer to ring sector
+    struct sector_s*    ringsector;
+
 } sector_t;
 
 

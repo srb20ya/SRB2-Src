@@ -209,6 +209,7 @@ void D_RegisterClientCommands (void)
 
     //m_menu.c
     CV_RegisterVar (&cv_crosshair);
+    CV_RegisterVar (&cv_analog); // Analog/Digital swap Tails 04-22-2000
     CV_RegisterVar (&cv_autorun);
     CV_RegisterVar (&cv_invertmouse);
     CV_RegisterVar (&cv_alwaysfreelook);

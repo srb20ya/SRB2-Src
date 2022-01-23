@@ -19,6 +19,11 @@
 void P_PlayerRingBurst(player_t* player);
 //END HACK
 
+//Prototype needed to use function: Stealth 12-26-99
+void P_Thrust ( mobj_t*       mo,
+                angle_t       angle,
+                fixed_t       move );
+
 // a weapon is found with two clip loads,
 // a big item has five clip loads
 int     maxammo[NUMAMMO] = {200, 50, 300, 50};
@@ -26,7 +31,7 @@ int     clipammo[NUMAMMO] = {10, 4, 20, 1};
 
 // added 4-2-98 (Boris) for dehacked patch
 // (i don't like that but do you see another solution ?)
-int     MAXHEALTH= 100;
+int     MAXHEALTH= 900; // Up to 900 rings! Tails 11-03-99
 
 //
 // GET STUFF
@@ -327,10 +332,53 @@ boolean P_GivePower ( player_t*     player,
 
     if (power == pw_strength)
     {
-        P_GiveBody (player, 100);
-        player->powers[power] = 1;
+//        P_GiveBody (player, 100); // Don't give rings! Tails 02-28-2000
+        player->powers[power] = SPEEDTICS; // using SPEEDTICS to hold timer for super sneakers Tails 02-28-2000
         return true;
     }
+//start miscellaneous powers Tails 03-05-2000
+    if (power == pw_super)
+    {
+     return true;
+    }
+
+    if (power == pw_blueshield)
+    {
+     return true;
+    }
+
+    if (power == pw_greenshield)
+    {
+     return true;
+    }
+
+    if (power == pw_blackshield)
+    {
+     return true;
+    }
+
+    if (power == pw_tailsfly)
+    {
+        player->powers[power] = TAILSTICS;
+        return true;
+    }
+    if (power == pw_extralife)
+    {
+     return true;
+    }
+    if (power == pw_yellowshield)
+    {
+     return true;
+    }
+//end miscellaneous powers Tails 03-05-2000
+
+// start underwater timer Tails 03-06-2000
+    if (power == pw_underwater)
+    {
+        player->powers[power] = WATERTICS;
+     return true;
+    }
+// end underwater timer Tails 03-06-2000
 
     if (player->powers[power])
         return false;   // already got it
@@ -354,10 +402,11 @@ int mega_health=200;
 //
 void P_TouchSpecialThing ( mobj_t*       special,
                            mobj_t*       toucher )
+
 {
     player_t*   player;
     int         i;
-    fixed_t     delta;
+//    fixed_t     delta;  unused as of current 12-25-99 Stealth
     int         sound;
 
 //    delta = special->z - toucher->z;
@@ -373,6 +422,8 @@ void P_TouchSpecialThing ( mobj_t*       special,
     if(special->z > (toucher->z + toucher->info->height))
       return;
 
+if(toucher->player->powers[pw_invisibility] > 70)
+return;
 
     sound = sfx_itemup;
     player = toucher->player;
@@ -399,33 +450,79 @@ void P_TouchSpecialThing ( mobj_t*       special,
         break;
 
         // bonus items
+
       case SPR_BON1:
+if(player->powers[pw_invisibility] < 70) // Make sure rings spill when hurt Tails 07-08-2000
+{
         player->health++;               // can go over 100%
-        if (player->health > 9*MAXHEALTH)
-            player->health = 9*MAXHEALTH;
+        if (player->health > 9*MAXHEALTH) // go up to 900 rings Tails 11-01-99
+            player->health = 9*MAXHEALTH; // go up to 900 rings Tails 11-01-99
         player->mo->health = player->health;
+        P_SpawnMobj (special->x,special->y,special->z, MT_SPARK);
         if(cv_showmessages.value==1)
             player->message = GOTHTHBONUS;
+}
         break;
 
-      case SPR_BON2:
-        player->armorpoints++;          // can go over 100%
-        if (player->armorpoints > max_armor)
-            player->armorpoints = max_armor;
-        if (!player->armortype)
-            player->armortype = 1;
-        if(cv_showmessages.value==1)
-           player->message = GOTARMBONUS;
-        break;
+// start bubble grab Tails 03-07-2000
+      case SPR_BUBM:
+      if(player->powers[pw_underwater] <= 421)
+        {
+        S_ChangeMusic(mus_runnin + gamemap - 1, 1);
+        I_PlayCD(gamemap + 1, true);
+        }
+//        if (player->armorpoints > max_armor)
+//            player->armorpoints = max_armor;
+//        if (!player->armortype)
+//            player->armortype = 1;
+//        if(cv_showmessages.value==1)
+if(!(player->powers[pw_greenshield]))
+        player->powers[pw_underwater] = 1051;
+        P_SpawnMobj (special->x,special->y,special->z, MT_POP);
+//        P_SpawnMobj (special->x,special->y,special->z + (special->info->height / 2), MT_POP);
+           player->message = NULL;
+           sound = sfx_ouch;
+          break;
 
-      case SPR_SOUL:
-        player->health += soul_health;
-        if (player->health > maxsoul)
-            player->health = maxsoul;
-        player->mo->health = player->health;
-        player->message = GOTSUPER;
+      case SPR_BUBN:
+//           player->message = NULL;
+//           sound = sfx_None;
+        return;
+// end bubble grab Tails 03-07-2000
+
+      case SPR_EMMY:
+    if(!(player->emerald1)){
+        player->emerald1 = true;
         sound = sfx_getpow;
-        break;
+        break;}
+  else if((player->emerald1) && !(player->emerald2)){
+        player->emerald2 = true;
+        sound = sfx_getpow;
+        break;}
+  else if((player->emerald2) && !(player->emerald3)){
+        player->emerald3 = true;
+        sound = sfx_getpow;
+        break;}
+   else if((player->emerald3) && !(player->emerald4)){
+        player->emerald4 = true;
+        sound = sfx_getpow;
+        break;}
+   else if((player->emerald4) && !(player->emerald5)){
+        player->emerald5 = true;
+        sound = sfx_getpow;
+        break;}
+   else if((player->emerald5) && !(player->emerald6)){
+        player->emerald6 = true;
+        sound = sfx_getpow;
+        break;}
+   else if((player->emerald6) && !(player->emerald7)){
+        player->emerald7 = true;
+//        player->message = GOTSUPER;
+        sound = sfx_getpow;
+        break;}
+   else
+     break;
+
 
       case SPR_MEGA:
         if (gamemode != commercial)
@@ -486,48 +583,28 @@ void P_TouchSpecialThing ( mobj_t*       special,
         if (!multiplayer)
             break;
         return;
-
-        // medikits, heals
-      case SPR_STIM:
-        if (!P_GiveBody (player, 10))
-            return;
-        if(cv_showmessages.value==1)
-            player->message = GOTSTIM;
-        break;
-
-      case SPR_MEDI:
-        if (!P_GiveBody (player, 25))
-            return;
-        if(cv_showmessages.value==1)
-            if (player->health < 25)
-                player->message = GOTMEDINEED;
-            else
-                player->message = GOTMEDIKIT;
-        break;
-
-
         // power ups
-      case SPR_PINV:
+      case SPR_PINV: // this is the invincibility powerup Tails 02-28-2000
         if (!P_GivePower (player, pw_invulnerability))
             return;
         player->message = GOTINVUL;
         sound = sfx_getpow;
         break;
 
-      case SPR_PSTR:
+      case SPR_PSTR: // this is the super sneaker powerup Tails 02-28-2000
         if (!P_GivePower (player, pw_strength))
             return;
-        player->message = GOTBERSERK;
-        if (player->readyweapon != wp_fist)
-            player->pendingweapon = wp_fist;
-        sound = sfx_getpow;
+        player->message = NULL; // Tails 02-28-2000
+//        if (player->readyweapon != wp_fist) // don't need
+//            player->pendingweapon = wp_fist; // this slop Tails 02-28-2000
+//        sound = sfx_None; // Don't play sound! Tails 02-28-2000
         break;
 
       case SPR_PINS:
-        if (!P_GivePower (player, pw_invisibility))
+        if (!P_GivePower (player, pw_invisibility)) // this is the temp invincibility after getting hit Tails 02-28-2000
             return;
-        player->message = GOTINVIS;
-        sound = sfx_getpow;
+        player->message = NULL; // Tails 02-28-2000
+//        sound = sfx_None; // Tails 02-28-2000
         break;
 
       case SPR_SUIT:
@@ -547,8 +624,8 @@ void P_TouchSpecialThing ( mobj_t*       special,
       case SPR_PVIS:
         if (!P_GivePower (player, pw_infrared))
             return;
-        player->message = GOTVISOR;
-        sound = sfx_getpow;
+        player->message = NULL; // no message Tails 02-28-2000
+        sound = sfx_None; // no sound Tails 02-28-2000
         break;
 
         // ammo
@@ -678,6 +755,9 @@ void P_TouchSpecialThing ( mobj_t*       special,
         sound = sfx_wpnup;
         break;
 
+      case SPR_DISS:
+      break;
+
       default:
         CONS_Printf ("\2P_TouchSpecialThing: Unknown gettable thing\n");
         return;
@@ -685,7 +765,9 @@ void P_TouchSpecialThing ( mobj_t*       special,
 
     if (special->flags & MF_COUNTITEM)
         player->itemcount++;
-    P_RemoveMobj (special);
+//if((player->powers[pw_invisibility] < 70)) // Don't nab rings when hurt, make sure they spill Tails 07-08-2000
+    P_SetMobjState(special, S_DISS);
+//    P_RemoveMobj (special);
     player->bonuscount += BONUSADD;
 
     //added:16-01-98:consoleplayer -> displayplayer (hear sounds from viewpoint)
@@ -711,6 +793,7 @@ void P_CheckSupportThings (mobj_t* mobj)
         // only for things above support thing
         if (mobj->z > supportz)
             mobj->eflags |= MF_CHECKPOS;
+
     }
 }
 
@@ -873,65 +956,17 @@ void P_DeathMessages ( mobj_t*       source,
                 // environment kills
                 w = target->player->specialsector;      //see p_spec.c
 
-                if (w==5)
-                    CONS_Printf(" dies in hellslime\n");
-                else if (w==7)
-                    CONS_Printf(" gulped a load of nukage\n");
-                else if (w==16 || w==4)
-                    CONS_Printf(" dies in super hellslime/strobe hurt\n");
-                else
-                    CONS_Printf(" dies in special sector\n");
             }
             else
             {
                 // check for lava,slime,water,crush,fall,monsters..
                 if (source->type == MT_BARREL)
                 {
-                    if (source->target->player)
-                        CONS_Printf(" was barrel-fragged by %s\n",
-                                    player_names[source->target->player-players]);
-                    else
-                        CONS_Printf(" dies from a barrel explosion\n");
+ 
                 }
                 else
                 switch (source->type)
                 {
-                  case MT_POSSESSED:
-                    CONS_Printf(" was shot by a possessed\n"); break;
-                  case MT_SHOTGUY:
-                    CONS_Printf(" was shot down by a shotguy\n"); break;
-                  case MT_VILE:
-                    CONS_Printf(" was blasted by an Arch-vile\n"); break;
-                  case MT_FATSO:
-                    CONS_Printf(" was exploded by a Mancubus\n"); break;
-                  case MT_CHAINGUY:
-                    CONS_Printf(" was punctured by a Chainguy\n"); break;
-                  case MT_TROOP:
-                    CONS_Printf(" was fried by an Imp\n"); break;
-                  case MT_SERGEANT:
-                    CONS_Printf(" was eviscerated by a Demon\n"); break;
-                  case MT_SHADOWS:
-                    CONS_Printf(" was mauled by a Shadow Demon\n"); break;
-                  case MT_HEAD:
-                    CONS_Printf(" was killed by a Ghost!\n"); break;
-                  case MT_BRUISER:
-                    CONS_Printf(" was smashed by a Revenant\n"); break;
-                  case MT_KNIGHT:
-                    CONS_Printf(" was slain by a Hell-Knight\n"); break;
-                  case MT_SKULL:
-                    CONS_Printf(" was killed by a Skull\n"); break;
-                  case MT_SPIDER:
-                    CONS_Printf(" was killed by a Spider\n"); break;
-                  case MT_BABY:
-                    CONS_Printf(" was killed by a Baby Spider\n"); break;
-                  case MT_CYBORG:
-                    CONS_Printf(" was crushed by the Cyber-demon\n"); break;
-                  case MT_PAIN:
-                    CONS_Printf(" was killed by a Pain Elemental\n"); break;
-                  case MT_WOLFSS:
-                    CONS_Printf(" was killed by a WolfSS\n"); break;
-                  default:
-                    CONS_Printf(" died\n");
                 }
             }
         }
@@ -977,8 +1012,10 @@ void P_KillMobj ( mobj_t*       source,
     // dead target is no more shootable
     target->flags &= ~(MF_SHOOTABLE|MF_FLOAT|MF_SKULLFLY);
 
-    if (target->type != MT_SKULL)
-        target->flags &= ~MF_NOGRAVITY;
+//    if (target->type != MT_SKULL)
+//        target->flags &= ~MF_NOGRAVITY;
+    if (target->type != MT_PLAYER)
+        target->flags &= MF_NOGRAVITY; // Don't drop Tails 03-08-2000
 
     //added:22-02-98: remember who exploded the barrel, so that the guy who
     //                shot the barrel which killed another guy, gets the frag!
@@ -1005,9 +1042,109 @@ void P_KillMobj ( mobj_t*       source,
     // if killed by a player
     if (source && source->player)
     {
+      if (multiplayer || netgame)
+       {
+         switch (target->type)
+          {
+           case MT_MISC10:
+        source->player->health += 10;
+//    P_SpawnMobj (source->player->mo->x, source->player->mo->y, source->player->mo->z + (source->player->mo->info->height /2), MT_DUMMYRINGBOX);
+    S_StartSound (source->player->mo, sfx_itemup);
+           break;
+           case MT_MISC11:
+        source->player->health += 25;
+//    P_SpawnMobj (source->player->mo->x, source->player->mo->y, source->player->mo->z + (source->player->mo->info->height /2), MT_DUMMYSUPERRINGBOX);
+    S_StartSound (source->player->mo, sfx_itemup);
+           break;
+           case MT_INV:
+       source->player->powers[pw_invulnerability] = 700;
+if(source->player->powers[pw_super] == false)
+{
+       S_StopMusic();
+       S_ChangeMusic(mus_invinc, false);
+       I_PlayCD(20, false);
+}
+           break;
+           case MT_MISC50:
+       source->player->powers[pw_blueshield] = true;
+       source->player->powers[pw_greenshield] = false;
+       source->player->powers[pw_yellowshield] = false;
+       source->player->powers[pw_blackshield] = false;
+       P_SpawnMobj (source->player->mo->x, source->player->mo->y, source->player->mo->z, MT_BLUEORB);
+       S_StartSound (source->player->mo, sfx_getpow);
+           break;
+           case MT_MISC48:
+       source->player->powers[pw_yellowshield] = true;
+       source->player->powers[pw_greenshield] = false;
+       source->player->powers[pw_blueshield] = false;
+       source->player->powers[pw_blackshield] = false;
+       P_SpawnMobj (source->player->mo->x, source->player->mo->y, source->player->mo->z, MT_YELLOWORB);
+       S_StartSound (source->player->mo, sfx_getpow);
+           break;
+           case MT_MISC31:
+       source->player->powers[pw_yellowshield] = false;
+       source->player->powers[pw_greenshield] = true;
+       source->player->powers[pw_blueshield] = false;
+       source->player->powers[pw_blackshield] = false;
+       P_SpawnMobj (source->player->mo->x, source->player->mo->y, source->player->mo->z, MT_GREENORB);
+   if(source->player->powers[pw_underwater] > 421)
+    {
+       source->player->powers[pw_underwater] = 0;
+    }
+else if (source->player->powers[pw_underwater] <= 421 && source->player->powers[pw_underwater] > 0)
+     {
+       source->player->powers[pw_underwater] = 0;
+        S_ChangeMusic(mus_runnin + gamemap - 1, 1);
+        I_PlayCD(gamemap + 1, true);
+     }
+       S_StartSound (source->player->mo, sfx_getpow);
+           break;
+           case MT_BKTV:
+       source->player->powers[pw_yellowshield] = false;
+       source->player->powers[pw_greenshield] = false;
+       source->player->powers[pw_blueshield] = false;
+       source->player->powers[pw_blackshield] = true;
+       P_SpawnMobj (source->player->mo->x, source->player->mo->y, source->player->mo->z, MT_BLACKORB);
+       S_StartSound (source->player->mo, sfx_getpow);
+           break;
+           case MT_MISC74:
+       source->player->powers[pw_strength] = 700;
+           break;
+           case MT_PRUP:
+       source->player->lives += 1;
+       S_StopMusic();
+       S_ChangeMusic(mus_xtlife, false);
+       I_PlayCD(21, false);
+       source->player->powers[pw_extralife] = 140;
+           default:
+           break;
+          }
+       }
+
         // count for intermission
         if (target->flags & MF_COUNTKILL)
             source->player->killcount++;
+           switch(target->type)
+             {
+                 case MT_POSSESSED:
+                 case MT_SHOTGUY:
+                 case MT_UNDEAD:
+                 case MT_FATSO:
+                 case MT_CHAINGUY:
+                 case MT_TROOP:
+                 case MT_SERGEANT:
+                 case MT_SHADOWS:
+                 case MT_PAIN:
+                 case MT_BABY:
+            source->player->score+=100; // Score! Tails 03-01-2000
+            P_SpawnMobj (target->x,target->y,target->z + (target->info->height / 2), MT_SCRA);
+                break;
+                 case MT_CYBORG:
+            source->player->score+=1000; // Tails 03-11-2000
+                default:
+                break;
+            }
+ // 
 
         // count frags if player killed player
         if (target->player)
@@ -1035,6 +1172,13 @@ void P_KillMobj ( mobj_t*       source,
 
         target->flags &= ~MF_SOLID;                     // does not block
         target->player->playerstate = PST_DEAD;
+        target->player->lives -= 1; // Lose a life Tails 03-11-2000
+   if(target->player->lives <= 0) // Tails 03-14-2000
+      {
+       S_StopMusic(); // Stop the Music! Tails 03-14-2000
+       S_ChangeMusic(mus_gmover, false); // Yousa dead now, Okieday? Tails 03-14-2000
+       I_PlayCD(22, false);
+      }
         P_DropWeapon (target->player);                  // put weapon away
 
         if (target->player == &players[consoleplayer])
@@ -1120,7 +1264,7 @@ boolean P_DamageMobj ( mobj_t*       target,
                        int           damage )
 {
     unsigned    ang;
-    int         saved;
+//    int         saved; unused as of current 12-25-99 Stealth
     player_t*   player;
     fixed_t     thrust;
     int         temp;
@@ -1138,18 +1282,129 @@ boolean P_DamageMobj ( mobj_t*       target,
     }
 
     player = target->player;
-
+// Tails bounce code moved here 12-05-99
     //SOM: Hack to reduce the player to 1 health whenever hit.
+         //9999 Damage value added as flag for instant death 12-25-99 Stealth
+         //Movement fixed to bounce at fixed speed in opposite direction: Stealth 12-26-99
     if(player) {
-      if(player->mo->health > 1)
-        damage = player->mo->health - 1;
-      else
-        damage = 1;
-      }
+            if(damage == 9999)
+              {
+              damage = 9999;
+               player->powers[pw_blueshield] = false;      //Get rid of shield
+               player->powers[pw_yellowshield] = false;
+               player->powers[pw_blackshield] = false;
+               player->powers[pw_greenshield] = false;
+                 player->mo->momz = JUMPGRAVITY*1.5;
+                 player->mo->momx = 0;
+                 player->mo->momy = 0;
+                   if ((player->mo->eflags & MF_JUSTHITFLOOR)) {
+                   player->mo->eflags &= ~MF_JUSTHITFLOOR; }
+                   if((player->mo->eflags & MF_JUSTJUMPED)) {
+                   player->mo->eflags &= ~MF_JUSTJUMPED; }
+                   if ((player->mo->eflags & MF_JUMPED)) {
+                   player->mo->eflags &= ~MF_JUMPED; }
+               S_StartSound (target, sfx_pldeth);
+               }
+         else if ( damage < 1000 && (player->powers[pw_blueshield] || player->powers[pw_yellowshield] || player->powers[pw_blackshield] || player->powers[pw_greenshield]))  //If One-Hit Shield
+              {
+
+// P_SpawnMobj (target->x,target->y,target->z + (target->info->height / 2), MT_INS); // make flash tails 02-26-2000
+               player->powers[pw_blueshield] = false;      //Get rid of shield
+               player->powers[pw_yellowshield] = false;
+               player->powers[pw_blackshield] = false;
+               player->powers[pw_greenshield] = false;
+               damage=0;                 //Dont take rings away
+                 player->mo->momz = JUMPGRAVITY*1.5;
+                 player->mo->momx = 0;
+                 player->mo->momy = 0;
+                 P_Thrust (player->mo, player->mo->angle, -256000);
+           //      P_Thrust(player->mo, player->mo->angle, -50);
+                   if ((player->mo->eflags & MF_JUSTHITFLOOR)) {
+                   player->mo->eflags &= ~MF_JUSTHITFLOOR; }
+                   if((player->mo->eflags & MF_JUSTJUMPED)) {
+                   player->mo->eflags &= ~MF_JUSTJUMPED; }
+                   if ((player->mo->eflags & MF_JUMPED)) {
+                   player->mo->eflags &= ~MF_JUMPED; }
+               S_StartSound (target, sfx_pldeth);
+              }
+
+    else if ( damage < 1000 // start ignore bouncing & such in invulnerability tails 02-26-2000
+             && ( (player->cheats&CF_GODMODE)
+                  || player->powers[pw_invulnerability] || player->powers[pw_invisibility] || player->powers[pw_super]) )
+{
+damage = 0;
+} // end ignore bouncing & such in invulnerability tails 02-26-2000
+     else if((player->mo->health > 1) && !(damage==9999))
+                {
+                 damage = player->mo->health - 1;
+//            player->health -= damage;
+//             P_SetMobjState(player->mo, S_PLAY_PAIN);
+                 player->mo->momz = JUMPGRAVITY*1.5;
+
+// P_SpawnMobj (target->x,target->y,target->z + (target->info->height / 2), MT_INS); // make flash tails 02-26-2000
+          //       player->mo->momx = -player->mo->momx;
+          //       player->mo->momy = -player->mo->momy;
+                 player->mo->momx = 0;
+                 player->mo->momy = 0;
+                 P_Thrust (player->mo, player->mo->angle, -256000);
+           //      P_Thrust(player->mo, player->mo->angle, -50);
+                   if ((player->mo->eflags & MF_JUSTHITFLOOR)) {
+                   player->mo->eflags &= ~MF_JUSTHITFLOOR; }
+                   if((player->mo->eflags & MF_JUSTJUMPED)) {
+                   player->mo->eflags &= ~MF_JUSTJUMPED; }
+                   if ((player->mo->eflags & MF_JUMPED)) {
+                   player->mo->eflags &= ~MF_JUMPED; }
+                  S_StartSound (target, target->info->painsound);
+
+                }
+
+//Should only be upward motion when dying: Stealth 12-26-99
+
+                else
+                {
+                 damage = 1;
+                 player->mo->health=1;
+                 player->mo->momz = JUMPGRAVITY*3;
+             //    player->mo->momx = -player->mo->momx;
+             //    player->mo->momy = -player->mo->momy;
+                 player->mo->momx = 0;
+                 player->mo->momy = 0;
+                   if ((player->mo->eflags & MF_JUSTHITFLOOR)) {
+                   player->mo->eflags &= ~MF_JUSTHITFLOOR; }
+                   if((player->mo->eflags & MF_JUSTJUMPED)) {
+                   player->mo->eflags &= ~MF_JUSTJUMPED; }
+                   if ((player->mo->eflags & MF_JUMPED)) {
+                   player->mo->eflags &= ~MF_JUMPED; }
+                  }
+                 }
+// end Tails bounce code moved here 12-05-99
 
 //    if (player && gameskill == sk_baby)
 //        damage >>= 1;   // take half damage in trainer mode
 
+
+// start enemies can't damage ringboxes Tails 04-04-2000
+	if(source)
+	{
+if(!(source->type == MT_PLAYER))
+{
+    switch (target->type)
+    {
+           case MT_MISC10:
+           case MT_MISC11:
+           case MT_INV:
+           case MT_MISC50:
+           case MT_MISC48:
+           case MT_MISC74:
+           case MT_PRUP:
+               damage = 0;
+           break;
+           default:
+           break;
+    }
+}
+}
+// end enemies can't damage ringboxes Tails 04-04-2000
 
     // Some close combat weapons should not
     // inflict thrust and push the victim out of reach,
@@ -1225,27 +1480,37 @@ boolean P_DamageMobj ( mobj_t*       target,
         // ignore damage in GOD mode, or with INVUL power.
         if ( damage < 1000
              && ( (player->cheats&CF_GODMODE)
-                  || player->powers[pw_invulnerability] ) )
+                  || player->powers[pw_invulnerability] || player->powers[pw_invisibility] || player->powers[pw_super]) ) // flash tails 02-26-2000
         {
             return false;
         }
 
-        if (player->armortype)
-        {
-            if (player->armortype == 1)
-                saved = damage/3;
-            else
-                saved = damage/2;
+//        if (player->armortype)
+//        {
+//            if (player->armortype == 1)         Old Legacy Stuff
+//                saved = damage/3;
+//            else
+//                saved = damage/2;
+//
+//            if (player->armorpoints <= saved)
+//            {
+//                // armor is used up
+//                saved = player->armorpoints;
+//                player->armortype = 0;
+//            }
+//            player->armorpoints -= saved;
+//            damage -= saved;
 
-            if (player->armorpoints <= saved)
-            {
-                // armor is used up
-                saved = player->armorpoints;
-                player->armortype = 0;
-            }
-            player->armorpoints -= saved;
-            damage -= saved;
-        }
+//Shield handling Added 12-25-99 Stealth
+/*
+              if (player->powers[pw_blueshield])  //If One-Hit Shield
+              {
+               player->powers[pw_blueshield] = false;      //Get rid of shield
+               damage=0;                 //Dont take rings away
+               S_StartSound (target, sfx_pldeth);
+              }
+*/
+//       }
 
         // added team play and teamdamage (view logboris at 13-8-98 to understand)
         if( demoversion < 125   || // support old demoversion
@@ -1263,6 +1528,7 @@ boolean P_DamageMobj ( mobj_t*       target,
             )
           )
         {
+
             player->health -= damage;   // mirror mobj health here for Dave
             if (player->health < 0)
                 player->health = 0;
@@ -1271,6 +1537,8 @@ boolean P_DamageMobj ( mobj_t*       target,
             player->damagecount += damage;  // add damage after armor / invuln
 
             P_PlayerRingBurst(player);
+
+            target->player->powers[pw_invisibility] = 105;
 
             if (player->damagecount > 100)
                 player->damagecount = 100;  // teleport stomp does 10k points...
@@ -1289,6 +1557,7 @@ boolean P_DamageMobj ( mobj_t*       target,
     // added teamplay and teamdamage (view logboris at 13-8-98 to understand)
     if( takedamage )
     {
+
         // do the damage
         target->health -= damage;
         if (target->health <= 0)
@@ -1357,21 +1626,22 @@ void P_PlayerRingBurst(player_t* player)
   if(num_rings > 30)
     return;
 
-  CONS_Printf("HACK: Rings spawned %i\n", num_rings);
+//  CONS_Printf("HACK: Rings spawned %i\n", num_rings);
   for(i = num_rings; i; i--)
     {
     ringz = player->mo->z + ((P_Random() % player->mo->info->height) * FRACUNIT);
-    ringx = ring_xpos_table[i % 16] * (reqdist * FRACUNIT);
-    ringy = ring_ypos_table[i % 16] * (reqdist * FRACUNIT);
-    mo = P_SpawnMobj(player->mo->x + reqdist,
-                     player->mo->y + reqdist,
+    ringx = ring_xpos_table[i % 16] * (reqdist);
+    ringy = ring_ypos_table[i % 16] * (reqdist);
+    mo = P_SpawnMobj(player->mo->x + ringx,
+                     player->mo->y + ringy,
                      ringz,
                      MT_FLINGRING);
-    mo->momz = (ringz - player->mo->z) / 10;
-    mo->momx = ring_xpos_table[i % 16] * (5 * FRACUNIT);
-    mo->momy = ring_ypos_table[i % 16] * (5 * FRACUNIT);
-    mo->fuse = 250 + (P_Random() % 50);
+    mo->momz = JUMPGRAVITY + ((P_Random() % 5) * FRACUNIT);
+    mo->momx = ring_xpos_table[i % 16] * (10 * FRACUNIT);
+    mo->momy = ring_ypos_table[i % 16] * (10 * FRACUNIT);
+    mo->fuse = 200 + (P_Random() % 50);
     }
 
   return;
   }
+                                            

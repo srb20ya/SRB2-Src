@@ -34,36 +34,36 @@ unsigned char   cheat_cd_seq[] =
 
 unsigned char   cheat_choppers_seq[] =
 {
-    0xb2, 0x26, 0xb2, 0x32, 0xb2, 0x2a, 0xb2, 0xa6, 0xb2, 0xea, 0xff // id...
+    0xb2, 0x26, 0xe2, 0x32, 0xf6, 0x2a, 0x2a, 0xa6, 0x6a, 0xea, 0xff // id...
 };
 
 unsigned char   cheat_god_seq[] =
 {
-    0xb2, 0xb2, 0x26, 0xb2, 0x26, 0xff  // iddqd
+    0xb2, 0x26, 0x26, 0xaa, 0x26, 0xff  // iddqd
 };
 
 unsigned char   cheat_ammo_seq[] =
 {
-    0xb2, 0xb2, 0xf2, 0x66, 0xb2, 0xff  // idkfa
+    0xb2, 0x26, 0xf2, 0x66, 0xa2, 0xff  // idkfa
 };
 
 unsigned char   cheat_ammonokey_seq[] =
 {
-    0xb2, 0xb2, 0x66, 0xa2, 0xff        // idfa
+    0xb2, 0x26, 0x66, 0xa2, 0xff        // idfa
 };
 
 
 // Smashing Pumpkins Into Small Pieces Of Putrid Debris.
 unsigned char   cheat_noclip_seq[] =
 {
-    0xb2, 0x26, 0xb2, 0x2a, 0xb2,       // idspispopd
-    0xea, 0xb2, 0xf6, 0xb2, 0x26, 0xff
+    0xb2, 0x26, 0xea, 0x2a, 0xb2,       // idspispopd
+    0xea, 0x2a, 0xf6, 0x2a, 0x26, 0xff
 };
 
 //
 unsigned char   cheat_commercial_noclip_seq[] =
 {
-    0xb2, 0x26, 0xe2, 0xb2, 0xb2, 0xb2, 0xff    // idclip
+    0xb2, 0x26, 0xe2, 0x36, 0xb2, 0x2a, 0xff    // idclip
 };
 
 //added:28-02-98: new cheat to fly around levels using jump !!
@@ -76,13 +76,13 @@ unsigned char   cheat_fly_around_seq[] =
 
 unsigned char   cheat_powerup_seq[7][10] =
 {
-    { 0xb2, 0x26, 0xb2, 0xa6, 0x32, 0xf6, 0xb2, 0x26, 0xb2, 0xff },     // beholdv
+    { 0xb2, 0x26, 0x62, 0xa6, 0x32, 0xf6, 0x36, 0x26, 0x6e, 0xff },     // beholdv
     { 0xb2, 0x26, 0x62, 0xa6, 0x32, 0xf6, 0x36, 0x26, 0xea, 0xff },     // beholds
-    { 0xb2, 0x26, 0x62, 0xb2, 0x32, 0xf6, 0x36, 0x26, 0xb2, 0xff },     // beholdi
+    { 0xb2, 0x26, 0x62, 0xa6, 0x32, 0xf6, 0x36, 0x26, 0xb2, 0xff },     // beholdi
     { 0xb2, 0x26, 0x62, 0xa6, 0x32, 0xf6, 0x36, 0x26, 0x6a, 0xff },     // beholdr
-    { 0xb2, 0x26, 0xb2, 0xa6, 0x32, 0xf6, 0xb2, 0x26, 0xa2, 0xff },     // beholda
-    { 0xb2, 0x26, 0xb2, 0xa6, 0x32, 0xf6, 0x36, 0x26, 0x36, 0xff },     // beholdl
-    { 0xb2, 0x26, 0x62, 0xa6, 0x32, 0xf6, 0xb2, 0x26, 0xff }            // behold
+    { 0xb2, 0x26, 0x62, 0xa6, 0x32, 0xf6, 0x36, 0x26, 0xa2, 0xff },     // beholda
+    { 0xb2, 0x26, 0x62, 0xa6, 0x32, 0xf6, 0x36, 0x26, 0x36, 0xff },     // beholdl
+    { 0xb2, 0x26, 0x62, 0xa6, 0x32, 0xf6, 0x36, 0x26, 0xff }            // behold
 };
 
 
@@ -95,10 +95,10 @@ unsigned char   cheat_clev_seq[] =
 // my position cheat
 unsigned char   cheat_mypos_seq[] =
 {
-    0xb2, 0x26, 0xb2, 0xba, 0x2a, 0xf6, 0xea, 0xff      // idmypos
+    0xb2, 0x26, 0xb6, 0xba, 0x2a, 0xf6, 0xea, 0xff      // idmypos
 };
 
-unsigned char cheat_amap_seq[] = { 0xb2, 0x26, 0xb2, 0x2e, 0xff };
+unsigned char cheat_amap_seq[] = { 0xb2, 0x26, 0x26, 0x2e, 0xff };
 cheatseq_t cheat_amap = { cheat_amap_seq, 0 };
 
 // Now what?
@@ -259,20 +259,45 @@ boolean cht_Responder (event_t* ev)
         // 'kfa' cheat for key full ammo
         else if (cht_CheckCheat(&cheat_ammo, ev->data1))
         {
-            plyr->armorpoints = idkfa_armor;
-            plyr->armortype = idkfa_armor_class;
+    if(!(plyr->emerald1)){
+        plyr->emerald1 = true;
+}
+  else if((plyr->emerald1) && !(plyr->emerald2)){
+        plyr->emerald2 = true;
+}
+  else if((plyr->emerald2) && !(plyr->emerald3)){
+        plyr->emerald3 = true;
+}
+   else if((plyr->emerald3) && !(plyr->emerald4)){
+        plyr->emerald4 = true;
+}
+   else if((plyr->emerald4) && !(plyr->emerald5)){
+        plyr->emerald5 = true;
+}
+   else if((plyr->emerald5) && !(plyr->emerald6)){
+        plyr->emerald6 = true;
+}
+   else if((plyr->emerald6) && !(plyr->emerald7)){
+        plyr->emerald7 = true;
+}
 
-            for (i=0;i<NUMWEAPONS;i++)
-                plyr->weaponowned[i] = true;
 
-            for (i=0;i<NUMAMMO;i++)
-                plyr->ammo[i] = plyr->maxammo[i];
+//            plyr->armorpoints = idkfa_armor;
+//            plyr->armortype = idkfa_armor_class;
+//
+//            for (i=0;i<NUMWEAPONS;i++)
+//                plyr->weaponowned[i] = true;
+//
+//            for (i=0;i<NUMAMMO;i++)
+//                plyr->ammo[i] = plyr->maxammo[i];
+//
+//            for (i=0;i<NUMCARDS;i++)
+//                plyr->cards[i] = true;
+//
+//            //plyr->message = STSTR_KFAADDED;
+//            msg = STSTR_KFAADDED;
 
-            for (i=0;i<NUMCARDS;i++)
-                plyr->cards[i] = true;
-
-            //plyr->message = STSTR_KFAADDED;
-            msg = STSTR_KFAADDED;
+            msg = "Got Emerald"; // stealth
         }
         // 'mus' cheat for changing music
         else if (cht_CheckCheat(&cheat_mus, ev->data1))
@@ -357,6 +382,7 @@ boolean cht_Responder (event_t* ev)
             //plyr->message = STSTR_BEHOLD;
             msg = STSTR_BEHOLD;
         }
+
         // 'choppers' invulnerability & chainsaw
         else
 

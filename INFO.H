@@ -31,9 +31,7 @@ typedef enum
 {
     SPR_TROO,
     SPR_SHTG,
-    SPR_PUNG,
-    SPR_PISG,
-    SPR_PISF,
+ // No more punch or pistol Tails 11-06-99
     SPR_SHTF,
     SPR_SHT2,
     SPR_CHGG,
@@ -78,7 +76,7 @@ typedef enum
     SPR_BSPI,
     SPR_APLS,
     SPR_APBX,
-    SPR_CYBR,
+    SPR_EGGM,
     SPR_PAIN,
     SPR_SSWV,
     SPR_KEEN,
@@ -99,7 +97,7 @@ typedef enum
     SPR_YSKU,
     SPR_STIM,
     SPR_MEDI,
-    SPR_SOUL,
+    SPR_EMMY, // emerald test tails
     SPR_PINV,
     SPR_PSTR,
     SPR_PINS,
@@ -140,7 +138,7 @@ typedef enum
     SPR_COL1,
     SPR_COL2,
     SPR_COL3,
-    SPR_COL4,
+    SPR_BUBL, // water bubble source Tails 03-07-2000
     SPR_CAND,
     SPR_BLTV, // Tails 9-30-99
     SPR_COL6,
@@ -172,6 +170,49 @@ typedef enum
     SPR_SPLA,
     SPR_BIRD, // Tails 10-20-99 Birdie freed!
     SPR_SQRL, // Tails 10-20-99 Squirrel freed!
+    SPR_THOK, // Tails 12-05-99 Thok! mobj
+    SPR_BORB, // Tails 12-29-99 Blue Shield
+    SPR_YORB, // Tails 12-29-99 Yellow Shield
+    SPR_GORB, // Tails 12-29-99 Green Shield
+    SPR_KORB, // Tails 12-29-99 Black Shield
+    SPR_SPRK, // spark tails
+    SPR_IVSP, // invincibility sparkles tails
+    SPR_IVSQ, // finish invincibility sparkles tails
+    SPR_IVSR, // following invincibility sparkles tails
+    SPR_IVSS, // finish following invincibility sparkles tails
+    SPR_DISS, // dissipating object tails
+    SPR_BUBP, // Small bubble Tails 03-07-2000
+    SPR_BUBO, // Medium bubble Tails 03-07-2000
+    SPR_BUBN, // Large bubble Tails 03-07-2000
+    SPR_BUBM, // Extra Large (would you like fries with that?) bubble Tails 03-07-2000
+    SPR_CNTA, // Drowning Timer - 0 Tails 03-07-2000
+    SPR_CNTB, // Drowning Timer - 1 Tails 03-07-2000
+    SPR_CNTC, // Drowning Timer - 2 Tails 03-07-2000
+    SPR_CNTD, // Drowning Timer - 3 Tails 03-07-2000
+    SPR_CNTE, // Drowning Timer - 4 Tails 03-07-2000
+    SPR_CNTF, // Drowning Timer - 5 Tails 03-07-2000
+    SPR_POPP, // Extra Large bubble goes POP! Tails 03-08-2000
+    SPR_PRUP, // 1up Box Tails 03-12-2000
+    SPR_BKTV, // Black shield TV Tails 04-08-2000
+    SPR_SCRA, // 100 score logo Tails 04-16-2000
+    SPR_SCRB, // 200 score logo Tails 04-16-2000
+    SPR_SCRC, // 500 score logo Tails 04-16-2000
+    SPR_SCRD, // 1000 score logo Tails 04-16-2000
+    SPR_SSPK, // Super Sonic Spark Tails 04-18-2000
+    SPR_GRAS, // Grass debris Tails 05-14-2000
+    SPR_YSPR, // Yellow Diagonal Spring Tails 05-17-2000
+    SPR_WTRA, // Ambient Water Sound 1 Tails 06-10-2000
+    SPR_WTRB, // Ambient Water Sound 2 Tails 06-10-2000
+    SPR_WTRC, // Ambient Water Sound 3 Tails 06-10-2000
+    SPR_WTRD, // Ambient Water Sound 4 Tails 06-10-2000
+    SPR_WTRE, // Ambient Water Sound 5 Tails 06-10-2000
+    SPR_WTRF, // Ambient Water Sound 6 Tails 06-10-2000
+    SPR_WTRG, // Ambient Water Sound 7 Tails 06-10-2000
+    SPR_WTRH, // Ambient Water Sound 8 Tails 06-10-2000
+    SPR_SKIM, // Skim mine dropper Tails 06-13-2000
+    SPR_MINE, // Skim mine Tails 06-13-2000
+    SPR_FISH, // Greenflower Fish Tails 07-03-2000
+    SPR_GARG, // Deep Sea Gargoyle Tails 07-29-2000
     NUMSPRITES
 
 } spritenum_t;
@@ -180,22 +221,7 @@ typedef enum
 {
     S_NULL,
     S_LIGHTDONE,
-    S_PUNCH,
-    S_PUNCHDOWN,
-    S_PUNCHUP,
-    S_PUNCH1,
-    S_PUNCH2,
-    S_PUNCH3,
-    S_PUNCH4,
-    S_PUNCH5,
-    S_PISTOL,
-    S_PISTOLDOWN,
-    S_PISTOLUP,
-    S_PISTOL1,
-    S_PISTOL2,
-    S_PISTOL3,
-    S_PISTOL4,
-    S_PISTOLFLASH,
+// No more punches or pistol Tails 11-06-99
     S_SGUN,
     S_SGUNDOWN,
     S_SGUNUP,
@@ -328,6 +354,8 @@ typedef enum
     S_IFOG4,
     S_IFOG5,
     S_PLAY,
+    S_PLAY_TAP1, // Tails 12-03-99
+    S_PLAY_TAP2, // Tails 12-03-99
     S_PLAY_RUN1,
     S_PLAY_RUN2,
     S_PLAY_RUN3,
@@ -336,30 +364,28 @@ typedef enum
     S_PLAY_RUN6, // Tails 9-14-99
     S_PLAY_RUN7, // Tails 9-14-99
     S_PLAY_RUN8, // Tails 9-14-99
-    S_PLAY_ATK1,
-    S_PLAY_ATK2,
+    S_PLAY_ATK1, // Tails 9-14-99
+    S_PLAY_ATK2, // Tails 9-14-99
     S_PLAY_ATK3, // Tails 9-14-99
     S_PLAY_ATK4, // Tails 9-14-99
-    S_PLAY_ATK5, // Tails 9-14-99
-    S_PLAY_ATK6, // Tails 9-14-99
-    S_PLAY_ATK7, // Tails 9-14-99
-    S_PLAY_ATK8, // Tails 9-14-99
-    S_PLAY_ATK9, // Tails 9-14-99
-    S_PLAY_ATK10, // Tails 9-14-99
-    S_PLAY_ATK11, // Tails 9-14-99
-    S_PLAY_ATK12, // Tails 9-14-99
-    S_PLAY_PAIN,
-    S_PLAY_PAIN2,
-    S_PLAY_DIE1,
-    S_PLAY_DIE2,
-    S_PLAY_DIE3,
-    S_PLAY_DIE4,
-    S_PLAY_DIE5,
-    S_PLAY_DIE6,
-    S_PLAY_DIE7, // Tails 9-14-99
-    S_PLAY_DIE8, // Tails 9-14-99
-    S_PLAY_DIE9, // Tails 9-14-99
-    S_PLAY_DIE10, // Tails 9-14-99
+    S_PLAY_PLG1, // Tails 9-14-99
+    S_PLAY_SPD1, // Tails 03-02-2000
+    S_PLAY_SPD2, // Tails 03-02-2000
+    S_PLAY_SPD3, // Tails 03-02-2000
+    S_PLAY_SPD4, // Tails 03-02-2000
+    S_PLAY_ABL1, // Tails 03-02-2000
+    S_PLAY_ABL2, // Tails 03-02-2000
+    S_PLAY_SPC1, // Tails 03-02-2000
+    S_PLAY_SPC2, // Tails 03-02-2000 ---- Finalized the character spec
+    S_PLAY_SPC3, // Tails 03-02-2000
+    S_PLAY_SPC4, // Tails 03-02-2000
+    S_PLAY_MPTY, // Tails 03-02-2000
+    S_PLAY_PAIN, // Tails 03-02-2000
+    S_PLAY_PAIN2, // Tails 03-02-2000
+    S_PLAY_DIE1, // Tails 03-02-2000
+    S_PLAY_DIE2, // Tails 03-02-2000
+    S_PLAY_DIE3, // Tails 03-02-2000
+// New Crawla Animations Tails 06-13-2000
     S_POSS_STND,
     S_POSS_STND2,
     S_POSS_RUN1,
@@ -370,21 +396,21 @@ typedef enum
     S_POSS_RUN6,
     S_POSS_RUN7,
     S_POSS_RUN8,
-    S_POSS_ATK1,
-    S_POSS_ATK2,
-    S_POSS_ATK3,
-    S_POSS_PAIN,
-    S_POSS_PAIN2,
+    S_POSS_RUN9,
+    S_POSS_RUN10,
+    S_POSS_RUN11,
+    S_POSS_RUN12,
+    S_POSS_RUN13,
+    S_POSS_RUN14,
+    S_POSS_RUN15,
+    S_POSS_RUN16,
+    S_POSS_RUN17,
     S_POSS_DIE1,
     S_POSS_DIE2,
     S_POSS_DIE3,
     S_POSS_DIE4,
-    S_POSS_DIE5,
 // XDIE frames deleted Tails 10-25-99
-    S_POSS_RAISE1,
-    S_POSS_RAISE2,
-    S_POSS_RAISE3,
-    S_POSS_RAISE4,
+// New Crawla Animations Tails 06-13-2000
     S_SPOS_STND,
     S_SPOS_STND2,
     S_SPOS_RUN1,
@@ -395,22 +421,20 @@ typedef enum
     S_SPOS_RUN6,
     S_SPOS_RUN7,
     S_SPOS_RUN8,
-    S_SPOS_ATK1,
-    S_SPOS_ATK2,
-    S_SPOS_ATK3,
-    S_SPOS_PAIN,
-    S_SPOS_PAIN2,
+    S_SPOS_RUN9,
+    S_SPOS_RUN10,
+    S_SPOS_RUN11,
+    S_SPOS_RUN12,
+    S_SPOS_RUN13,
+    S_SPOS_RUN14,
+    S_SPOS_RUN15,
+    S_SPOS_RUN16,
+    S_SPOS_RUN17,
     S_SPOS_DIE1,
     S_SPOS_DIE2,
     S_SPOS_DIE3,
     S_SPOS_DIE4,
-    S_SPOS_DIE5,
 // XDIE frames deleted Tails 10-25-99
-    S_SPOS_RAISE1,
-    S_SPOS_RAISE2,
-    S_SPOS_RAISE3,
-    S_SPOS_RAISE4,
-    S_SPOS_RAISE5,
     S_VILE_STND,
     S_VILE_STND2,
     S_VILE_RUN1,
@@ -665,21 +689,15 @@ typedef enum
     S_HEAD_ATK1,
     S_HEAD_ATK2,
     S_HEAD_ATK3,
+    S_HEAD_ATK4,
+    S_HEAD_ATK5,
     S_HEAD_PAIN,
-    S_HEAD_PAIN2,
-    S_HEAD_PAIN3,
     S_HEAD_DIE1,
     S_HEAD_DIE2,
     S_HEAD_DIE3,
     S_HEAD_DIE4,
     S_HEAD_DIE5,
     S_HEAD_DIE6,
-    S_HEAD_RAISE1,
-    S_HEAD_RAISE2,
-    S_HEAD_RAISE3,
-    S_HEAD_RAISE4,
-    S_HEAD_RAISE5,
-    S_HEAD_RAISE6,
     S_BRBALL1,
     S_BRBALL2,
     S_BRBALLX1,
@@ -832,33 +850,40 @@ typedef enum
     S_ARACH_PLEX3,
     S_ARACH_PLEX4,
     S_ARACH_PLEX5,
-    S_CYBER_STND,
-    S_CYBER_STND2,
-    S_CYBER_RUN1,
-    S_CYBER_RUN2,
-    S_CYBER_RUN3,
-    S_CYBER_RUN4,
-    S_CYBER_RUN5,
-    S_CYBER_RUN6,
-    S_CYBER_RUN7,
-    S_CYBER_RUN8,
-    S_CYBER_ATK1,
-    S_CYBER_ATK2,
-    S_CYBER_ATK3,
-    S_CYBER_ATK4,
-    S_CYBER_ATK5,
-    S_CYBER_ATK6,
-    S_CYBER_PAIN,
-    S_CYBER_DIE1,
-    S_CYBER_DIE2,
-    S_CYBER_DIE3,
-    S_CYBER_DIE4,
-    S_CYBER_DIE5,
-    S_CYBER_DIE6,
-    S_CYBER_DIE7,
-    S_CYBER_DIE8,
-    S_CYBER_DIE9,
-    S_CYBER_DIE10,
+    S_EGGMOBILE_STND, // Boss 1 Tails 11-29-99
+    S_EGGMOBILE_STND2, // Boss 1 Tails 11-29-99
+    S_EGGMOBILE_RUN1, // Boss 1 Tails 11-29-99
+    S_EGGMOBILE_RUN2, // Boss 1 Tails 11-29-99
+    S_EGGMOBILE_RUN3, // Boss 1 Tails 11-29-99
+    S_EGGMOBILE_RUN4, // Boss 1 Tails 11-29-99
+    S_EGGMOBILE_ATK1, // Boss 1 Tails 11-29-99
+    S_EGGMOBILE_ATK2, // Boss 1 Tails 11-29-99
+    S_EGGMOBILE_PAIN, // Boss 1 Tails 11-29-99
+    S_EGGMOBILE_PAIN2, // Boss 1 Tails 11-29-99
+    S_EGGMOBILE_PAIN3, // Boss 1 Tails 11-29-99
+    S_EGGMOBILE_PAIN4, // Boss 1 Tails 11-29-99
+    S_EGGMOBILE_PAIN5, // Boss 1 Tails 11-29-99
+    S_EGGMOBILE_PAIN6, // Boss 1 Tails 11-29-99
+    S_EGGMOBILE_PAIN7, // Boss 1 Tails 11-29-99
+    S_EGGMOBILE_PAIN8, // Boss 1 Tails 11-29-99
+    S_EGGMOBILE_PAIN9, // Boss 1 Tails 11-29-99
+    S_EGGMOBILE_PAIN10, // Boss 1 Tails 11-29-99
+    S_EGGMOBILE_PAIN11, // Boss 1 Tails 11-29-99
+    S_EGGMOBILE_PAIN12, // Boss 1 Tails 11-29-99
+    S_EGGMOBILE_DIE1, // Boss 1 Tails 11-29-99
+    S_EGGMOBILE_DIE2, // Boss 1 Tails 11-29-99
+    S_EGGMOBILE_DIE3, // Boss 1 Tails 11-29-99
+    S_EGGMOBILE_DIE4, // Boss 1 Tails 11-29-99
+    S_EGGMOBILE_DIE5, // Boss 1 Tails 11-29-99
+    S_EGGMOBILE_DIE6, // Boss 1 Tails 11-29-99
+    S_EGGMOBILE_DIE7, // Boss 1 Tails 11-29-99
+    S_EGGMOBILE_DIE8, // Boss 1 Tails 11-29-99
+    S_EGGMOBILE_DIE9, // Boss 1 Tails 11-29-99
+    S_EGGMOBILE_DIE10, // Boss 1 Tails 11-29-99
+    S_EGGMOBILE_DIE11, // Boss 1 Tails 11-29-99
+    S_EGGMOBILE_DIE12, // Boss 1 Tails 11-29-99
+    S_EGGMOBILE_DIE13, // Boss 1 Tails 11-29-99
+    S_EGGMOBILE_DIE14, // Boss 1 Tails 11-29-99
     S_PAIN_STND,
     S_PAIN_RUN1,
     S_PAIN_RUN2,
@@ -962,6 +987,10 @@ typedef enum
     S_BBAR1,
     S_BBAR2,
     S_BBAR3,
+    S_BBAR4, // Tails 10-31-99
+    S_BBAR5, // Tails 10-31-99
+    S_BBAR6, // Tails 10-31-99
+    S_BBAR7, // Tails 10-31-99
     S_BON1,
     S_BON1A,
     S_BON1B,
@@ -978,6 +1007,14 @@ typedef enum
     S_BON1M, //Tails 9-15-99
     S_BON1N, //Tails 9-15-99
     S_BON1O,  //Tails 9-15-99
+    S_BON1P,  //Tails 10-29-99
+    S_BON1Q,  //Tails 10-29-99
+    S_BON1R,  //Tails 10-29-99
+    S_BON1S,  //Tails 10-29-99
+    S_BON1T,  //Tails 10-29-99
+    S_BON1U,  //Tails 10-29-99
+    S_BON1V,  //Tails 10-29-99
+    S_BON1W,  //Tails 10-29-99
     S_BON2,
     S_BON2A,
     S_BON2B,
@@ -1004,6 +1041,7 @@ typedef enum
     S_STIM5, // Tails 9-30-99
     S_STIM6, // Tails 9-30-99
     S_STIM7, // Tails 9-30-99
+    S_STIM8, // Tails 2-13-00
     S_MEDI,
     S_MEDI1, // Tails 9-30-99
     S_MEDI2, // Tails 9-30-99
@@ -1012,16 +1050,37 @@ typedef enum
     S_MEDI5, // Tails 9-30-99
     S_MEDI6, // Tails 9-30-99
     S_MEDI7, // Tails 9-30-99
-    S_SOUL,
-    S_SOUL2,
-    S_SOUL3,
-    S_SOUL4,
-    S_SOUL5,
-    S_SOUL6,
-    S_PINV,
+    S_MEDI8, // Tails 2-13-00
+    S_EMMY1, // start emerald tails
+    S_EMMY2,
+    S_EMMY3,
+    S_EMMY4,
+    S_EMMY5,
+    S_EMMY6,
+    S_EMMY7,
+    S_EMMY8,
+    S_EMMY9,
+    S_EMMY10,
+    S_EMMY11,
+    S_EMMY12,
+    S_EMMY13,
+    S_EMMY14,
+    S_EMMY15,
+    S_EMMY16,
+    S_EMMY17,
+    S_EMMY18,
+    S_EMMY19,
+    S_EMMY20,
+    S_EMMY21, // end emerald tails
+    S_PINV, // start invincibility box tails
     S_PINV2,
     S_PINV3,
     S_PINV4,
+    S_PINV5,
+    S_PINV6,
+    S_PINV7,
+    S_PINV8,
+    S_PINV9, // end invincibility box tails
     S_PSTR,
     S_PINS,
     S_PINS2,
@@ -1064,6 +1123,7 @@ typedef enum
     S_GRTV5, // Tails 9-30-99
     S_GRTV6, // Tails 9-30-99
     S_GRTV7, // Tails 9-30-99
+    S_GRTV8, // Tails 2-13-00
     S_STALAG,
     S_BLOODYTWITCH,
     S_BLOODYTWITCH2,
@@ -1072,6 +1132,13 @@ typedef enum
     S_DEADTORSO,
     S_DEADBOTTOM,
     S_HEADSONSTICK,
+    S_HEADSONSTICK2, // Tails 11-06-99
+    S_HEADSONSTICK3, // Tails 11-06-99
+    S_HEADSONSTICK4, // Tails 11-06-99
+    S_HEADSONSTICK5, // Tails 11-06-99
+    S_HEADSONSTICK6, // Tails 11-06-99
+    S_HEADSONSTICK7, // Tails 11-06-99
+    S_HEADSONSTICK8, // Tails 11-06-99
     S_GIBS,
     S_HEADONASTICK,
     S_HEADCANDLES,
@@ -1084,6 +1151,7 @@ typedef enum
     S_SHTV5, // Tails 9-30-99
     S_SHTV6, // Tails 9-30-99
     S_SHTV7, // Tails 9-30-99
+    S_SHTV8, // Tails 2-13-00
     S_LIVESTICK,
     S_LIVESTICK2,
     S_MEAT2,
@@ -1093,8 +1161,13 @@ typedef enum
     S_STALAGTITE,
     S_TALLGRNCOL,
     S_SHRTGRNCOL,
-    S_TALLREDCOL,
-    S_SHRTREDCOL,
+    S_TALLREDCOL, // It's da fan! Tails 12-05-99
+    S_TALLREDCOL2, // It's da fan! Tails 12-05-99
+    S_TALLREDCOL3, // It's da fan! Tails 12-05-99
+    S_TALLREDCOL4, // It's da fan! Tails 12-05-99
+    S_TALLREDCOL5, // It's da fan! Tails 12-05-99
+    S_BUBBLES1, // Bubble Source Tails 03-07-2000
+    S_BUBBLES2, // Bubble Source Tails 03-07-2000
     S_CANDLESTIK,
     S_BLTV, // Tails 9-30-99
     S_BLTV1, // Tails 9-30-99
@@ -1104,6 +1177,7 @@ typedef enum
     S_BLTV5, // Tails 9-30-99
     S_BLTV6, // Tails 9-30-99
     S_BLTV7, // Tails 9-30-99
+    S_BLTV8, // Tails 2-13-00
     S_SKULLCOL,
     S_TORCHTREE,
     S_BIGTREE,
@@ -1115,6 +1189,7 @@ typedef enum
     S_YLTV5, // Tails 9-30-99
     S_YLTV6, // Tails 9-30-99
     S_YLTV7, // Tails 9-30-99
+    S_YLTV8, // Tails 2-13-00
     S_EVILEYE,
     S_EVILEYE2,
     S_EVILEYE3,
@@ -1155,6 +1230,13 @@ typedef enum
     S_HANGTLOOKUP,
     S_HANGTNOBRAIN,
     S_COLONGIBS,
+    S_COLONGIBS2, // Tails 11-07-99
+    S_COLONGIBS3, // Tails 11-07-99
+    S_COLONGIBS4, // Tails 11-07-99
+    S_COLONGIBS5, // Tails 11-07-99
+    S_COLONGIBS6, // Tails 11-07-99
+    S_COLONGIBS7, // Tails 11-07-99
+    S_COLONGIBS8, // Tails 11-07-99
     S_SMALLPOOL,
     S_BRAINSTEM,
     S_TECHLAMP,
@@ -1181,11 +1263,255 @@ typedef enum
     S_SPLASH3,
     S_BIRD1, // Tails 10-20-99 Birdie free!
     S_BIRD2, // Tails 10-20-99 Birdie free!
-    S_BIRD3, // Tails 10-23-99 Birdie disappear
+    S_BIRD3, // Tails 10-23-99 Birdie free!
     S_SQRL1, // Tails 10-20-99 Squirrel free!
     S_SQRL2, // Tails 10-20-99 Squirrel free!
-    S_SQRL3, // Tails 10-23-99 Squirrel disappear
-
+    S_SQRL3, // Tails 10-23-99 Squirrel free!
+    S_SQRL4, // Tails 10-20-99 Squirrel free!
+    S_SQRL5, // Tails 10-20-99 Squirrel free!
+    S_SQRL6, // Tails 10-20-99 Squirrel free!
+    S_SQRL7, // Tails 10-20-99 Squirrel free!
+    S_SQRL8, // Tails 10-20-99 Squirrel free!
+    S_SQRL9, // Tails 10-20-99 Squirrel free!
+    S_SQRL10, // Tails 10-20-99 Squirrel free!
+    S_THOK1, // Tails 12-05-99 Thok! mobj
+    S_BORB1, // Tails 12-29-99 shield mobjs
+    S_BORB2, // Tails 12-29-99 shield mobjs
+    S_BORB3, // Tails 12-29-99 shield mobjs
+    S_BORB4, // Tails 12-29-99 shield mobjs
+    S_BORB5, // Tails 12-29-99 shield mobjs
+    S_BORB6, // Tails 12-29-99 shield mobjs
+    S_BORB7, // Tails 12-29-99 shield mobjs
+    S_BORB8, // Tails 12-29-99 shield mobjs
+    S_YORB1, // Tails 12-29-99 shield mobjs
+    S_YORB2, // Tails 12-29-99 shield mobjs
+    S_YORB3, // Tails 12-29-99 shield mobjs
+    S_YORB4, // Tails 12-29-99 shield mobjs
+    S_YORB5, // Tails 12-29-99 shield mobjs
+    S_YORB6, // Tails 12-29-99 shield mobjs
+    S_YORB7, // Tails 12-29-99 shield mobjs
+    S_YORB8, // Tails 12-29-99 shield mobjs
+    S_GORB1, // Tails 12-29-99 shield mobjs
+    S_GORB2, // Tails 06-28-2000 shield mobjs
+    S_GORB3, // Tails 06-28-2000 shield mobjs
+    S_GORB4, // Tails 06-28-2000 shield mobjs
+    S_GORB5, // Tails 06-28-2000 shield mobjs
+    S_GORB6, // Tails 06-28-2000 shield mobjs
+    S_GORB7, // Tails 06-28-2000 shield mobjs
+    S_GORB8, // Tails 06-28-2000 shield mobjs
+    S_KORB1, // Tails 12-29-99 shield mobjs
+    S_KORB2, // Tails 12-29-99 shield mobjs
+    S_KORB3, // Tails 12-29-99 shield mobjs
+    S_KORB4, // Tails 12-29-99 shield mobjs
+    S_KORB5, // Tails 12-29-99 shield mobjs
+    S_KORB6, // Tails 12-29-99 shield mobjs
+    S_KORB7, // Tails 12-29-99 shield mobjs
+    S_KORB8, // Tails 12-29-99 shield mobjs
+    S_SPRK1, // spark start tails
+    S_SPRK2,
+    S_SPRK3,
+    S_SPRK4,
+    S_SPRK5, // spark
+    S_SPRK6,
+    S_SPRK7,
+    S_SPRK8,
+    S_SPRK9, // spark
+    S_SPRK10,
+    S_SPRK11,
+    S_SPRK12,
+    S_SPRK13, // spark
+    S_SPRK14,
+    S_SPRK15,
+    S_SPRK16, // end spark tails
+    S_IVSP1, // invincibility sparkles tails
+    S_IVSP2, // invincibility sparkles tails
+    S_IVSP3, // invincibility sparkles tails
+    S_IVSP4, // invincibility sparkles tails
+    S_IVSP5, // invincibility sparkles tails
+    S_IVSP6, // invincibility sparkles tails
+    S_IVSP7, // invincibility sparkles tails
+    S_IVSP8, // invincibility sparkles tails
+    S_IVSP9, // invincibility sparkles tails
+    S_IVSP10, // invincibility sparkles tails
+    S_IVSP11, // invincibility sparkles tails
+    S_IVSP12, // invincibility sparkles tails
+    S_IVSP13, // invincibility sparkles tails
+    S_IVSP14, // invincibility sparkles tails
+    S_IVSP15, // invincibility sparkles tails
+    S_IVSP16, // invincibility sparkles tails
+    S_IVSP17, // invincibility sparkles tails
+    S_IVSP18, // invincibility sparkles tails
+    S_IVSP19, // invincibility sparkles tails
+    S_IVSP20, // invincibility sparkles tails
+    S_IVSP21, // invincibility sparkles tails
+    S_IVSP22, // invincibility sparkles tails
+    S_IVSP23, // invincibility sparkles tails
+    S_IVSP24, // invincibility sparkles tails
+    S_IVSP25, // invincibility sparkles tails
+    S_IVSP26, // invincibility sparkles tails
+    S_IVSP27, // invincibility sparkles tails
+    S_IVSP28, // invincibility sparkles tails
+    S_IVSP29, // invincibility sparkles tails
+    S_IVSQ1, // invincibility sparkles finish tails
+    S_IVSQ2, // invincibility sparkles finish tails
+    S_IVSQ3, // invincibility sparkles finish tails
+    S_IVSR1, // following invincibility sparkles tails
+    S_IVSR2, // following invincibility sparkles tails
+    S_IVSR3, // following invincibility sparkles tails
+    S_IVSR4, // following invincibility sparkles tails
+    S_IVSR5, // following invincibility sparkles tails
+    S_IVSR6, // following invincibility sparkles tails
+    S_IVSR7, // following invincibility sparkles tails
+    S_IVSR8, // following invincibility sparkles tails
+    S_IVSR9, // following invincibility sparkles tails
+    S_IVSR10, // following invincibility sparkles tails
+    S_IVSR11, // following invincibility sparkles tails
+    S_IVSR12, // following invincibility sparkles tails
+    S_IVSR13, // following invincibility sparkles tails
+    S_IVSR14, // following invincibility sparkles tails
+    S_IVSR15, // following invincibility sparkles tails
+    S_IVSR16, // following invincibility sparkles tails
+    S_IVSR17, // following invincibility sparkles tails
+    S_IVSR18, // following invincibility sparkles tails
+    S_IVSR19, // following invincibility sparkles tails
+    S_IVSR20, // following invincibility sparkles tails
+    S_IVSR21, // following invincibility sparkles tails
+    S_IVSR22, // following invincibility sparkles tails
+    S_IVSR23, // following invincibility sparkles tails
+    S_IVSR24, // following invincibility sparkles tails
+    S_IVSR25, // following invincibility sparkles tails
+    S_IVSR26, // following invincibility sparkles tails
+    S_IVSR27, // following invincibility sparkles tails
+    S_IVSR28, // following invincibility sparkles tails
+    S_IVSR29, // following invincibility sparkles tails
+    S_IVSS1, // finish following invincibility sparkles tails
+    S_IVSS2, // finish following invincibility sparkles tails
+    S_IVSS3, // finish following invincibility sparkles tails
+    S_DISS, // dissipating object tails
+    S_SMALLBUBBLE, // small bubble Tails 03-07-2000
+    S_SMALLBUBBLE1, // small bubble Tails 03-07-2000
+    S_MEDIUMBUBBLE, // medium bubble Tails 03-07-2000
+    S_MEDIUMBUBBLE1, // medium bubble Tails 03-07-2000
+    S_LARGEBUBBLE, // large bubble Tails 03-07-2000
+    S_EXTRALARGEBUBBLE, // extra large bubble (breathable) Tails 03-07-2000
+    S_EXTRALARGEBUBBLE1, // extra large bubble (breathable) Tails 03-07-2000
+    S_ZERO1, // Drowning Timer - 0 Tails 03-07-2000
+    S_ONE1, // Drowning Timer - 1 Tails 03-07-2000
+    S_TWO1, // Drowning Timer - 2 Tails 03-07-2000
+    S_THREE1, // Drowning Timer - 3 Tails 03-07-2000
+    S_FOUR1, // Drowning Timer - 4 Tails 03-07-2000
+    S_FIVE1, // Drowning Timer - 5 Tails 03-07-2000
+    S_POP1, // Extra Large bubble goes POP! Tails 03-08-2000
+    S_PRUP1, // 1Up box Tails 03-12-2000
+    S_PRUP2, // 1Up box Tails 03-12-2000
+    S_PRUP3, // 1Up box Tails 03-12-2000
+    S_PRUP4, // 1Up box Tails 03-12-2000
+    S_PRUP5, // 1Up box Tails 03-12-2000
+    S_PRUP6, // 1Up box Tails 03-12-2000
+    S_PRUP7, // 1Up box Tails 03-12-2000
+    S_PRUP8, // 1Up box Tails 03-12-2000
+    S_PRUP9, // 1Up box Tails 03-12-2000
+    S_BKTV1, // Black shield TV Tails 04-08-2000
+    S_BKTV2, // Black shield TV Tails 04-08-2000
+    S_BKTV3, // Black shield TV Tails 04-08-2000
+    S_BKTV4, // Black shield TV Tails 04-08-2000
+    S_BKTV5, // Black shield TV Tails 04-08-2000
+    S_BKTV6, // Black shield TV Tails 04-08-2000
+    S_BKTV7, // Black shield TV Tails 04-08-2000
+    S_BKTV8, // Black shield TV Tails 04-08-2000
+    S_BKTV9, // Black shield TV Tails 04-08-2000
+    S_SCRA, // 100 score logo Tails 04-16-2000
+    S_SCRA2, // 100 score logo Tails 04-16-2000
+    S_SCRB, // 200 score logo Tails 04-16-2000
+    S_SCRB2, // 200 score logo Tails 04-16-2000
+    S_SCRC, // 500 score logo Tails 04-16-2000
+    S_SCRC2, // 500 score logo Tails 04-16-2000
+    S_SCRD, // 1000 score logo Tails 04-16-2000
+    S_SCRD2, // 1000 score logo Tails 04-16-2000
+    S_SSPK1, // Super Sonic Spark Tails 04-18-2000
+    S_SSPK2, // Super Sonic Spark Tails 04-18-2000
+    S_SSPK3, // Super Sonic Spark Tails 04-18-2000
+    S_SSPK4, // Super Sonic Spark Tails 04-18-2000
+    S_SSPK5, // Super Sonic Spark Tails 04-18-2000
+    S_GRASS1, // Grass debris Tails 05-14-2000
+    S_GRASS2, // Grass debris Tails 05-14-2000
+    S_GRASS3, // Grass debris Tails 05-14-2000
+    S_GRASS4, // Grass debris Tails 05-14-2000
+    S_GRASS5, // Grass debris Tails 05-14-2000
+    S_GRASS6, // Grass debris Tails 05-14-2000
+    S_GRASS7, // Grass debris Tails 05-14-2000
+    S_YDIAG1, // Yellow Diagonal Spring Tails 05-17-2000
+    S_YDIAG2, // Yellow Diagonal Spring Tails 05-17-2000
+    S_YDIAG3, // Yellow Diagonal Spring Tails 05-17-2000
+    S_YDIAG4, // Yellow Diagonal Spring Tails 05-17-2000
+    S_YDIAG5, // Yellow Diagonal Spring Tails 05-17-2000
+    S_YDIAG6, // Yellow Diagonal Spring Tails 05-17-2000
+    S_YDIAG7, // Yellow Diagonal Spring Tails 05-17-2000
+    S_YDIAG8, // Yellow Diagonal Spring Tails 05-17-2000
+    S_AWATERA1, // Ambient Water Sound 1 Tails 06-10-2000
+    S_AWATERA2, // Ambient Water Sound 1 Tails 06-10-2000
+    S_AWATERB1, // Ambient Water Sound 2 Tails 06-10-2000
+    S_AWATERB2, // Ambient Water Sound 2 Tails 06-10-2000
+    S_AWATERC1, // Ambient Water Sound 3 Tails 06-10-2000
+    S_AWATERC2, // Ambient Water Sound 3 Tails 06-10-2000
+    S_AWATERD1, // Ambient Water Sound 4 Tails 06-10-2000
+    S_AWATERD2, // Ambient Water Sound 4 Tails 06-10-2000
+    S_AWATERE1, // Ambient Water Sound 5 Tails 06-10-2000
+    S_AWATERE2, // Ambient Water Sound 5 Tails 06-10-2000
+    S_AWATERF1, // Ambient Water Sound 6 Tails 06-10-2000
+    S_AWATERF2, // Ambient Water Sound 6 Tails 06-10-2000
+    S_AWATERG1, // Ambient Water Sound 7 Tails 06-10-2000
+    S_AWATERG2, // Ambient Water Sound 7 Tails 06-10-2000
+    S_AWATERH1, // Ambient Water Sound 8 Tails 06-10-2000
+    S_AWATERH2, // Ambient Water Sound 8 Tails 06-10-2000
+    S_SKIM1, // Skim mine dropper Tails 06-13-2000
+    S_SKIM2, // Skim mine dropper Tails 06-13-2000
+    S_SKIM3, // Skim mine dropper Tails 06-13-2000
+    S_SKIM4, // Skim mine dropper Tails 06-13-2000
+    S_SKIM5, // Skim mine dropper Tails 06-13-2000
+    S_SKIM6, // Skim mine dropper Tails 06-13-2000
+    S_SKIM7, // Skim mine dropper Tails 06-13-2000
+    S_SKIM8, // Skim mine dropper Tails 06-13-2000
+    S_SKIM9, // Skim mine dropper Tails 06-13-2000
+    S_SKIM10, // Skim mine dropper Tails 06-13-2000
+    S_SKIM11, // Skim mine dropper Tails 06-13-2000
+    S_SKIM12, // Skim mine dropper Tails 06-13-2000
+    S_SKIM13, // Skim mine dropper Tails 06-13-2000
+    S_SKIM14, // Skim mine dropper Tails 06-13-2000
+    S_SKIM15, // Skim mine dropper Tails 06-13-2000
+    S_SKIM16, // Skim mine dropper Tails 06-13-2000
+    S_SKIM17, // Skim mine dropper Tails 06-13-2000
+    S_SKIM18, // Skim mine dropper Tails 06-13-2000
+    S_SKIM19, // Skim mine dropper Tails 06-13-2000
+    S_SKIM20, // Skim mine dropper Tails 06-13-2000
+    S_SKIM21, // Skim mine dropper Tails 06-13-2000
+    S_SKIM22, // Skim mine dropper Tails 06-13-2000
+    S_SKIM23, // Skim mine dropper Tails 06-13-2000
+    S_SKIM24, // Skim mine dropper Tails 06-13-2000
+    S_SKIM25, // Skim mine dropper Tails 06-13-2000
+    S_SKIM26, // Skim mine dropper Tails 06-13-2000
+    S_SKIM27, // Skim mine dropper Tails 06-13-2000
+    S_SKIM28, // Skim mine dropper Tails 06-13-2000
+    S_SKIM29, // Skim mine dropper Tails 06-13-2000
+    S_SKIM30, // Skim mine dropper Tails 06-13-2000
+    S_SKIM_BOOM1, // Skim mine dropper explode Tails 06-13-2000
+    S_SKIM_BOOM2, // Skim mine dropper explode Tails 06-13-2000
+    S_SKIM_BOOM3, // Skim mine dropper explode Tails 06-13-2000
+    S_SKIM_BOOM4, // Skim mine dropper explode Tails 06-13-2000
+    S_MINE1, // Skim mine Tails 06-13-2000
+    S_MINE_BOOM1, // Skim mine explode Tails 06-13-2000
+    S_MINE_BOOM2, // Skim mine explode Tails 06-13-2000
+    S_MINE_BOOM3, // Skim mine explode Tails 06-13-2000
+    S_MINE_BOOM4, // Skim mine explode Tails 06-13-2000
+    S_FISH1, // Greenflower Fish Tails 07-03-2000
+    S_FISH2, // Greenflower Fish Tails 07-03-2000
+    S_FISH3, // Greenflower Fish Tails 07-03-2000
+    S_FISH4, // Greenflower Fish Tails 07-03-2000
+    S_FISH_DIE1, // Greenflower Fish Tails 07-03-2000
+    S_FISH_DIE2, // Greenflower Fish Tails 07-03-2000
+    S_FISH_DIE3, // Greenflower Fish Tails 07-03-2000
+    S_FISH_DIE4, // Greenflower Fish Tails 07-03-2000
+    S_GARGOYLE, // Deep Sea Gargoyle Tails 07-29-2000
     NUMSTATES
 } statenum_t;
 
@@ -1196,7 +1522,7 @@ typedef struct
   long          frame;          //faB: we use the upper 16bits for translucency
                                 //     and other shade effects
   long          tics;
-  // void       (*action) ();
+  // void       (*action) ();  
   actionf_t     action;
   statenum_t    nextstate;
   long          misc1, misc2;
@@ -1263,7 +1589,7 @@ typedef enum {
     MT_MISC9,
     MT_MISC10,
     MT_MISC11,
-    MT_MISC12,
+    MT_EMMY, // emerald tails
     MT_INV,
     MT_MISC13,
     MT_INS,
@@ -1293,7 +1619,7 @@ typedef enum {
     MT_MISC32,
     MT_MISC33,
     MT_MISC34,
-    MT_MISC35,
+    MT_BUBBLES, // Bubble source Tails 03-07-2000
     MT_MISC36,
     MT_MISC37,
     MT_MISC38,
@@ -1352,6 +1678,49 @@ typedef enum {
     MT_FLINGRING,   //SOM: Test rings flying
     MT_BIRD, // Tails 10-20-99 Birdie freed!
     MT_SQRL, // Tails 10-20-99 Squirrel freed!
+    MT_THOK, // Tails 12-05-99 Thok! mobj
+    MT_BLUEORB, // Tails 12-29-99 shield mobjs
+    MT_YELLOWORB, // Tails 12-29-99 shield mobjs
+    MT_GREENORB, // Tails 12-29-99 shield mobjs
+    MT_BLACKORB, // Tails 12-29-99 shield mobjs
+    MT_SPARK, //spark tails
+    MT_IVSP, // invincibility sparkles tails
+    MT_IVSQ, // invincibility sparkles finish tails
+    MT_IVSR, // following invincibility sparkles tails
+    MT_IVSS, // finish following invincibility sparkles tails
+    MT_DISS, // dissipating object tails
+    MT_SMALLBUBBLE, // small bubble Tails 03-07-2000
+    MT_MEDIUMBUBBLE, // medium bubble Tails 03-07-2000
+    MT_LARGEBUBBLE, // large bubble Tails 03-07-2000
+    MT_EXTRALARGEBUBBLE, // extra large bubble Tails 03-07-2000
+    MT_ZERO, // Drowning Timer - 0 Tails 03-07-2000
+    MT_ONE, // Drowning Timer - 1 Tails 03-07-2000
+    MT_TWO, // Drowning Timer - 2 Tails 03-07-2000
+    MT_THREE, // Drowning Timer - 3 Tails 03-07-2000
+    MT_FOUR, // Drowning Timer - 4 Tails 03-07-2000
+    MT_FIVE, // Drowning Timer - 5 Tails 03-07-2000
+    MT_POP, // Extra Large bubble goes POP! Tails 03-08-2000
+    MT_PRUP, // 1up Box Tails 03-12-2000
+    MT_BKTV, // Black shield TV Tails 04-08-2000
+    MT_SCRA, // 100 score logo Tails 04-16-2000
+    MT_SCRB, // 200 score logo Tails 04-16-2000
+    MT_SCRC, // 500 score logo Tails 04-16-2000
+    MT_SCRD, // 1000 score logo Tails 04-16-2000
+    MT_SUPERSPARK, // Super Sonic Spark Tails 04-18-2000
+    MT_GRASSDEBRIS, // Grass debris Tails 05-14-2000
+    MT_YELLOWDIAG, // Yellow Diagonal Spring Tails 05-17-2000
+    MT_AWATERA, // Ambient Water Sound 1 Tails 06-10-2000
+    MT_AWATERB, // Ambient Water Sound 2 Tails 06-10-2000
+    MT_AWATERC, // Ambient Water Sound 3 Tails 06-10-2000
+    MT_AWATERD, // Ambient Water Sound 4 Tails 06-10-2000
+    MT_AWATERE, // Ambient Water Sound 5 Tails 06-10-2000
+    MT_AWATERF, // Ambient Water Sound 6 Tails 06-10-2000
+    MT_AWATERG, // Ambient Water Sound 7 Tails 06-10-2000
+    MT_AWATERH, // Ambient Water Sound 8 Tails 06-10-2000
+    MT_SKIM, // Skim mine dropper Tails 06-13-2000
+    MT_MINE, // Skim mine Tails 06-13-2000
+    MT_GFZFISH, // Greenflower Fish Tails 07-03-2000
+    MT_GARGOYLE, // Deep Sea Gargoyle Tails 07-29-2000
     NUMMOBJTYPES
 
 } mobjtype_t;

@@ -381,7 +381,8 @@ void I_PlayCD (int track, boolean looping)
 
     if (!tracks[track].is_audio)
     {
-        CONS_Printf ("\2CD Play: not an audio track\n");
+//        CONS_Printf ("\2CD Play: not an audio track\n");
+// Tails 04-09-2000 annoying rubbish
         return;
     }
 

@@ -536,7 +536,7 @@ void LoadDehackedFile(char *filename)
     CONS_Printf("Loading Dehacked file %s\n",filename);
   }
 
-  devparm=M_CheckParm("-devparm");
+  devparm=M_CheckParm("-debug"); // Tails 06-04-2000
 
   // save value for cross reference
   for(i=0;i<NUMSTATES;i++)

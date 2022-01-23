@@ -166,6 +166,69 @@ typedef struct player_s
     // True if secret level has been done.
     boolean             didsecret;
 
+    int wants_to_thok;     //Stealth: Homing Attack 12-31-99
+    int thok_dist;
+    angle_t thok_angle;
+
+    int score; // player score Tails 03-01-2000
+    int releasedash; // dash stuff Tails 02-27-2000
+    int dashspeed; // dashing speed Tails 03-01-2000
+
+    int typechar; // Which character? Tails 03-01-2000
+
+    int lives; // do lives now, worry about continues later Tails 03-09-2000
+    int continues; // continues that player has acquired Tails 03-11-2000
+
+    int timebonus; // Time Bonus Tails 03-10-2000
+    int ringbonus; // Ring Bonus Tails 03-10-2000
+    int fscore; // Fake score for intermissions Tails 03-12-2000
+    int seconds; // Tails 06-13-2000
+    int minutes; // Tails 06-13-2000
+
+    int ringblink; // used as a ring blinking timer Tails 03-14-2000
+
+// start emeralds Tails 04-08-2000
+    int emerald1;
+    int emerald2;
+    int emerald3;
+    int emerald4;
+    int emerald5;
+    int emerald6;
+    int emerald7;
+// end emeralds Tails 04-08-2000
+
+    int superready; // Ready for Super? Tails 04-08-2000
+    int tailsfly; // Lots easier than stupid MF flags Tails 06-13-2000
+
+    int acceleration; // Acceleration Tails 04-24-2000
+
+    int xtralife1; // Extra Life
+    int xtralife2; // via rings status Tails 04-25-2000
+    int xtralife3; // 50,000 points
+    int xtralife4; // 100,000 points
+    int xtralife5; // 150,000 points
+    int xtralife6; // 200,000 points
+    int xtralife7; // 250,000 points
+    int xtralife8; // 300,000 points
+    int xtralife9; // 350,000 points
+    int xtralife10; // 400,000 points
+    int xtralife11; // 450,000 points
+    int xtralife12; // 500,000 points
+    int xtralife13; // 550,000 points
+    int xtralife14; // 600,000 points
+    int xtralife15; // 650,000 points
+    int xtralife16; // 700,000 points
+    int xtralife17; // 750,000 points
+    int xtralife18; // 800,000 points
+    int xtralife19; // 850,000 points
+    int xtralife20; // 900,000 points
+    int xtralife21; // 950,000 points
+    int xtralife22; // 1,000,000 points
+
+    int walking; // Are the walking frames playing? Tails 08-18-2000
+    int running; // Are the walking frames playing? Tails 08-18-2000
+    int spinning; // Are the walking frames playing? Tails 08-18-2000
+    int speed; // Player's speed (distance formula of MOMX and MOMY values) Tails 08-21-2000
 } player_t;
 
 
@@ -178,6 +241,9 @@ typedef struct
     boolean     in;     // whether the player is in game
 
     // Player stats, kills, collected items etc.
+    int         sscore; // score tally Tails 03-09-2000
+    int         stimeb; // Time Bonus Tails 03-10-2000
+    int         sringb; // Ring Bonus Tails 03-10-2000
     int         skills;
     int         sitems;
     int         ssecret;

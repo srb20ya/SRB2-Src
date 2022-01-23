@@ -40,7 +40,7 @@ extern consvar_t cv_viewheight; // p_mobj.c
 // but we do not have any moving sectors nearby
 #define MAXRADIUS       (32*FRACUNIT)
 
-#define MAXMOVE         (30*FRACUNIT)
+#define MAXMOVE         (60*FRACUNIT) // Speed Barrier: ELIMINATED THAT BAD BOY!! Tails 04-11-2000
 
 //added:26-02-98: max Z move up or down without jumping
 //      above this, a heigth difference is considered as a 'dropoff'

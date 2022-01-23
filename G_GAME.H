@@ -37,6 +37,7 @@ extern  ULONG           levelstarttic;  // gametic at level start
 // used in game menu
 extern consvar_t  cv_crosshair;
 extern consvar_t  cv_autorun;
+extern consvar_t  cv_analog; // Analog/Digital swap Tails 04-22-2000
 extern consvar_t  cv_invertmouse;
 extern consvar_t  cv_alwaysfreelook;
 extern consvar_t  cv_showmessages;

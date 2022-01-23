@@ -18,6 +18,6 @@ enum
 // Bounding box functions.
 void M_ClearBox (fixed_t*       box);
 
-void M_AddToBox (fixed_t*       box, fixed_t    x, fixed_t      y );
+void M_AddToBox (fixed_t*       box, fixed_t    x, fixed_t      y);
 
 #endif

@@ -95,6 +95,10 @@ static void CON_DrawBackpic (pic_t *pic, int startx, int destwidth);
 
 extern boolean chat_on; //set true by hu_ when entering a chat message
 
+//Prototypes for new console cheats: Stealth 12-26-99
+
+//void A_SuperSonic(void); 
+
 //======================================================================
 //                   CONSOLE VARS AND COMMANDS
 //======================================================================
@@ -312,6 +316,10 @@ void CON_Init(void)
     COM_AddCommand ("english", CONS_English_f);
     COM_AddCommand ("french", CONS_French_f);
     COM_AddCommand ("bind", CONS_Bind_f);
+
+//Stealth's new console cheats 12-26-99
+//    COM_AddCommand ("supersonic", A_SuperSonic);
+
     // set console full screen for game startup MAKE SURE VID_Init() done !!!
     con_destlines = vid.height;
     con_curlines = vid.height;

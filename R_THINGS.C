@@ -1196,12 +1196,14 @@ void Sk_SetDefaultValue(skin_t *skin)
     memset (skin, 0, sizeof(skin_t));
     strcpy (skin->name, DEFAULTSKIN);
     strcpy (skin->faceprefix, "STF");
+    strcpy (skin->typechar, "0"); // Tails 03-01-2000
     for (i=0;i<sfx_freeslot0;i++)
         if (S_sfx[i].skinsound!=-1)
         {
             skin->soundsid[S_sfx[i].skinsound] = i;
         }
     memcpy(&skins[0].spritedef, &sprites[SPR_PLAY], sizeof(spritedef_t));
+
 }
 
 //
@@ -1403,6 +1405,14 @@ void R_AddSkins (int wadnum)
                 strncpy (skins[numskins].faceprefix, value, 3);
                 strupr (skins[numskins].faceprefix);
             }
+// start character type identification Tails 03-01-2000
+            else
+            if (!stricmp(token,"typechar"))
+            {
+                strncpy (skins[numskins].typechar, value, 1);
+                strupr (skins[numskins].typechar);
+            }
+// end character type identification Tails 03-01-2000
             else
             {
                 int found=false;
@@ -1449,5 +1459,6 @@ next_token:
 
         numskins++;
     }
+
     return;
 }

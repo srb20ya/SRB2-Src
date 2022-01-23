@@ -88,9 +88,9 @@ else
 
 	# build a normal optimised version
 	ifdef PGCC
-		CFLAGS = -g -mpentium -O6 -ffast-math -fomit-frame-pointer $(OPTS)
+                CFLAGS = -g -mpentium -O6 -ffast-math -fomit-frame-pointer $(OPTS) 
 	else
-		CFLAGS = -g -m486 -O3 -ffast-math -fomit-frame-pointer $(OPTS)
+                CFLAGS = -g -m486 -O3 -ffast-math -fomit-frame-pointer $(OPTS) 
 	endif
 endif
 

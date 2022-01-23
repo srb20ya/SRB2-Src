@@ -33,6 +33,7 @@ void    P_SpawnMapThing (mapthing_t*    mthing);
 
 //SOM: Water stuff
 void  P_WaterSector(sector_t* sector);
+//Tails 05-24-2000 : Ring stuff
 void  P_RingSector(sector_t* sector);
 //SOM: Look in p_spec.c to find the function
 
@@ -469,6 +470,20 @@ void P_LoadThings (int lump)
                 break;
             }
         }
+
+/*
+// start no rings in nightmare Tails 03-12-2000
+       if(gameskill == sk_nightmare)
+       {
+          switch(mt->type)
+         {
+          case 2014:
+          spawn = false;
+          break;
+         }
+       }
+// end no rings in nightmare Tails 03-12-2000
+*/
         if (spawn == false)
             break;
 
@@ -737,7 +752,7 @@ void P_SetupLevelSky (void)
             skytexture = R_TextureNumForName ("SKY1");
         else
         if (gamemap < 21)
-            skytexture = R_TextureNumForName ("SKY2");
+            skytexture = R_TextureNumForName ("SECSKY");
         else
             skytexture = R_TextureNumForName ("SKY3");
     }
@@ -778,7 +793,7 @@ boolean P_SetupLevel (int           episode,
                       int           map,
                       int           playermask,   //Fab: what's this?
                       skill_t       skill,
-                      char*         wadname)      // for wad files
+                      char*         wadname)
 {
     int         i;
     char        lumpname[9];
@@ -789,6 +804,17 @@ boolean P_SetupLevel (int           episode,
     {
         players[i].killcount = players[i].secretcount
             = players[i].itemcount = 0;
+
+        players[i].timebonus = players[i].ringbonus = 0; // Reset the bonus counters Tails 03-10-2000
+
+        players[i].health = 1; // Alright, who added this and didn't comment it? Tails 03-10-2000
+
+        players[i].xtralife1 = 0; // Tails 04-25-2000
+        players[i].xtralife2 = 0; // Tails 04-25-2000
+
+        players[i].seconds = 0; // Tails 06-06-2000
+        players[i].minutes = 0; // Tails 06-06-2000
+
     }
 
     // Initial height of PointOfView
@@ -844,10 +870,9 @@ boolean P_SetupLevel (int           episode,
         lastloadedmaplumpnum = W_GetNumForName (G_BuildMapName(episode,map));
     }
 
-
     leveltime = 0;
 
-    // textures are needed first
+// textures are needed first
 //    R_LoadTextures ();
 //    R_FlushTextureCache();
 
@@ -874,6 +899,7 @@ boolean P_SetupLevel (int           episode,
     for(i = 0; i < numsectors; i++)
       P_WaterSector(&sectors[i]);
 
+    //Tails 05-24-2000 : Find ring sectors!
     for(i = 0; i < numsectors; i++)
       P_RingSector(&sectors[i]);
 
@@ -922,7 +948,7 @@ boolean P_SetupLevel (int           episode,
 
     //Fab:19-07-98:start cd music for this level (note: can be remapped)
     if (gamemode==commercial)
-        I_PlayCD (map, true);                // Doom2, 32 maps
+        I_PlayCD (map + 1, true);                // Doom2, 32 maps prepping for CD version Tails 04-05-2000
     else
         I_PlayCD ((episode-1)*9+map, true);  // Doom1, 9maps per episode
 

@@ -330,6 +330,7 @@ void M_NewGame(int choice);
 void M_LoadGame(int choice);
 void M_SaveGame(int choice);
 void M_EndGame(int choice);
+void M_TimeAttack(void); // TIME ATTACK! Tails 12-05-99
 
 enum
 {
@@ -337,6 +338,7 @@ enum
     loadgame,
     savegame,
     endgame,
+    timeattack, // TIME ATTACK! Tails 12-05-99
     single_end
 } single_e;
 
@@ -345,7 +347,8 @@ menuitem_t SinglePlayerMenu[] =
     {IT_CALL | IT_PATCH,"M_NGAME" ,M_NewGame ,'n'},
     {IT_CALL | IT_PATCH,"M_LOADG" ,M_LoadGame,'l'},
     {IT_CALL | IT_PATCH,"M_SAVEG" ,M_SaveGame,'s'},
-    {IT_CALL | IT_PATCH,"M_ENDGAM",M_EndGame ,'e'}
+    {IT_CALL | IT_PATCH,"M_ENDGAM",M_EndGame ,'e'}, // TIME ATTACK! Tails 12-05-99
+    {IT_CALL | IT_PATCH,"M_TATTAK",M_TimeAttack,'t'} // TIME ATTACK! Tails 12-05-99
 };
 
 menu_t  SinglePlayerDef =
@@ -426,7 +429,7 @@ menuitem_t SetupMultiPlayerMenu[] =
 {
     {IT_KEYHANDLER | IT_STRING          ,"Your name" ,M_HandleSetupMultiPlayer,0},
     {IT_CVAR | IT_STRING | IT_CV_NOPRINT,"Your color",&cv_playercolor         ,16},
-    {IT_KEYHANDLER | IT_STRING          ,"Your skin" ,M_HandleSetupMultiPlayer,96},
+    {IT_KEYHANDLER | IT_STRING          ,"Your player" ,M_HandleSetupMultiPlayer,96}, // changed to player Tails 11-09-99
     /* this line calls the setup controls for secondary player, only if numitems is > 3 */
     {IT_CALL | IT_WHITESTRING, "Setup Controls...", M_SetupControlsMenu, 120}
 };
@@ -844,24 +847,25 @@ void M_VerifyNightmare(int ch)
 //added:10-02-98: note: alphaKey member is the y offset
 menuitem_t OptionsMenu[]=
 {
-    {IT_STRING | IT_CVAR,"Messages:"       ,&cv_showmessages    ,0},
-    {IT_STRING | IT_CVAR
-     | IT_CV_SLIDER     ,"Screen Size"     ,&cv_viewsize        ,10},
+//    {IT_STRING | IT_CVAR,"Messages:"       ,&cv_showmessages    ,0},
+//    {IT_STRING | IT_CVAR
+//     | IT_CV_SLIDER     ,"Screen Size"     ,&cv_viewsize        ,10},
     {IT_STRING | IT_CVAR
      | IT_CV_SLIDER     ,"Brightness"      ,&cv_usegamma        ,20},
     {IT_STRING | IT_CVAR
      | IT_CV_SLIDER     ,"Mouse Speed"     ,&cv_mousesens       ,30},
-    {IT_STRING | IT_CVAR,"Always Run"      ,&cv_autorun         ,40},
-    {IT_STRING | IT_CVAR,"Always MouseLook",&cv_alwaysfreelook  ,50},
-    {IT_STRING | IT_CVAR,"Invert Mouse"    ,&cv_invertmouse     ,60},
-    {IT_STRING | IT_CVAR
-     | IT_CV_SLIDER     ,"Mlook Speed"     ,&cv_mlooksens       ,70},
-    {IT_STRING | IT_CVAR,"Crosshair"       ,&cv_crosshair       ,80},
-    {IT_STRING | IT_CVAR,"Autoaim"         ,&cv_autoaim         ,90},
-    {IT_CALL   | IT_WHITESTRING,"Game Options..."  ,M_GameOption,110},
-    {IT_SUBMENU | IT_WHITESTRING,"Sound Volume..."  ,&SoundDef  ,120},
-    {IT_SUBMENU | IT_WHITESTRING,"Video Options..." ,&VidModeDef,130},
-    {IT_CALL    | IT_WHITESTRING,"Setup Controls...",M_SetupControlsMenu,140}
+    {IT_STRING | IT_CVAR,"Analog Control"      ,&cv_analog      ,40}, // Analog/Digital swap Tails 04-22-2000
+//    {IT_STRING | IT_CVAR,"Always Run"      ,&cv_autorun         ,40},
+//    {IT_STRING | IT_CVAR,"Always MouseLook",&cv_alwaysfreelook  ,50},
+//    {IT_STRING | IT_CVAR,"Invert Mouse"    ,&cv_invertmouse     ,60},
+//    {IT_STRING | IT_CVAR
+//     | IT_CV_SLIDER     ,"Mlook Speed"     ,&cv_mlooksens       ,70},
+//    {IT_STRING | IT_CVAR,"Crosshair"       ,&cv_crosshair       ,80},
+//    {IT_STRING | IT_CVAR,"Autoaim"         ,&cv_autoaim         ,90},
+    {IT_CALL   | IT_WHITESTRING,"Game Options..."  ,M_GameOption,50},
+    {IT_SUBMENU | IT_WHITESTRING,"Sound Volume..."  ,&SoundDef  ,60},
+    {IT_SUBMENU | IT_WHITESTRING,"Video Options..." ,&VidModeDef,70},
+    {IT_CALL    | IT_WHITESTRING,"Setup Controls...",M_SetupControlsMenu,80}
 };
 
 menu_t  OptionsDef =
@@ -908,15 +912,15 @@ void M_DrawSlider (int x, int y, int range)
 
 menuitem_t GameOptionsMenu[]=
 {
-    {IT_STRING | IT_CVAR,"Item Respawn"        ,&cv_itemrespawn        ,0},
-    {IT_STRING | IT_CVAR,"Item Respawn time"   ,&cv_itemrespawntime    ,10},
-    {IT_STRING | IT_CVAR,"Monster Respawn"     ,&cv_respawnmonsters    ,20},
-    {IT_STRING | IT_CVAR,"Monster Respawn time",&cv_respawnmonsterstime,30},
-    {IT_STRING | IT_CVAR,"Fast Monsters"       ,&cv_fastmonsters       ,40},
-    {IT_STRING | IT_CVAR,"Gravity"             ,&cv_gravity            ,50},
-    {IT_STRING | IT_CVAR,"Solid corpse"        ,&cv_solidcorpse        ,60},
-    {IT_STRING | IT_CVAR,"BloodTime"           ,&cv_bloodtime          ,70},
-    {IT_CALL   | IT_WHITESTRING,"Network Options..."  ,M_NetOption     ,110}
+//    {IT_STRING | IT_CVAR,"Item Respawn"        ,&cv_itemrespawn        ,0}, Tails 11-09-99
+//    {IT_STRING | IT_CVAR,"Item Respawn time"   ,&cv_itemrespawntime    ,10}, Tails 11-09-99
+    {IT_STRING | IT_CVAR,"Enemy Respawn"     ,&cv_respawnmonsters    ,20}, // Tails 11-09-99
+    {IT_STRING | IT_CVAR,"Enemy Respawn time",&cv_respawnmonsterstime,30}, // Tails 11-09-99
+    {IT_STRING | IT_CVAR,"Fast Enemies"       ,&cv_fastmonsters       ,40}, // Tails 11-09-99
+//    {IT_STRING | IT_CVAR,"Gravity"             ,&cv_gravity            ,50}, Tails 11-09-99
+//    {IT_STRING | IT_CVAR,"Solid corpse"        ,&cv_solidcorpse        ,60}, Tails 11-09-99
+//    {IT_STRING | IT_CVAR,"BloodTime"           ,&cv_bloodtime          ,70}, Tails 11-09-99
+    {IT_CALL   | IT_WHITESTRING,"Network Options..."  ,M_NetOption     ,50}
 };
 
 menu_t  GameOptionDef =
@@ -946,13 +950,13 @@ void M_GameOption(int choice)
 
 menuitem_t NetOptionsMenu[]=
 {
-    {IT_STRING | IT_CVAR,"Allow Jump"      ,&cv_allowjump       ,0},
-    {IT_STRING | IT_CVAR,"Allow autoaim"   ,&cv_allowautoaim    ,10},
-    {IT_STRING | IT_CVAR,"Teamplay"        ,&cv_teamplay        ,20},
-    {IT_STRING | IT_CVAR,"TeamDamage"      ,&cv_teamdamage      ,30},
-    {IT_STRING | IT_CVAR,"Fraglimit"       ,&cv_fraglimit       ,40},
+//    {IT_STRING | IT_CVAR,"Allow Jump"      ,&cv_allowjump       ,0}, Tails 11-09-99
+//    {IT_STRING | IT_CVAR,"Allow autoaim"   ,&cv_allowautoaim    ,10}, Tails 11-09-99
+//    {IT_STRING | IT_CVAR,"Teamplay"        ,&cv_teamplay        ,20}, Tails 11-09-99
+//    {IT_STRING | IT_CVAR,"TeamDamage"      ,&cv_teamdamage      ,30}, Tails 11-09-99
+//    {IT_STRING | IT_CVAR,"Fraglimit"       ,&cv_fraglimit       ,40}, Tails 11-09-99
     {IT_STRING | IT_CVAR,"Timelimit"       ,&cv_timelimit       ,50},
-    {IT_STRING | IT_CVAR,"Deathmatch Type" ,&cv_deathmatch      ,60},
+    {IT_STRING | IT_CVAR,"Game Type" ,&cv_deathmatch      ,60}, // Tails 11-09-99
     {IT_CALL   | IT_WHITESTRING,"Games Options..." ,M_GameOption,110},
 };
 
@@ -1149,8 +1153,8 @@ void M_ChangeControl(int choice);
 //
 menuitem_t ControlMenu[]=
 {
-    {IT_CALL | IT_STRING2,"Fire"        ,M_ChangeControl,gc_fire       },
-    {IT_CALL | IT_STRING2,"Use/Open"    ,M_ChangeControl,gc_use        },
+    {IT_CALL | IT_STRING2,"Spindash Release"        ,M_ChangeControl,gc_fire       }, // Tails 11-09-99
+    {IT_CALL | IT_STRING2,"Rolling"     ,M_ChangeControl,gc_use        }, // Tails 12-04-99
     {IT_CALL | IT_STRING2,"Jump"        ,M_ChangeControl,gc_jump       },
     {IT_CALL | IT_STRING2,"Forward"     ,M_ChangeControl,gc_forward    },
     {IT_CALL | IT_STRING2,"Backpedal"   ,M_ChangeControl,gc_backward   },
@@ -1158,8 +1162,8 @@ menuitem_t ControlMenu[]=
     {IT_CALL | IT_STRING2,"Turn Right"  ,M_ChangeControl,gc_turnright  },
     {IT_CALL | IT_STRING2,"Run"         ,M_ChangeControl,gc_speed      },
     {IT_CALL | IT_STRING2,"Strafe On"   ,M_ChangeControl,gc_strafe     },
-    {IT_CALL | IT_STRING2,"Strafe Left" ,M_ChangeControl,gc_strafeleft },
-    {IT_CALL | IT_STRING2,"Strafe Right",M_ChangeControl,gc_straferight},
+    {IT_CALL | IT_STRING2,"Camera Left" ,M_ChangeControl,gc_camleft    }, // Tails 03-04-2000
+    {IT_CALL | IT_STRING2,"Camera Right",M_ChangeControl,gc_camright   }, // Tails 03-04-2000
     {IT_CALL | IT_STRING2,"Look Up"     ,M_ChangeControl,gc_lookup     },
     {IT_CALL | IT_STRING2,"Look Down"   ,M_ChangeControl,gc_lookdown   },
     {IT_CALL | IT_STRING2,"Center View" ,M_ChangeControl,gc_centerview },
@@ -1184,16 +1188,16 @@ menu_t  ControlDef =
 //
 menuitem_t ControlMenu2[]=
 {
-  {IT_CALL | IT_STRING2,"Fist/Chainsaw"  ,M_ChangeControl,gc_weapon1},
-  {IT_CALL | IT_STRING2,"Pistol"         ,M_ChangeControl,gc_weapon2},
-  {IT_CALL | IT_STRING2,"Shotgun/Double" ,M_ChangeControl,gc_weapon3},
-  {IT_CALL | IT_STRING2,"Chaingun"       ,M_ChangeControl,gc_weapon4},
-  {IT_CALL | IT_STRING2,"Rocket Launcher",M_ChangeControl,gc_weapon5},
-  {IT_CALL | IT_STRING2,"Plasma rifle"   ,M_ChangeControl,gc_weapon6},
-  {IT_CALL | IT_STRING2,"BFG"            ,M_ChangeControl,gc_weapon7},
-  {IT_CALL | IT_STRING2,"Chainsaw"       ,M_ChangeControl,gc_weapon8},
-  {IT_CALL | IT_STRING2,"Previous Weapon",M_ChangeControl,gc_prevweapon},
-  {IT_CALL | IT_STRING2,"Next Weapon"    ,M_ChangeControl,gc_nextweapon},
+//  {IT_CALL | IT_STRING2,"Fist/Chainsaw"  ,M_ChangeControl,gc_weapon1}, Tails 11-09-99
+//  {IT_CALL | IT_STRING2,"Pistol"         ,M_ChangeControl,gc_weapon2}, Tails 11-09-99
+//  {IT_CALL | IT_STRING2,"Shotgun/Double" ,M_ChangeControl,gc_weapon3}, Tails 11-09-99
+//  {IT_CALL | IT_STRING2,"Chaingun"       ,M_ChangeControl,gc_weapon4}, Tails 11-09-99
+//  {IT_CALL | IT_STRING2,"Rocket Launcher",M_ChangeControl,gc_weapon5}, Tails 11-09-99
+//  {IT_CALL | IT_STRING2,"Plasma rifle"   ,M_ChangeControl,gc_weapon6}, Tails 11-09-99
+//  {IT_CALL | IT_STRING2,"BFG"            ,M_ChangeControl,gc_weapon7}, Tails 11-09-99
+//  {IT_CALL | IT_STRING2,"Chainsaw"       ,M_ChangeControl,gc_weapon8}, Tails 11-09-99
+//  {IT_CALL | IT_STRING2,"Previous Weapon",M_ChangeControl,gc_prevweapon}, Tails 11-09-99
+//  {IT_CALL | IT_STRING2,"Next Weapon"    ,M_ChangeControl,gc_nextweapon}, Tails 11-09-99
   {IT_CALL | IT_STRING2,"Talk key"       ,M_ChangeControl,gc_talkkey},
   {IT_CALL | IT_STRING2,"Rankings/Scores",M_ChangeControl,gc_scores},
   {IT_CALL | IT_STRING2,"Console"        ,M_ChangeControl,gc_console},
@@ -1968,6 +1972,22 @@ void M_EndGame(int choice)
 
     M_StartMessage(ENDGAME,M_EndGameResponse,true);
 }
+///////////////////////////////
+//START MAIN TIME ATTACK CODE// Tails 12-05-99
+///////////////////////////////
+
+//===========================================================================
+//                                Time Attack
+//===========================================================================
+//
+// M_TimeAttack
+//
+
+void M_TimeAttack(void)
+    {
+    D_PageDrawer ("BOSSBACK");
+    
+    }
 
 //===========================================================================
 //                                 Quit Game
@@ -1990,14 +2010,14 @@ int     quitsounds[8] =
 
 int     quitsounds2[8] =
 {
-    sfx_vilact,
-    sfx_getpow,
-    sfx_boscub,
+    sfx_oof, // Tails 11-09-99
+    sfx_itemup, // Tails 11-09-99
+    sfx_jump, // Tails 11-09-99
     sfx_slop,
-    sfx_skeswg,
-    sfx_kntdth,
-    sfx_bspact,
-    sfx_sgtatk
+    sfx_gloop, // Tails 11-09-99
+    sfx_splash, // Tails 11-09-99
+    sfx_floush, // Tails 11-09-99
+    sfx_sgcock // Tails 11-09-99
 };
 
 
@@ -2009,11 +2029,11 @@ void M_QuitResponse(int ch)
         return;
     if (!netgame)
     {
-        //added:12-02-98: quitsounds are much more fun than quisounds2
+        //added:12-02-98: quitsounds are much more fun than quitsounds2 (NOT!! -Tails)
         //if (gamemode == commercial)
-        //    S_StartSound(NULL,quitsounds2[(gametic>>2)&7]);
-        //else
-            S_StartSound(NULL,quitsounds[(gametic>>2)&7]);
+       //     S_StartSound(NULL,quitsounds2[(gametic>>2)&7]);
+       // else
+            S_StartSound(NULL,quitsounds2[(gametic>>2)&7]); // Use quitsounds2, not quitsounds Tails 11-09-99
 
         //added:12-02-98: do that instead of I_WaitVbl which does not work
         if(!nosound)
@@ -2483,19 +2503,19 @@ boolean M_Responder (event_t* ev)
     if (!menuactive)
         switch(ch)
         {
-          case KEY_MINUS:         // Screen size down
-            if (automapactive || chat_on || con_destlines)     // DIRTY !!!
-                return false;
-            CV_SetValue (&cv_viewsize, cv_viewsize.value-1);
-            S_StartSound(NULL,sfx_stnmov);
-            return true;
+//          case KEY_MINUS:         // Screen size down Tails 11-09-99
+//            if (automapactive || chat_on || con_destlines)     // DIRTY !!! Tails 11-09-99
+//                return false; Tails 11-09-99
+//            CV_SetValue (&cv_viewsize, cv_viewsize.value-1); Tails 11-09-99
+//            S_StartSound(NULL,sfx_stnmov); Tails 11-09-99
+//            return true; Tails 11-09-99
 
-          case KEY_EQUALS:        // Screen size up
-            if (automapactive || chat_on || con_destlines)     // DIRTY !!!
-                return false;
-            CV_SetValue (&cv_viewsize, cv_viewsize.value+1);
-            S_StartSound(NULL,sfx_stnmov);
-            return true;
+//          case KEY_EQUALS:        // Screen size up Tails 11-09-99
+//            if (automapactive || chat_on || con_destlines)     // DIRTY !!! Tails 11-09-99
+//                return false; Tails 11-09-99
+//            CV_SetValue (&cv_viewsize, cv_viewsize.value+1); Tails 11-09-99
+//            S_StartSound(NULL,sfx_stnmov); Tails 11-09-99
+//            return true; Tails 11-09-99
 
           case KEY_F1:            // Help key
             M_StartControlPanel ();

@@ -17,6 +17,7 @@ void FastMonster_OnChange(void);
 consvar_t cv_solidcorpse = {"solidcorpse","0",CV_NETVAR,CV_OnOff};
 consvar_t cv_fastmonsters = {"fastmonsters","0",CV_NETVAR | CV_CALL,CV_OnOff,FastMonster_OnChange};
 
+player_t *plyr;
 
 typedef enum
 {
@@ -181,8 +182,8 @@ boolean P_CheckMeleeRange (mobj_t*      actor)
 
     //added:19-03-98: check height now, so that damn imps cant attack
     //                you if you stand on a higher ledge.
-    if ( (pl->z > actor->z+actor->height) ||
-         (actor->z > pl->z + pl->height) )
+    if ( ((pl->z > actor->z+actor->height) ||
+         (actor->z > pl->z + pl->height)) && (!(actor->type == MT_SKIM)) ) // Tails 06-13-2000
          return false;
 
     if (! P_CheckSight (actor, actor->target) )
@@ -557,6 +558,343 @@ P_LookForPlayers
     return false;
 }
 
+// Start Ring Shield finder Tails 06-08-2000
+//
+// P_LookForShield
+// If allaround is false, only look 180 degrees in front.
+// Returns true if a player is targeted.
+//
+boolean
+P_LookForShield
+( mobj_t*       actor,
+  boolean       allaround )
+{
+    int         c;
+    int         stop;
+    player_t*   player;
+    sector_t*   sector;
+    angle_t     an;
+    fixed_t     dist;
+
+    sector = actor->subsector->sector;
+
+    c = 0;
+    stop = (actor->lastlook-1)&PLAYERSMASK;
+
+    for ( ; ; actor->lastlook = (actor->lastlook+1)&PLAYERSMASK )
+    {
+        if (!playeringame[actor->lastlook])
+            continue;
+
+        if (c++ == 2
+            || actor->lastlook == stop)
+        {
+            // done looking
+            return false;
+        }
+
+        player = &players[actor->lastlook];
+
+//if(!(player->powers[pw_yellowshield]) && (  (abs(player->mo->x-actor->x) + abs(player->mo->y-actor->y)) > player->thok_dist))
+//            continue;           // no ring shield!
+
+        if (!allaround)
+        {
+            an = R_PointToAngle2 (actor->x,
+                                  actor->y,
+                                  player->mo->x,
+                                  player->mo->y)
+                - actor->angle;
+
+            if (an > ANG90 && an < ANG270)
+            {
+                dist = P_AproxDistance (player->mo->x - actor->x,
+                                        player->mo->y - actor->y);
+                // if real close, react anyway
+                if (dist > MELEERANGE)
+                    continue;   // behind back
+            }
+        }
+if((player->powers[pw_yellowshield]) && (  (abs(player->mo->x-actor->x) + abs(player->mo->y-actor->y)) < player->thok_dist || player->thok_dist==0))
+{
+        actor->target = player->mo;
+//        actor->tracer = player->mo;
+        return true;
+}
+    }
+
+    return false;
+}
+// End Ring Shield finder Tails 06-08-2000
+
+// start shield looks Tails 06-28-2000
+//
+// P_LookForGreen
+// If allaround is false, only look 180 degrees in front.
+// Returns true if a player is targeted.
+//
+boolean
+P_LookForGreen
+( mobj_t*       actor,
+  boolean       allaround )
+{
+    int         c;
+    int         stop;
+    player_t*   player;
+    sector_t*   sector;
+    angle_t     an;
+    fixed_t     dist;
+
+    sector = actor->subsector->sector;
+
+    c = 0;
+    stop = (actor->lastlook-1)&PLAYERSMASK;
+
+    for ( ; ; actor->lastlook = (actor->lastlook+1)&PLAYERSMASK )
+    {
+        if (!playeringame[actor->lastlook])
+            continue;
+
+        if (c++ == 2
+            || actor->lastlook == stop)
+        {
+            // done looking
+            return false;
+        }
+
+        player = &players[actor->lastlook];
+
+        if (player->health <= 0)
+            continue;           // dead
+
+        if (!P_CheckSight (actor, player->mo))
+            continue;           // out of sight
+
+        if (!allaround)
+        {
+            an = R_PointToAngle2 (actor->x,
+                                  actor->y,
+                                  player->mo->x,
+                                  player->mo->y)
+                - actor->angle;
+
+            if (an > ANG90 && an < ANG270)
+            {
+                dist = P_AproxDistance (player->mo->x - actor->x,
+                                        player->mo->y - actor->y);
+                // if real close, react anyway
+                if (dist > MELEERANGE)
+                    continue;   // behind back
+            }
+        }
+if(player->powers[pw_greenshield]){
+        actor->target = player->mo;
+        return true;}
+    }
+
+    return false;
+}
+//
+// P_LookForBlue
+// If allaround is false, only look 180 degrees in front.
+// Returns true if a player is targeted.
+//
+boolean
+P_LookForBlue
+( mobj_t*       actor,
+  boolean       allaround )
+{
+    int         c;
+    int         stop;
+    player_t*   player;
+    sector_t*   sector;
+    angle_t     an;
+    fixed_t     dist;
+
+    sector = actor->subsector->sector;
+
+    c = 0;
+    stop = (actor->lastlook-1)&PLAYERSMASK;
+
+    for ( ; ; actor->lastlook = (actor->lastlook+1)&PLAYERSMASK )
+    {
+        if (!playeringame[actor->lastlook])
+            continue;
+
+        if (c++ == 2
+            || actor->lastlook == stop)
+        {
+            // done looking
+            return false;
+        }
+
+        player = &players[actor->lastlook];
+
+        if (player->health <= 0)
+            continue;           // dead
+
+        if (!P_CheckSight (actor, player->mo))
+            continue;           // out of sight
+
+        if (!allaround)
+        {
+            an = R_PointToAngle2 (actor->x,
+                                  actor->y,
+                                  player->mo->x,
+                                  player->mo->y)
+                - actor->angle;
+
+            if (an > ANG90 && an < ANG270)
+            {
+                dist = P_AproxDistance (player->mo->x - actor->x,
+                                        player->mo->y - actor->y);
+                // if real close, react anyway
+                if (dist > MELEERANGE)
+                    continue;   // behind back
+            }
+        }
+if(player->powers[pw_blueshield]){
+        actor->target = player->mo;
+        return true;}
+    }
+
+    return false;
+}
+
+//
+// P_LookForYellow
+// If allaround is false, only look 180 degrees in front.
+// Returns true if a player is targeted.
+//
+boolean
+P_LookForYellow
+( mobj_t*       actor,
+  boolean       allaround )
+{
+    int         c;
+    int         stop;
+    player_t*   player;
+    sector_t*   sector;
+    angle_t     an;
+    fixed_t     dist;
+
+    sector = actor->subsector->sector;
+
+    c = 0;
+    stop = (actor->lastlook-1)&PLAYERSMASK;
+
+    for ( ; ; actor->lastlook = (actor->lastlook+1)&PLAYERSMASK )
+    {
+        if (!playeringame[actor->lastlook])
+            continue;
+
+        if (c++ == 2
+            || actor->lastlook == stop)
+        {
+            // done looking
+            return false;
+        }
+
+        player = &players[actor->lastlook];
+
+        if (player->health <= 0)
+            continue;           // dead
+
+        if (!P_CheckSight (actor, player->mo))
+            continue;           // out of sight
+
+        if (!allaround)
+        {
+            an = R_PointToAngle2 (actor->x,
+                                  actor->y,
+                                  player->mo->x,
+                                  player->mo->y)
+                - actor->angle;
+
+            if (an > ANG90 && an < ANG270)
+            {
+                dist = P_AproxDistance (player->mo->x - actor->x,
+                                        player->mo->y - actor->y);
+                // if real close, react anyway
+                if (dist > MELEERANGE)
+                    continue;   // behind back
+            }
+        }
+if(player->powers[pw_yellowshield]){
+        actor->target = player->mo;
+        return true;}
+    }
+
+    return false;
+}
+
+//
+// P_LookForBlack
+// If allaround is false, only look 180 degrees in front.
+// Returns true if a player is targeted.
+//
+boolean
+P_LookForBlack
+( mobj_t*       actor,
+  boolean       allaround )
+{
+    int         c;
+    int         stop;
+    player_t*   player;
+    sector_t*   sector;
+    angle_t     an;
+    fixed_t     dist;
+
+    sector = actor->subsector->sector;
+
+    c = 0;
+    stop = (actor->lastlook-1)&PLAYERSMASK;
+
+    for ( ; ; actor->lastlook = (actor->lastlook+1)&PLAYERSMASK )
+    {
+        if (!playeringame[actor->lastlook])
+            continue;
+
+        if (c++ == 2
+            || actor->lastlook == stop)
+        {
+            // done looking
+            return false;
+        }
+
+        player = &players[actor->lastlook];
+
+        if (player->health <= 0)
+            continue;           // dead
+
+        if (!P_CheckSight (actor, player->mo))
+            continue;           // out of sight
+
+        if (!allaround)
+        {
+            an = R_PointToAngle2 (actor->x,
+                                  actor->y,
+                                  player->mo->x,
+                                  player->mo->y)
+                - actor->angle;
+
+            if (an > ANG90 && an < ANG270)
+            {
+                dist = P_AproxDistance (player->mo->x - actor->x,
+                                        player->mo->y - actor->y);
+                // if real close, react anyway
+                if (dist > MELEERANGE)
+                    continue;   // behind back
+            }
+        }
+if(player->powers[pw_blackshield]){
+        actor->target = player->mo;
+        return true;}
+    }
+
+    return false;
+}
+//end shield looks Tails 06-28-2000
 
 //
 // A_KeenDie
@@ -971,10 +1309,15 @@ void A_HeadAttack (mobj_t* actor)
 
 void A_CyberAttack (mobj_t* actor)
 {
+
+    int         angle;
+
     if (!actor->target)
         return;
 
     A_FaceTarget (actor);
+    angle += (P_Random()<<20);
+    angle -= (P_Random()<<20);
     P_SpawnMissile (actor, actor->target, MT_ROCKET);
 }
 
@@ -1021,34 +1364,55 @@ void A_SkelMissile (mobj_t* actor)
 
 int     TRACEANGLE = 0xc000000;
 
-void A_Tracer (mobj_t* actor)
+void A_Tracer (mobj_t* actor, mobj_t* mobj) // specifically used for attracting rings now Tails 03-15-2000
 {
     angle_t     exact;
     fixed_t     dist;
     fixed_t     slope;
     mobj_t*     dest;
-    mobj_t*     th;
+//    mobj_t*     th;
+//    player_t*   player; // Tails 03-15-2000
 
     if (gametic & 3)
         return;
 
+if(multiplayer || netgame)
+  return;
+
+if(!(plyr->powers[pw_yellowshield]))
+  return;
+
     // spawn a puff of smoke behind the rocket
-    P_SpawnPuff (actor->x, actor->y, actor->z);
+//    P_SpawnPuff (actor->x, actor->y, actor->z);
 
-    th = P_SpawnMobj (actor->x-actor->momx,
-                      actor->y-actor->momy,
-                      actor->z, MT_SMOKE);
+//    th = P_SpawnMobj (actor->x-actor->momx,
+//                      actor->y-actor->momy,
+//                      actor->z, MT_SMOKE);
 
-    th->momz = FRACUNIT;
-    th->tics -= P_Random()&3;
-    if (th->tics < 1)
-        th->tics = 1;
+//    th->momz = FRACUNIT;
+//    th->tics -= P_Random()&3;
+//    if (th->tics < 1)
+//        th->tics = 1;
+
+// start yellowshield Tails 03-15-2000
+if(plyr->powers[pw_yellowshield] && !(multiplayer || netgame))
+{
+actor->target = plyr->mo;
+actor->tracer = plyr->mo;
+}
+// end yellowshield Tails 03-15-2000
 
     // adjust direction
     dest = actor->tracer;
 
+    if (multiplayer || netgame)
+        return; // Don't have this figured out for multiplayer yet Tails 03-15-2000
+
     if (!dest || dest->health <= 0)
         return;
+
+//        if(  (abs(plyr->mo->x-actor->x) + abs(plyr->mo->y-actor->y)) < plyr->thok_dist || plyr->thok_dist==0)
+//{
 
     // change angle
     exact = R_PointToAngle2 (actor->x,
@@ -1091,7 +1455,7 @@ void A_Tracer (mobj_t* actor)
     else
         actor->momz += FRACUNIT/8;
 }
-
+//}
 
 void A_SkelWhoosh (mobj_t*      actor)
 {
@@ -1541,38 +1905,7 @@ void A_PainDie (mobj_t* actor)
 
 void A_Scream (mobj_t* actor)
 {
-    int         sound;
-
-    switch (actor->info->deathsound)
-    {
-      case 0:
-        return;
-
-      case sfx_podth1:
-      case sfx_podth2:
-      case sfx_podth3:
-        sound = sfx_podth1 + P_Random ()%3;
-        break;
-
-      case sfx_bgdth1:
-      case sfx_bgdth2:
-        sound = sfx_bgdth1 + P_Random ()%2;
-        break;
-
-      default:
-        sound = actor->info->deathsound;
-        break;
-    }
-
-    // Check for bosses.
-    if (actor->type==MT_SPIDER
-        || actor->type == MT_CYBORG)
-    {
-        // full volume
-        S_StartSound (NULL, sound);
-    }
-    else
-        S_StartSound (actor, sound);
+        S_StartSound (actor, actor->info->deathsound);
 }
 
 
@@ -1583,7 +1916,8 @@ void A_XScream (mobj_t* actor)
 
 void A_Pain (mobj_t* actor)
 {
-    if (actor->info->painsound)
+
+     if (actor->info->painsound)
         S_StartSound (actor, actor->info->painsound);
 }
 
@@ -1607,7 +1941,7 @@ void A_Fall (mobj_t *actor)
 //
 void A_Explode (mobj_t* thingy)
 {
-    P_RadiusAttack ( thingy, thingy->target, 128 );
+    P_RadiusAttack ( thingy, thingy->target, 32 );
 }
 
 
@@ -1633,11 +1967,11 @@ void A_BossDeath (mobj_t* mo)
 
     if ( gamemode == commercial)
     {
-        if (gamemap != 7)
+        if (gamemap == 16) // Tails 12-01-99//xmas
             return;
 
         if ((mo->type != MT_FATSO)
-            && (mo->type != MT_BABY))
+            && (mo->type != MT_BABY) && (mo->type != MT_CYBORG)) // Tails 12-01-99
             return;
     }
     else
@@ -1726,7 +2060,7 @@ void A_BossDeath (mobj_t* mo)
     // victory!
     if ( gamemode == commercial)
     {
-        if (gamemap == 7)
+        if (gamemap > 0) // Tails 12-01-99
         {
             if (mo->type == MT_FATSO)
             {
@@ -1741,6 +2075,12 @@ void A_BossDeath (mobj_t* mo)
                 EV_DoFloor(&junk,raiseToTexture);
                 return;
             }
+            if (mo->type == MT_CYBORG) // Tails 12-01-99
+            { // Tails 12-01-99
+                junk.tag = 666; // Tails 12-01-99
+                G_ExitLevel (); // Tails 12-01-99
+                return; // Tails 12-01-99
+            } // Tails 12-01-99
         }
     }
     else
@@ -2015,13 +2355,553 @@ void A_PlayerScream (mobj_t* mo)
     // Default death sound.
     int         sound = sfx_pldeth;
 
-    if ( (gamemode == commercial)
-        &&      (mo->health < -50))
-    {
-        // IF THE PLAYER DIES
-        // LESS THAN -50% WITHOUT GIBBING
-        sound = sfx_pdiehi;
-    }
+// removed high die code Tails 12-04-99
 
     S_StartSound (mo, sound);
+}
+
+
+// start shields Tails 12-05-99
+void A_BlueShield () // Tails 12-05-99
+
+{
+if (!(multiplayer || netgame))
+   {
+      plyr->powers[pw_blueshield] = true;
+      plyr->powers[pw_blackshield] = false;
+      plyr->powers[pw_greenshield] = false;
+      plyr->powers[pw_yellowshield] = false; // get rid of yellow shield if have it Tails 03-15-2000
+    P_SpawnMobj (plyr->mo->x, plyr->mo->y, plyr->mo->z, MT_BLUEORB);
+    S_StartSound (plyr->mo, sfx_getpow);
+     }
+}
+
+void A_YellowShield () // Tails 12-05-99
+
+{
+if (!(multiplayer || netgame))
+   {
+      plyr->powers[pw_yellowshield] = true;
+      plyr->powers[pw_blackshield] = false;
+      plyr->powers[pw_greenshield] = false;
+      plyr->powers[pw_blueshield] = false; // get rid of blue shield if have it Tails 03-15-2000
+    P_SpawnMobj (plyr->mo->x, plyr->mo->y, plyr->mo->z, MT_YELLOWORB);
+    S_StartSound (plyr->mo, sfx_getpow);
+     }
+}
+// end shields Tails 12-05-99
+
+// Start Ringbox codes Tails
+
+void A_RingBox ()
+{
+if (!(multiplayer || netgame))
+   {
+      plyr->health += 10;
+//    P_SpawnMobj (plyr->mo->x, plyr->mo->y, plyr->mo->z + (plyr->mo->info->height /2), MT_DUMMYRINGBOX);
+    S_StartSound (plyr->mo, sfx_itemup);
+   }
+}
+
+void A_SuperRingBox ()
+{
+if (!(multiplayer || netgame))
+   {
+        plyr->health += 25;
+//    P_SpawnMobj (plyr->mo->x, plyr->mo->y, plyr->mo->z + (plyr->mo->info->height /2), MT_DUMMYSUPERRINGBOX);
+    S_StartSound (plyr->mo, sfx_itemup);
+   }
+}
+
+// End ringbox codes Tails
+
+// start invincibility code Tails
+
+void A_Invincibility ()
+{
+if (!(multiplayer || netgame))
+{
+       plyr->powers[pw_invulnerability] = 700;
+if(plyr->powers[pw_super] == false)
+    {
+//       P_SpawnMobj (plyr->mo->x, plyr->mo->y, plyr->mo->z), MT_IVSR);
+       S_StopMusic();
+       S_ChangeMusic(mus_invinc, false);
+    I_PlayCD(20, false);
+    }
+}
+}
+
+//end invincibility tails
+
+//start super sneakers tails 03-04-2000
+void A_SuperSneakers ()
+{
+if (!(multiplayer || netgame))
+    {
+       plyr->powers[pw_strength] = 700;
+    }
+}
+//end super sneakers tails 03-04-2000
+
+// start extra life Tails 03-12-2000
+void A_ExtraLife ()
+{
+if (!(multiplayer || netgame))
+    {
+     plyr->lives += 1;
+       S_StopMusic();
+       S_ChangeMusic(mus_xtlife, false);
+       plyr->powers[pw_extralife] = 140;
+       I_PlayCD(21, false);
+    }
+}
+// end extra life Tails 03-12-2000
+
+// start black shield Tails 03-12-2000
+void A_BlackShield ()
+{
+if (!(multiplayer || netgame))
+   {
+      plyr->powers[pw_blackshield] = true;
+      plyr->powers[pw_greenshield] = false;
+      plyr->powers[pw_yellowshield] = false; // get rid of yellow shield if have it Tails 03-15-2000
+      plyr->powers[pw_blueshield] = false; // get rid of yellow shield if have it Tails 03-15-2000
+    P_SpawnMobj (plyr->mo->x, plyr->mo->y, plyr->mo->z, MT_BLACKORB);
+    S_StartSound (plyr->mo, sfx_getpow);
+     }
+}
+// end black shield Tails 03-12-2000
+
+// start green shield Tails 04-08-2000
+void A_GreenShield ()
+{
+if (!(multiplayer || netgame))
+   {
+      P_SpawnMobj(plyr->mo->x, plyr->mo->y, plyr->mo->z, MT_GREENORB);
+      plyr->powers[pw_blackshield] = false;
+      plyr->powers[pw_greenshield] = true;
+      plyr->powers[pw_yellowshield] = false; // get rid of yellow shield if have it Tails 03-15-2000
+      plyr->powers[pw_blueshield] = false; // get rid of yellow shield if have it Tails 03-15-2000
+     if(plyr->powers[pw_underwater] > 421)
+       {
+        plyr->powers[pw_underwater]= 0;
+       }
+else if(plyr->powers[pw_underwater] <= 421)
+       {
+        plyr->powers[pw_underwater]= 0;
+        S_ChangeMusic(mus_runnin + gamemap - 1, 1);
+        I_PlayCD(gamemap + 1, true);
+       }
+    S_StartSound (plyr->mo, sfx_getpow);
+     }
+}
+// end green shield Tails 04-08-2000
+
+// start score logo rise Tails 04-16-2000
+void A_ScoreRise (mobj_t*  actor)
+{
+actor->momz = JUMPGRAVITY*0.5; // make logo rise!
+}
+// end score logo rise Tails 04-16-2000
+
+// start bunny hop tails
+
+void A_BunnyHop (mobj_t*   actor)
+{
+    int         delta;
+
+    if (actor->reactiontime)
+        actor->reactiontime--;
+
+actor->momz = JUMPGRAVITY*1; // make bunny hop!
+
+    // modify target threshold
+    if  (actor->threshold)
+    {
+        if (!actor->target
+            || actor->target->health <= 0)
+        {
+            actor->threshold = 0;
+        }
+        else
+            actor->threshold--;
+    }
+
+    // turn towards movement direction if not there yet
+    if (actor->movedir < 8)
+    {
+        actor->angle &= (7<<29);
+        delta = actor->angle - (actor->movedir << 29);
+
+        if (delta > 0)
+            actor->angle -= ANG90/2;
+        else if (delta < 0)
+            actor->angle += ANG90/2;
+    }
+
+    if (!actor->target
+        || !(actor->target->flags&MF_SHOOTABLE))
+    {
+        // look for a new target
+        if (P_LookForPlayers(actor,true))
+            return;     // got a new target
+
+        P_SetMobjState (actor, actor->info->spawnstate);
+        return;
+    }
+
+    // do not attack twice in a row
+    if (actor->flags & MF_JUSTATTACKED)
+    {
+        actor->flags &= ~MF_JUSTATTACKED;
+        if (!cv_fastmonsters.value)
+            P_NewChaseDir (actor);
+        return;
+    }
+
+    // check for melee attack
+    if (actor->info->meleestate
+        && P_CheckMeleeRange (actor))
+    {
+        if (actor->info->attacksound)
+            S_StartSound (actor, actor->info->attacksound);
+
+        P_SetMobjState (actor, actor->info->meleestate);
+        return;
+    }
+
+    // check for missile attack
+    if (actor->info->missilestate)
+    {
+        if (!cv_fastmonsters.value && actor->movecount)
+        {
+            goto nomissile;
+        }
+
+        if (!P_CheckMissileRange (actor))
+            goto nomissile;
+
+        P_SetMobjState (actor, actor->info->missilestate);
+        actor->flags |= MF_JUSTATTACKED;
+        return;
+    }
+
+    // ?
+  nomissile:
+    // possibly choose another target
+    if (multiplayer
+        && !actor->threshold
+        && !P_CheckSight (actor, actor->target) )
+    {
+        if (P_LookForPlayers(actor,true))
+            return;     // got a new target
+    }
+
+    // chase towards player
+    if (--actor->movecount<0
+        || !P_Move (actor))
+    {
+        P_NewChaseDir (actor);
+    }
+
+    // make active sound
+    if (actor->info->activesound
+        && P_Random () < 3)
+    {
+        S_StartSound (actor, actor->info->activesound);
+    }
+}
+
+// end bunny hop tails
+
+// start random bubble spawn Tails 03-07-2000
+void A_BubbleSpawn (mobj_t*   actor)
+{
+ if (P_Random () > 128)
+   {
+        P_SpawnMobj (actor->x,actor->y,actor->z + (actor->info->height / 2), MT_SMALLBUBBLE);
+   }
+else if (P_Random () < 128 && P_Random () > 96)
+   {
+        P_SpawnMobj (actor->x,actor->y,actor->z + (actor->info->height / 2), MT_MEDIUMBUBBLE);
+   }
+else if (P_Random () > 128 && P_Random () < 136)
+   {
+        P_SpawnMobj (actor->x,actor->y,actor->z + (actor->info->height / 2), MT_LARGEBUBBLE);
+   }
+}
+// end random bubble spawn Tails 03-07-2000
+
+// start bubble floating Tails 03-07-2000
+void A_BubbleRise (mobj_t*   actor)
+{
+   actor->momz = JUMPGRAVITY*0.2; // make bubbles rise!
+}
+// end bubble floating Tails 03-07-2000
+
+void A_RingChase (mobj_t*   actor)
+{
+    angle_t     exact;
+    fixed_t     dist;
+    fixed_t     slope;
+    mobj_t*     dest;
+
+P_LookForShield(actor, true); // Go find 'em, boy! Tails 06-08-2000
+
+/*
+if(!actor->target->player)
+  return;
+*/
+if(!actor->target)
+  return;
+
+if(!(actor->target->player->powers[pw_yellowshield]))
+{
+actor->target = NULL;
+actor->tracer = NULL;
+return;
+}
+
+actor->tracer = actor->target;
+
+    // adjust direction
+    dest = actor->tracer;
+
+    if (!dest || dest->health <= 0)
+        return;
+
+    // change angle
+    exact = R_PointToAngle2 (actor->x,
+                             actor->y,
+                             dest->x,
+                             dest->y);
+
+    if (exact != actor->angle)
+    {
+        if (exact - actor->angle > 0x80000000)
+        {
+            actor->angle -= TRACEANGLE*3;
+            if (exact - actor->angle < 0x80000000)
+                actor->angle = exact;
+        }
+        else
+        {
+            actor->angle += TRACEANGLE*3;
+            if (exact - actor->angle > 0x80000000)
+                actor->angle = exact;
+        }
+    }
+
+    exact = actor->angle>>ANGLETOFINESHIFT;
+    actor->momx = FixedMul (actor->info->speed, finecosine[exact]);
+    actor->momy = FixedMul (actor->info->speed, finesine[exact]);
+
+    // change slope
+    dist = P_AproxDistance (dest->x - actor->x,
+                            dest->y - actor->y);
+
+    dist = dist / actor->info->speed;
+    if (dist < 1)
+        dist = 1;
+    slope = (dest->z+40*FRACUNIT - actor->z) / dist;
+
+    if (slope < actor->momz)
+        actor->momz -= FRACUNIT/8;
+    else
+        actor->momz += FRACUNIT/8;
+}
+
+void A_Step (mobj_t* actor)
+{
+if ((actor->player->specialsector == 800) && (actor->z <= actor->floorz))
+{
+S_StartSound(actor, sfx_firsht);
+}
+if ((actor->player->specialsector == 801) && (actor->z <= actor->floorz))
+        P_SpawnMobj (actor->x,actor->y,actor->z, MT_GRASSDEBRIS);
+}
+
+// start ambient water sounds Tails 06-10-2000
+void A_AWaterA (mobj_t* actor)
+{
+S_StartSound(actor, sfx_amwtr1);
+}
+void A_AWaterB (mobj_t* actor)
+{
+S_StartSound(actor, sfx_amwtr2);
+}
+void A_AWaterC (mobj_t* actor)
+{
+S_StartSound(actor, sfx_amwtr3);
+}
+void A_AWaterD (mobj_t* actor)
+{
+S_StartSound(actor, sfx_amwtr4);
+}
+void A_AWaterE (mobj_t* actor)
+{
+S_StartSound(actor, sfx_amwtr5);
+}
+void A_AWaterF (mobj_t* actor)
+{
+S_StartSound(actor, sfx_amwtr6);
+}
+void A_AWaterG (mobj_t* actor)
+{
+S_StartSound(actor, sfx_amwtr7);
+}
+void A_AWaterH (mobj_t* actor)
+{
+S_StartSound(actor, sfx_amwtr8);
+}
+// end ambient water sounds Tails 06-10-2000
+
+void A_DropMine(mobj_t* actor) // Tells Skim to drop mine on player Tails 06-13-2000
+{
+  P_SpawnMobj (actor->x,actor->y,actor->z - 12*FRACUNIT, MT_MINE);
+}
+// start shield positions Tails 06-28-2000 Works in multiplayer, too!
+void A_GreenLook(mobj_t* actor)
+{
+P_LookForGreen(actor, true);
+P_UnsetThingPosition (actor);
+actor->x = actor->target->x;
+actor->y = actor->target->y;
+actor->z = actor->target->z;
+P_SetThingPosition (actor);
+if(actor->target->player->powers[pw_greenshield] == false)
+P_SetMobjState(actor, S_DISS);
+if(actor->target->player->powers[pw_super] == true || actor->target->player->powers[pw_invulnerability] > 1)
+P_SetMobjState(actor, S_DISS);
+}
+void A_BlueLook(mobj_t* actor)
+{
+P_LookForBlue(actor, true);
+P_UnsetThingPosition (actor);
+actor->x = actor->target->x;
+actor->y = actor->target->y;
+actor->z = actor->target->z;
+P_SetThingPosition (actor);
+if(actor->target->player->powers[pw_blueshield] == false)
+P_SetMobjState(actor, S_DISS);
+if(actor->target->player->powers[pw_super] == true || actor->target->player->powers[pw_invulnerability] > 1)
+P_SetMobjState(actor, S_DISS);
+}
+void A_YellowLook(mobj_t* actor)
+{
+P_LookForYellow(actor, true);
+P_UnsetThingPosition (actor);
+actor->x = actor->target->x;
+actor->y = actor->target->y;
+actor->z = actor->target->z;
+P_SetThingPosition (actor);
+if(actor->target->player->powers[pw_yellowshield] == false)
+P_SetMobjState(actor, S_DISS);
+if(actor->target->player->powers[pw_super] == true || actor->target->player->powers[pw_invulnerability] > 1)
+P_SetMobjState(actor, S_DISS);
+}
+void A_BlackLook(mobj_t* actor)
+{
+P_LookForBlack(actor, true);
+P_UnsetThingPosition (actor);
+actor->x = actor->target->x;
+actor->y = actor->target->y;
+actor->z = actor->target->z;
+P_SetThingPosition (actor);
+if(actor->target->player->powers[pw_blackshield] == false)
+P_SetMobjState(actor, S_DISS);
+if(actor->target->player->powers[pw_super] == true || actor->target->player->powers[pw_invulnerability] > 1)
+P_SetMobjState(actor, S_DISS);
+}
+// end shield positions Tails 06-28-2000
+
+// start GFZ Fish jump Tails 07-03-2000
+void A_FishJump(mobj_t* actor)
+{
+if((actor->z <= actor->floorz) || (actor->z <= actor->waterz-(64*FRACUNIT)))
+{
+if(actor->z > actor->waterz-(48*FRACUNIT))
+{
+actor->momz = JUMPGRAVITY*2;
+P_SetMobjState(actor, S_FISH1);
+}
+else
+{
+actor->momz = JUMPGRAVITY*3;
+P_SetMobjState(actor, S_FISH1);
+}
+}
+
+//if((actor->state == &states[S_FISH1]) && (actor->momz == 0))
+//P_SetMobjState(actor, S_FISH2);
+
+if((actor->momz < 0) && ((actor->state == &states[S_FISH1]) || (actor->state == &states[S_FISH2])))
+P_SetMobjState(actor, S_FISH3);
+}
+// end GFZ Fish jump Tails 07-03-2000
+
+boolean P_MoveRing (mobj_t* actor)
+{
+    fixed_t     tryx;
+    fixed_t     tryy;
+
+    line_t*     ld;
+
+    // warning: 'catch', 'throw', and 'try'
+    // are all C++ reserved words
+    boolean     try_ok;
+    boolean     good;
+
+    if (actor->movedir == DI_NODIR)
+        return false;
+
+    if ((unsigned)actor->movedir >= 8)
+        I_Error ("Weird actor->movedir!");
+
+    tryx = actor->x + actor->momx;
+    tryy = actor->y + actor->momy;
+
+    try_ok = P_TryMove (actor, tryx, tryy);
+
+    if (!try_ok)
+    {
+        // open any specials
+        if (actor->flags & MF_FLOAT && floatok)
+        {
+            // must adjust height
+            if (actor->z < tmfloorz)
+                actor->z += FLOATSPEED;
+            else
+                actor->z -= FLOATSPEED;
+
+            actor->flags |= MF_INFLOAT;
+            return true;
+        }
+
+        if (!numspechit)
+            return false;
+
+        actor->movedir = DI_NODIR;
+        good = false;
+        while (numspechit--)
+        {
+            ld = spechit[numspechit];
+            // if the special is not a door
+            // that can be opened,
+            // return false
+            if (P_UseSpecialLine (actor, ld,0))
+                good = true;
+        }
+        return good;
+    }
+    else
+    {
+        actor->flags &= ~MF_INFLOAT;
+    }
+
+
+    if (! (actor->flags & MF_FLOAT) )
+        actor->z = actor->floorz;
+    return true;
 }

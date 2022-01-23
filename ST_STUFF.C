@@ -25,6 +25,8 @@
 
 #include "z_zone.h"
 
+#include "stdlib.h" // Tails 06-06-2000
+
 #ifdef __WIN32__
 #include "win32/hwr_main.h"
 #endif
@@ -362,11 +364,23 @@ static int      st_randomnumber;
 //             status bar overlay
 // ------------------------------------------
 
-// icons for overlay
-static   pic_t*   sbohealth;
-static   pic_t*   sbofrags;
-static   pic_t*   sboarmor;
-static   pic_t*   sboammo[NUMWEAPONS];
+// icons for overlay -- changed to patch_t Tails 03-11-2000
+static   patch_t*   sbohealth;
+static   patch_t*   sbofrags;
+static   patch_t*   sboarmor;
+static   patch_t*   sboammo[NUMWEAPONS];
+static   patch_t*   sboover; // Tails 03-11-2000
+static   patch_t*   sboslife; // Tails 03-12-2000
+static   patch_t*   sbotlife; // Tails 03-12-2000
+static   patch_t*   stsonic; // Tails 03-12-2000
+static   patch_t*   sttails; // Tails 03-12-2000
+static   patch_t*   stknux; // Tails 03-12-2000
+static   patch_t*   stlivex; // Tails 03-12-2000
+static   patch_t*   rrings; // Tails 03-14-2000
+static   patch_t*   colon; // colon for time Tails 03-14-2000
+static   patch_t*   stuser; // Temporary user icon Tails 04-08-2000
+static   patch_t*   sboulife; // Temporary user icon Tails 04-08-2000
+static   patch_t*   rtime; // Red Time logo Tails 06-12-2000
 
 
 //
@@ -780,32 +794,32 @@ void ST_doPaletteStuff(void)
     int         palette;
     byte*       pal;
     int         cnt;
-    int         bzc;
+//    int         bzc;
 
     //SOM: NO PALETTE CHANGES!
 //    return;
 
-    cnt = plyr->damagecount;
+//    cnt = plyr->damagecount;
 
-    if (plyr->powers[pw_strength])
-    {
+//    if (plyr->powers[pw_strength])
+//    {
        // slowly fade the berzerk out
-        bzc = 12 - (plyr->powers[pw_strength]>>6);
+//        bzc = 12 - (plyr->powers[pw_strength]>>6);
 
-      if (bzc > cnt)
-           cnt = bzc;
-    }
+//      if (bzc > cnt)
+//           cnt = bzc;
+//    }
 
-    if (cnt)
-    {
-        palette = (cnt+7)>>3;
+//    if (cnt)
+//    {
+//        palette = (cnt+7)>>3;
 
-        if (palette >= NUMREDPALS)
-            palette = NUMREDPALS-1;
+//        if (palette >= NUMREDPALS)
+//            palette = NUMREDPALS-1;
 
-        palette += STARTREDPALS;
-    }
-    else
+//        palette += STARTREDPALS;
+//    }
+//    else
     if (plyr->bonuscount)
     {
         palette = (plyr->bonuscount+7)>>3;
@@ -815,18 +829,24 @@ void ST_doPaletteStuff(void)
 
         palette += STARTBONUSPALS;
     }
-    else
-   if ( plyr->powers[pw_ironfeet] > 4*32
-      || plyr->powers[pw_ironfeet]&8)
-        palette = RADIATIONPAL;
-   else
-        palette = 0;
+//    else
+//   if ( plyr->powers[pw_ironfeet] > 4*32
+//      || plyr->powers[pw_ironfeet]&8)
+//        palette = RADIATIONPAL;
+//   else
+//        palette = 0;
 
 
     //added:28-02-98:quick hack underwater palette
-    if (plyr->mo &&
-        (plyr->mo->z + (cv_viewheight.value<<FRACBITS) < plyr->mo->waterz) )
-        palette = RADIATIONPAL;
+//    if (plyr->mo &&
+//       (plyr->mo->z + (cv_viewheight.value<<FRACBITS) < plyr->mo->waterz) )
+//        palette = RADIATIONPAL;
+
+      if ((plyr->mo->eflags & MF_UNDERWATER) && (camera.mo->z < plyr->mo->waterz))
+       palette = RADIATIONPAL;
+// Hack to fix dumb bug from previous underwater palette - Tails 10-31-99
+    else
+         palette = 0;
 
     if (palette != st_palette)
     {
@@ -1360,6 +1380,18 @@ void ST_Init (void)
     sbohealth = W_CacheLumpName ("SBOHEALT", PU_STATIC);
     sbofrags  = W_CacheLumpName ("SBOFRAGS", PU_STATIC);
     sboarmor  = W_CacheLumpName ("SBOARMOR", PU_STATIC);
+    sboover   = W_CacheLumpName ("SBOOVER", PU_STATIC); // Tails 03-11-2000
+    sboslife  = W_CacheLumpName ("SBOSLIFE", PU_STATIC); // Tails 03-12-2000
+    sbotlife  = W_CacheLumpName ("SBOTLIFE", PU_STATIC); // Tails 03-12-2000
+    stsonic   = W_CacheLumpName ("STSONIC", PU_STATIC); // Tails 03-12-2000
+    sttails   = W_CacheLumpName ("STTAILS", PU_STATIC); // Tails 03-12-2000
+    stknux    = W_CacheLumpName ("STKNUX", PU_STATIC); // Tails 03-12-2000
+    stlivex   = W_CacheLumpName ("STLIVEX", PU_STATIC); // Tails 03-12-2000
+    rrings    = W_CacheLumpName ("SBORINGS", PU_STATIC); // Tails 03-14-2000
+    colon     = W_CacheLumpName ("WICOLON", PU_STATIC); // Tails 03-14-2000
+    stuser    = W_CacheLumpName ("STUSER", PU_STATIC); // Temorary User icon Tails 04-08-2000
+    sboulife  = W_CacheLumpName ("SBOULIFE", PU_STATIC); // Temorary User icon Tails 04-08-2000
+    rtime     = W_CacheLumpName ("SBOTIME", PU_STATIC); // Red Time logo Tails 06-12-2000
 
     for (i=0;i<NUMWEAPONS;i++)
     {
@@ -1493,28 +1525,142 @@ void ST_overlayDrawer (void)
        switch (c)
        {
          case 'h': // draw health
-           ST_drawOverlayNum(SCX(50),
-                             SCY(198)-(16*vid.dupy),
-                             plyr->health,
+
+// start GAME OVER pic Tails 03-11-2000
+          if(plyr->lives <= 0)
+{
+               V_DrawScaledPatch (SCX(32),SCY(100)-(sboover->height*vid.dupy), FG | V_NOSCALESTART,sboover); // Tails 03-11-2000
+}
+// end GAME OVER pic Tails 03-11-2000
+
+// start lives status Tails 03-12-2000
+if (plyr->skin == 0)
+{
+               V_DrawScaledPatch (SCX(52),SCY(192)-(sboslife->height*vid.dupy), FG | V_NOSCALESTART,stsonic); // Tails 03-11-2000
+               V_DrawScaledPatch (SCX(16),SCY(192)-(sboslife->height*vid.dupy), FG | V_NOSCALESTART,sboslife); // Tails 03-11-2000
+}
+
+if (plyr->skin == 1)
+{
+               V_DrawScaledPatch (SCX(52),SCY(192)-(sbotlife->height*vid.dupy), FG | V_NOSCALESTART,sttails); // Tails 03-11-2000
+               V_DrawScaledPatch (SCX(16),SCY(192)-(sbotlife->height*vid.dupy), FG | V_NOSCALESTART,sbotlife); // Tails 03-11-2000
+}
+
+if (plyr->skin > 1)
+{
+               V_DrawScaledPatch (SCX(52),SCY(192)-(sboulife->height*vid.dupy), FG | V_NOSCALESTART,stuser); // Tails 03-11-2000
+               V_DrawScaledPatch (SCX(16),SCY(192)-(sboulife->height*vid.dupy), FG | V_NOSCALESTART,sboulife); // Tails 03-11-2000
+}
+
+// draw the number of lives
+           ST_drawOverlayNum(SCX(88), // was 50 Tails 10-31-99
+                             SCY(197)-(16*vid.dupy),
+                             plyr->lives,
                              tallnum,NULL);
 
+// now draw the "x"
+if((multiplayer))
+               V_DrawScaledPatch (SCX(56),SCY(176), FG | V_NOSCALESTART, stlivex);
+else
+               V_DrawScaledPatch (SCX(56),SCY(184), FG | V_NOSCALESTART, stlivex);
+
+// end lives status Tails 03-12-2000
+
+if((multiplayer))
+{
+          if(plyr->health>0) //Added to prevent -1 rings 12-25-99 Stealth
+          {
+           ST_drawOverlayNum(SCX(288), // was 50 Tails 10-31-99
+                             SCY(10), // Ring score location Tails 10-31-99
+                             plyr->health-1,        // Always have 1 ring when not dead fixed: Stealth 12-25-99
+                             tallnum,NULL);
+          }
+
+          else  //Added to prevent -1 rings 12-25-99 Stealth
+          {
+           ST_drawOverlayNum(SCX(288), // was 50 Tails 10-31-99
+                             SCY(10), // Ring score location Tails 10-31-99
+                             plyr->health, 
+                             tallnum,NULL);
+          }
            if (rendermode==render_soft)
-               V_DrawScalePic (SCX(52),SCY(198)-(sbohealth->height*vid.dupy),0,sbohealth);
+             {
+              if(plyr->health <= 1 && plyr->ringblink & 1)
+               {
+               V_DrawScaledPatch (SCX(220),SCY(10), FG | V_NOSCALESTART,rrings); // Tails 03-14-2000
+               }
+              else if(plyr->health <= 1 && plyr->ringblink)
+               {
+               V_DrawScaledPatch (SCX(220),SCY(10), FG | V_NOSCALESTART,sbohealth); // Was a number I forget and 198 =) Tails 10-31-99
+               }
+              else
+               {
+               V_DrawScaledPatch (SCX(220),SCY(10), FG | V_NOSCALESTART,sbohealth); // Was a number I forget and 198 =) Tails 10-31-99
+               }
+             }
+}
+else
+{
+          if(plyr->health>0) //Added to prevent -1 rings 12-25-99 Stealth
+          {
+           ST_drawOverlayNum(SCX(112), // was 50 Tails 10-31-99
+//                             SCY(198)-(16*vid.dupy),
+                             SCY(58)-(16*vid.dupy), // Ring score location Tails 10-31-99
+                             plyr->health-1,        // Always have 1 ring when not dead fixed: Stealth 12-25-99
+                             tallnum,NULL);
+          }
+
+          else  //Added to prevent -1 rings 12-25-99 Stealth
+          {
+           ST_drawOverlayNum(SCX(112), // was 50 Tails 10-31-99
+//                             SCY(198)-(16*vid.dupy),
+                             SCY(58)-(16*vid.dupy), // Ring score location Tails 10-31-99
+                             plyr->health, 
+                             tallnum,NULL);
+          }
+           if (rendermode==render_soft)
+             {
+              if(plyr->health <= 1 && plyr->ringblink & 1)
+               {
+               V_DrawScaledPatch (SCX(16),SCY(42), FG | V_NOSCALESTART,rrings); // Tails 03-14-2000
+               }
+              else if(plyr->health <= 1 && plyr->ringblink)
+               {
+               V_DrawScaledPatch (SCX(16),SCY(42), FG | V_NOSCALESTART,sbohealth); // Was a number I forget and 198 =) Tails 10-31-99
+               }
+              else
+               {
+               V_DrawScaledPatch (SCX(16),SCY(42), FG | V_NOSCALESTART,sbohealth); // Was a number I forget and 198 =) Tails 10-31-99
+               }
+             }
+}
            break;
 
          case 'f': // draw frags
-           st_fragscount = ST_PlayerFrags(plyr-players);
+//           st_fragscount = ST_PlayerFrags(plyr-players); // not using frags Tails 03-01-2000
 
-           if (cv_deathmatch.value)
+//           if (cv_deathmatch.value) // don't check for deathmatch Tails 03-01-2000
+        if ((multiplayer))
            {
-               ST_drawOverlayNum(SCX(300),
-                                 SCY(2),
-                                 st_fragscount,
+               ST_drawOverlayNum(SCX(128), // Score Tails 03-01-2000
+                                 SCY(10), // Location Tails 03-01-2000
+                                 plyr->score,
                                  tallnum,NULL);
-
+           
                if (rendermode==render_soft)
-                   V_DrawScalePic (SCX(302),SCY(2),0,sbofrags);
+                   V_DrawScaledPatch (SCX(16),SCY(10), FG | V_NOSCALESTART,sbofrags); // Draw SCORE Tails 03-01-2000
            }
+       else
+           {
+               ST_drawOverlayNum(SCX(128), // Score Tails 03-01-2000
+                                 SCY(10), // Location Tails 03-01-2000
+                                 plyr->score,
+                                 tallnum,NULL);
+           
+               if (rendermode==render_soft)
+                   V_DrawScaledPatch (SCX(16),SCY(10), FG | V_NOSCALESTART,sbofrags); // Draw SCORE Tails 03-01-2000
+           }
+
            break;
 
          case 'a': // draw ammo
@@ -1542,13 +1688,135 @@ void ST_overlayDrawer (void)
            break;
 
          case 'm': // draw armor
-           ST_drawOverlayNum(SCX(300),
-                             SCY(198)-(16*vid.dupy),
-                             plyr->armorpoints,
+
+     if ((multiplayer))
+        {
+          if(plyr->seconds < 10)
+           {
+           ST_drawOverlayNum(SCX(204), // Tails 02-29-2000
+                             SCY(10), // Draw the current single seconds time Tails 02-29-2000
+                             0,
+                             tallnum,NULL);
+           }
+           ST_drawOverlayNum(SCX(212), // Tails 02-29-2000
+                             SCY(10), // Draw the current single seconds time Tails 02-29-2000
+                             plyr->seconds,
                              tallnum,NULL);
 
+           ST_drawOverlayNum(SCX(188), // Tails 02-29-2000
+                             SCY(10), // Draw the current single seconds time Tails 02-29-2000
+                             plyr->minutes,
+                             tallnum,NULL);
+
+               V_DrawScaledPatch (SCX(188),SCY(10), FG | V_NOSCALESTART,colon); // colon location Tails 02-29-2000
+
            if (rendermode==render_soft)
-               V_DrawScalePic (SCX(302),SCY(198)-(sboarmor->height*vid.dupy),0,sboarmor);
+              V_DrawScaledPatch (SCX(136),SCY(10), FG | V_NOSCALESTART,sboarmor); // TIME location Tails 02-29-2000
+        }
+    else
+        {
+          if(plyr->seconds < 10)
+           {
+           ST_drawOverlayNum(SCX(104), // Tails 02-29-2000
+                             SCY(42)-(16*vid.dupy), // Draw the current single seconds time Tails 02-29-2000
+                             0,
+                             tallnum,NULL);
+           }
+           ST_drawOverlayNum(SCX(112), // Tails 02-29-2000
+                             SCY(42)-(16*vid.dupy), // Draw the current single seconds time Tails 02-29-2000
+                             plyr->seconds,
+                             tallnum,NULL);
+
+           ST_drawOverlayNum(SCX(88), // Tails 02-29-2000
+                             SCY(42)-(16*vid.dupy), // Draw the current single seconds time Tails 02-29-2000
+                             plyr->minutes,
+                             tallnum,NULL);
+
+               V_DrawScaledPatch (SCX(88),SCY(42)-(16*vid.dupy), FG | V_NOSCALESTART,colon); // colon location Tails 02-29-2000
+
+           if (rendermode==render_soft)
+             {
+              if(leveltime >= 18900 && plyr->ringblink & 1)
+               {
+               V_DrawScaledPatch (SCX(17),SCY(26), FG | V_NOSCALESTART,rtime); // TIME location Tails 02-29-2000
+               }
+              else if(leveltime >= 18900 && plyr->ringblink)
+               {
+               V_DrawScaledPatch (SCX(17),SCY(26), FG | V_NOSCALESTART,sboarmor); // TIME location Tails 02-29-2000
+               }
+              else
+               {
+               V_DrawScaledPatch (SCX(17),SCY(26), FG | V_NOSCALESTART,sboarmor); // TIME location Tails 02-29-2000
+               }
+             }
+        }
+if(devparm)
+{
+char smomx[33];
+char smomy[33];
+char smomz[33];
+char sspeed[33];
+char scontinues[33];
+char ssuperready[33];
+char semerald1[33];
+char semerald2[33];
+char semerald3[33];
+char semerald4[33];
+char semerald5[33];
+char semerald6[33];
+char semerald7[33];
+char sx[33];
+char sy[33];
+char sz[33];
+sprintf(smomx, "%i", plyr->mo->momx >> FRACBITS);
+sprintf(smomy, "%i", plyr->mo->momy >> FRACBITS);
+sprintf(smomz, "%i", plyr->mo->momz >> FRACBITS);
+sprintf(sspeed, "%i", plyr->speed);
+sprintf(scontinues, "%i", plyr->continues);
+sprintf(ssuperready, "%i", plyr->superready);
+sprintf(semerald1, "%i", plyr->emerald1);
+sprintf(semerald2, "%i", plyr->emerald2);
+sprintf(semerald3, "%i", plyr->emerald3);
+sprintf(semerald4, "%i", plyr->emerald4);
+sprintf(semerald5, "%i", plyr->emerald5);
+sprintf(semerald6, "%i", plyr->emerald6);
+sprintf(semerald7, "%i", plyr->emerald7);
+sprintf(sx, "%i", plyr->mo->x >> FRACBITS);
+sprintf(sy, "%i", plyr->mo->y >> FRACBITS);
+sprintf(sz, "%i", plyr->mo->z >> FRACBITS);
+V_DrawString(248, 0, "MOMX =");
+V_DrawString(296, 0, smomx);
+V_DrawString(248, 8, "MOMY =");
+V_DrawString(296, 8, smomy);
+V_DrawString(248, 16, "MOMZ =");
+V_DrawString(296, 16, smomz);
+V_DrawString(240, 24, "SPEED =");
+V_DrawString(296, 24, sspeed);
+V_DrawString(208, 32, "CONTINUES =");
+V_DrawString(296, 32, scontinues);
+V_DrawString(200, 40, "SUPERREADY =");
+V_DrawString(296, 40, ssuperready);
+V_DrawString(216, 48, "EMERALD1 =");
+V_DrawString(296, 48, semerald1);
+V_DrawString(216, 56, "EMERALD2 =");
+V_DrawString(296, 56, semerald2);
+V_DrawString(216, 64, "EMERALD3 =");
+V_DrawString(296, 64, semerald3);
+V_DrawString(216, 72, "EMERALD4 =");
+V_DrawString(296, 72, semerald4);
+V_DrawString(216, 80, "EMERALD5 =");
+V_DrawString(296, 80, semerald5);
+V_DrawString(216, 88, "EMERALD6 =");
+V_DrawString(296, 88, semerald6);
+V_DrawString(216, 96, "EMERALD7 =");
+V_DrawString(296, 96, semerald7);
+V_DrawString(240, 104, "X =");
+V_DrawString(264, 104, sx);
+V_DrawString(240, 112, "Y =");
+V_DrawString(264, 112, sy);
+V_DrawString(240, 120, "Z =");
+V_DrawString(264, 120, sz);
+}
            break;
        }
     }

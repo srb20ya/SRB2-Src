@@ -319,7 +319,8 @@ void D_Display (void)
 
         // fullscreen with overlay
         if (st_overlay && !automapactive &&
-            (!playerdeadview || cv_splitscreen.value)) //Fab: full clear view when dead
+            (!playerdeadview || playerdeadview || cv_splitscreen.value)) //Fab: full clear view when dead
+                 // yeah right fab! we want the stats even when he's dead!
         {
             ST_overlayDrawer ();
             if(cv_splitscreen.value)
@@ -660,8 +661,9 @@ void D_DoAdvanceDemo (void)
         if ( gamemode == commercial )
             pagetic = TICRATE * 15; // Changed by Tails: 9-14-99
         else
-            pagetic = 200;
+            pagetic = 170;
         pagename = "TITLEPIC";
+        I_PlayCD (18, true);
         if ( gamemode == commercial )
           S_StartMusic(mus_dm2ttl);
         else
@@ -676,7 +678,7 @@ void D_DoAdvanceDemo (void)
         pagename = "CREDIT";
         break;
       case 3:
-        G_DeferedPlayDemo ("demo1");
+        G_DeferedPlayDemo ("demo2");
         break;
       case 4:
         gamestate = GS_DEMOSCREEN;
@@ -697,7 +699,7 @@ void D_DoAdvanceDemo (void)
         }
         break;
       case 5:
-        G_DeferedPlayDemo ("demo1");
+        G_DeferedPlayDemo ("demo3");
         break;
         // THE DEFINITIVE DOOM Special Edition demo
       case 6:
@@ -817,7 +819,7 @@ void IdentifyVersion (void)
 
     // and... Doom LEGACY !!! :)
     legacywad = malloc(strlen(doomwaddir)+1+9+1);
-    sprintf(legacywad, "%s/doom3.wad", doomwaddir);
+    sprintf(legacywad, "%s/xmassupp.wad", doomwaddir); // xmas
 
     // FinalDoom : Plutonia
     plutoniawad = malloc(strlen(doomwaddir)+1+12+1);
@@ -1148,7 +1150,7 @@ void D_DoomMain (void)
     }
 
     nomonsters = M_CheckParm ("-nomonsters");
-    devparm = M_CheckParm ("-devparm");
+    devparm = M_CheckParm ("-debug"); // Tails 06-04-2000
 
     //added:11-01-98:removed the repeated spaces in title strings,
     //               because GCC doesn't expand the TABS from my text editor.
@@ -1265,8 +1267,8 @@ void D_DoomMain (void)
     p = M_CheckParm ("-warp");
     if (p && p < myargc-1)
     {
-        if (gamemode == commercial)
-            startmap = atoi (myargv[p+1]);
+        if (gamemode == commercial){
+            startmap = atoi (myargv[p+1]);}
         else
         {
             startepisode = myargv[p+1][0]-'0';

@@ -39,8 +39,8 @@ enum
     gc_forward,
     gc_backward,
     gc_strafe,
-    gc_straferight,
-    gc_strafeleft,
+    gc_camright, // Forgot about this spot!! Tails 04-23-2000
+    gc_camleft, // Forgot about this spot!! Tails 04-23-2000
     gc_speed,
     gc_turnleft,
     gc_turnright,

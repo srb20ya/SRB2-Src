@@ -223,8 +223,15 @@ typedef enum
     // Set by P_MovePlayer() to disable gravity add in P_MobjThinker() ( for gameplay )
     MF_SWIMMING          = 16,
     // Jumping Status... Added by Tails 9-15-99 Spin Attack
-    MF_JUMPED            = 32
-
+    MF_JUMPED            = 32,
+    // Stealth: Is Spinning on the ground
+    MF_SPINNING          = 64,
+    //SOM: If it hit the floor, flag this for one tick!
+    MF_JUSTJUMPED        = 128,
+    //Stealth: Reving Spindash
+    MF_STARTDASH         = 256,
+    // Tails Flying Tails 03-03-2000
+    MF_TAILSFLY          = 512,
 } mobjeflag_t;
 
 
@@ -333,6 +340,7 @@ typedef struct mobj_s
     // WARNING : nexw field are not automaticely added to save game
     //SOM: Added fuse
     int                 fuse;
+
 } mobj_t;
 
 // check mobj against water content, before movement code

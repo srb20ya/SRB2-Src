@@ -84,36 +84,37 @@ void F_StartFinale (void)
       case commercial:
       {
           S_ChangeMusic(mus_read_m, true);
+          I_PlayCD(24, true);
 
-          switch (gamemap)
-          {
-            case 6:
-              finaleflat = text[SLIME16_NUM];
-              finaletext = C1TEXT;
-              break;
-            case 11:
-              finaleflat = text[RROCK14_NUM];
-              finaletext = C2TEXT;
-              break;
-            case 20:
-              finaleflat = text[RROCK07_NUM];
-              finaletext = C3TEXT;
-              break;
-            case 30:
-              finaleflat = text[RROCK17_NUM];
-              finaletext = C4TEXT;
-              break;
-            case 15:
-              finaleflat = text[RROCK13_NUM];
-              finaletext = C5TEXT;
-              break;
-            case 31:
-              finaleflat = text[RROCK19_NUM];
-              finaletext = C6TEXT;
-              break;
-            default:
-              // Ouch.
-              break;
+          switch (gamemap) //xmas
+          { //xmas
+            case 1: //xmas
+              finaleflat = text[SLIME16_NUM]; //xmas
+              finaletext = C1TEXT; //xmas
+              break; //xmas
+            case 5: //xmas
+              finaleflat = text[RROCK14_NUM]; //xmas
+              finaletext = C2TEXT; //xmas
+              break; //xmas
+            case 6: //xmas
+              finaleflat = text[RROCK07_NUM]; //xmas
+              finaletext = C3TEXT; //xmas
+              break; //xmas
+            case 10: //xmas
+              finaleflat = text[RROCK17_NUM]; //xmas
+              finaletext = C4TEXT; //xmas
+              break; //xmas
+            case 9: //xmas
+              finaleflat = text[RROCK13_NUM]; //xmas
+              finaletext = C5TEXT; //xmas
+              break; //xmas
+            case 15: //xmas
+              finaleflat = text[RROCK19_NUM]; //xmas
+              finaletext = C6TEXT; //xmas
+              break; //xmas
+            default: //xmas
+              // Ouch. //xmas
+              break; //xmas
           }
           break;
       }
@@ -213,19 +214,35 @@ void F_TextWrite (void)
     src = W_CacheLumpName ( finaleflat , PU_CACHE);
     dest = screens[0];
 
-    for (y=0 ; y<vid.height; y++)
-    {
-        for (x=0 ; x<vid.width/64 ; x++)
-        {
-            memcpy (dest, src+((y&63)<<6), 64);
-            dest += 64;
-        }
-        if (vid.width&63)
-        {
-            memcpy (dest, src+((y&63)<<6), vid.width&63);
-            dest += (vid.width&63);
-        }
-    }
+// Tails DRAW A FULL PIC INSTEAD OF FLAT!
+          switch (gamemap){//xmas
+             case 1://xmas
+             V_DrawScaledPatch (0,0,0,W_CacheLumpName ("MAP1INTR", PU_CACHE));//xmas
+             break;//xmas
+             case 5://xmas
+             V_DrawScaledPatch (0,0,0,W_CacheLumpName ("ENDPIC", PU_CACHE));//xmas
+             break;//xmas
+             case 9://xmas
+             V_DrawScaledPatch (0,0,0,W_CacheLumpName ("EMERINTR", PU_CACHE));//xmas
+             break;//xmas
+             default://xmas
+             V_DrawScaledPatch (0,0,0,W_CacheLumpName ("BOSSBACK", PU_CACHE));//xmas
+             break;//xmas
+        }//xmas
+
+//    for (y=0 ; y<vid.height; y++)
+//    {
+//        for (x=0 ; x<vid.width/64 ; x++)
+//        {
+//            memcpy (dest, src+((y&63)<<6), 64);
+//            dest += 64;
+//        }
+//        if (vid.width&63)
+//        {
+//            memcpy (dest, src+((y&63)<<6), vid.width&63);
+//            dest += (vid.width&63);
+//        }
+//    }
     }
 
     V_MarkRect (0, 0, vid.width, vid.height);
@@ -370,8 +387,8 @@ void F_CastTicker (void)
         switch (st)
         {
           case S_PLAY_ATK1:     sfx = sfx_dshtgn; break;
-          case S_POSS_ATK2:     sfx = sfx_pistol; break;
-          case S_SPOS_ATK2:     sfx = sfx_shotgn; break;
+          case S_POSS_RUN1:     sfx = sfx_pistol; break; // Tails 06-13-2000
+          case S_SPOS_RUN1:     sfx = sfx_shotgn; break; // Tails 06-13-2000
           case S_VILE_ATK2:     sfx = sfx_vilatk; break;
           case S_SKEL_FIST2:    sfx = sfx_skeswg; break;
           case S_SKEL_FIST4:    sfx = sfx_skepch; break;
@@ -391,9 +408,9 @@ void F_CastTicker (void)
           case S_SPID_ATK2:
           case S_SPID_ATK3:     sfx = sfx_shotgn; break;
           case S_BSPI_ATK2:     sfx = sfx_plasma; break;
-          case S_CYBER_ATK2:
-          case S_CYBER_ATK4:
-          case S_CYBER_ATK6:    sfx = sfx_rlaunc; break;
+//          case S_EGGMOBILE_ATK2:
+//          case S_EGGMOBILE_ATK2:
+          case S_EGGMOBILE_ATK2:    sfx = sfx_rlaunc; break;
           case S_PAIN_DIE1:     sfx = sfx_sklatk; break;
           default: sfx = 0; break;
         }

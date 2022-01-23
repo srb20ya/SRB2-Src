@@ -333,6 +333,33 @@ boolean PIT_CheckThing (mobj_t* thing)
         return !solid;
     }
 
+// start collectibles can hit a still player Tails 08-07-2000
+    if (tmthing->flags & MF_SPECIAL)
+    {
+        solid = tmthing->flags&MF_SOLID;
+        if (thing->flags&MF_PICKUP)
+        {
+            // can remove thing
+            P_TouchSpecialThing (tmthing, thing);
+        }
+        return !solid;
+    }
+// end collectibles can hit a still player Tails 08-07-2000
+
+if(tmthing->type==MT_POSSESSED || tmthing->type==MT_SHOTGUY)
+{
+if(thing->type==MT_PLAYER)
+{
+if((thing->z <= tmthing->z + tmthing->info->height) && (thing->z + thing->info->height >= tmthing->z))
+  {
+   if((thing->eflags & MF_SPINNING))
+P_DamageMobj(tmthing, thing, thing, 1);
+else if(!(thing->eflags & MF_JUMPED || thing->eflags & MF_JUSTJUMPED))
+P_DamageMobj(thing, tmthing, tmthing, 1);
+}
+}
+}
+
 
     //added:24-02-98:compatibility with old demos, it used to return with...
     //added:27-02-98:for version 112+, nonsolid things pass through other things
@@ -362,15 +389,425 @@ boolean PIT_CheckThing (mobj_t* thing)
             tmthing->z > tmthing->floorz)  // block while in air
             return false;
 
-
         if (topz > tmfloorz)
-        {
             tmfloorz = topz;
             tmfloorthing = thing;       //thing we may stand on
+
+if(thing->player)
+{
+           if ((tmthing->z == tmfloorz) &&
+            ((thing->eflags & MF_JUMPED || thing->eflags & MF_JUSTJUMPED || thing->player->powers[pw_invulnerability] || thing->player->powers[pw_super] || thing->eflags & MF_SPINNING || thing->state == &states[S_PLAY_ABL1] || thing->state == &states[S_PLAY_ABL2]) && thing->type==MT_PLAYER))
+               {
+               //SOM: Don't kill spring boards!
+               switch(tmthing->type) {
+                 case MT_POSSESSED:
+                 case MT_SHOTGUY:
+                 case MT_UNDEAD:
+                 case MT_FATSO:
+                 case MT_CHAINGUY:
+                 case MT_TROOP:
+                 case MT_SERGEANT:
+                 case MT_SHADOWS:
+                 case MT_PAIN:
+                 case MT_SKIM:
+                 case MT_GFZFISH:
+                   P_DamageMobj(tmthing, thing, thing, 1);
+                   break;
+                 case MT_MINE:
+                   if(!(thing->player->powers[pw_super] || thing->player->powers[pw_invulnerability]) && (tmthing->type == MT_PLAYER))
+                     {
+                     P_ExplodeMissile(tmthing);
+                     }
+                 break;
+                 case MT_CYBORG:
+                   {
+              if (!(tmthing->state->nextstate == S_EGGMOBILE_PAIN || tmthing->state->nextstate == S_EGGMOBILE_PAIN2 || tmthing->state->nextstate == S_EGGMOBILE_PAIN3 || tmthing->state->nextstate == S_EGGMOBILE_PAIN4 || tmthing->state->nextstate == S_EGGMOBILE_PAIN5 || tmthing->state->nextstate == S_EGGMOBILE_PAIN6 || 
+                   tmthing->state->nextstate == S_EGGMOBILE_PAIN7 || tmthing->state->nextstate == S_EGGMOBILE_PAIN8 || tmthing->state->nextstate == S_EGGMOBILE_PAIN9 || tmthing->state->nextstate == S_EGGMOBILE_PAIN10 || tmthing->state->nextstate == S_EGGMOBILE_PAIN11 || tmthing->state->nextstate == S_EGGMOBILE_PAIN12)) 
+                  {
+                   P_SetMobjState (tmthing, S_EGGMOBILE_PAIN);
+                   P_DamageMobj(tmthing, thing, thing, 1);
+                  }
+                   break;
+                  }
+                 default:
+ //                  tmthing->player->mo->momx = 0;
+ //                  tmthing->player->mo->momy = 0;
+                   break;
+                  }
+}
+}
+
+if(tmthing->player)
+{
+// Z Damage works!! YESSSS!!!! I'VE SPENT WAY TOO MUCH TIME ON IT!! Tails 11-03-99
+        // Fixed it up -- Stealth
+           {
+        if (tmthing->z <= tmfloorz)
+//           if ((tmthing->z <= tmfloorz) && tmthing->type==MT_PLAYER)
+           {
+           if(tmthing->type==MT_MINE && tmthing->state == &states[S_MINE1])
+            {
+                     P_ExplodeMissile(tmthing);
+            }
+             if(((tmthing->eflags & MF_JUMPED && !(tmthing->eflags & MF_ONGROUND)) || ((tmthing->eflags & MF_JUSTJUMPED) && !(tmthing->eflags & MF_ONGROUND)) || (((tmthing->player->powers[pw_invulnerability]) || (tmthing->player->powers[pw_super])) && !(tmthing->eflags & MF_ONGROUND)) && tmthing->type == MT_PLAYER))
+//             if(((tmthing->eflags & MF_JUMPED && !(tmthing->eflags & MF_ONGROUND)) || (tmthing->eflags & MF_JUSTJUMPED && !(tmthing->eflags & MF_ONGROUND)) || (tmthing->player->powers[pw_invulnerability] || (tmthing->player->powers[pw_super]) && !(tmthing->eflags & MF_ONGROUND)) || (tmthing->eflags & MF_SPINNING && !(tmthing->eflags & MF_ONGROUND))) && tmthing->type == MT_PLAYER)
+             {
+               //SOM: Don't kill spring boards!
+               switch(thing->type)
+                {
+                 case MT_POSSESSED:
+                 case MT_SHOTGUY:
+                 case MT_UNDEAD:
+                 case MT_FATSO:
+                 case MT_CHAINGUY:
+                 case MT_TROOP:
+                 case MT_SERGEANT:
+                 case MT_SHADOWS:
+                 case MT_PAIN:
+                 case MT_MISC50:
+                 case MT_MISC31:
+                 case MT_MISC48:
+                 case MT_MISC10:
+                 case MT_MISC11:
+                 case MT_MISC74:
+                 case MT_PRUP:
+                 case MT_BKTV:
+                 case MT_INV: // invincibility box tails
+                 case MT_BABY:
+                 case MT_SKIM:
+                 case MT_GFZFISH:
+                  {
+                   P_DamageMobj(thing, tmthing, tmthing, 1);
+
+                   tmthing->player->mo->momz = JUMPGRAVITY*1.5;
+
+                   if((tmthing->eflags & MF_JUSTJUMPED))
+                   {
+                    tmthing->eflags &= ~MF_JUSTJUMPED;
+                   }
+                   if (!(tmthing->eflags & MF_JUMPED))
+                   {
+                    tmthing->eflags += MF_JUMPED;
+                   }
+                   if ((tmthing->eflags & MF_JUSTHITFLOOR))
+                   {
+                    tmthing->eflags &= ~MF_JUSTHITFLOOR;
+                   }
+                if(tmthing->player->powers[pw_super])
+                   P_SetMobjState (tmthing->player->mo, S_PLAY_ABL1);
+                else
+                   P_SetMobjState (tmthing->player->mo, S_PLAY_ATK3);
+                   break;
+                  }
+                 case MT_MINE:
+                   if(!(tmthing->player->powers[pw_super] || tmthing->player->powers[pw_invulnerability]) && (tmthing->type == MT_PLAYER))
+                     {
+                     P_ExplodeMissile(thing);
+                     }
+                 break;
+                 case MT_CYBORG:
+                   {
+                   tmthing->player->mo->momz = JUMPGRAVITY*1.5;
+                   if((tmthing->eflags & MF_JUSTJUMPED))
+                   {
+                    tmthing->eflags &= ~MF_JUSTJUMPED;
+                   }
+                   if (!(tmthing->eflags & MF_JUMPED))
+                   {
+                    tmthing->eflags += MF_JUMPED;
+                   }
+                   if ((tmthing->eflags & MF_JUSTHITFLOOR))
+                   {
+                    tmthing->eflags &= ~MF_JUSTHITFLOOR;
+                   }
+                if(tmthing->player->powers[pw_super])
+                   P_SetMobjState (tmthing->player->mo, S_PLAY_ABL1);
+                else
+                   P_SetMobjState (tmthing->player->mo, S_PLAY_ATK3);
+              if (!(thing->state->nextstate == S_EGGMOBILE_PAIN || thing->state->nextstate == S_EGGMOBILE_PAIN2 || thing->state->nextstate == S_EGGMOBILE_PAIN3 || thing->state->nextstate == S_EGGMOBILE_PAIN4 || thing->state->nextstate == S_EGGMOBILE_PAIN5 || thing->state->nextstate == S_EGGMOBILE_PAIN6 || 
+                   thing->state->nextstate == S_EGGMOBILE_PAIN7 || thing->state->nextstate == S_EGGMOBILE_PAIN8 || thing->state->nextstate == S_EGGMOBILE_PAIN9 || thing->state->nextstate == S_EGGMOBILE_PAIN10 || thing->state->nextstate == S_EGGMOBILE_PAIN11 || thing->state->nextstate == S_EGGMOBILE_PAIN12)) 
+                  {
+                   P_SetMobjState (thing, S_EGGMOBILE_PAIN);
+                   P_DamageMobj(thing, tmthing, tmthing, 1);
+                  }
+                   break;
+                  }
+                 case MT_MISC70:
+                  {
+               if(tmthing->type == MT_PLAYER)
+                  {
+                   tmthing->player->mo->momz = JUMPGRAVITY*3;
+                   P_SetMobjState (thing, S_HEADSONSTICK2);
+                   if ((tmthing->eflags & MF_JUSTHITFLOOR))
+                   {
+                    tmthing->eflags &= ~MF_JUSTHITFLOOR;
+                   }
+                   if((tmthing->eflags & MF_JUSTJUMPED))
+                   {
+                    tmthing->eflags &= ~MF_JUSTJUMPED;
+                   }
+                   if ((tmthing->eflags & MF_JUMPED))
+                   {
+                    tmthing->eflags &= ~MF_JUMPED;
+                   }
+                if(tmthing->player->powers[pw_super])
+                   P_SetMobjState (tmthing->player->mo, S_PLAY_SPC1);
+                else
+                   P_SetMobjState (tmthing->player->mo, S_PLAY_PLG1);
+                   }
+                   break;
+                  }
+                 case MT_MISC84:
+                  {
+             if(tmthing->type == MT_PLAYER)
+                  {
+                   tmthing->player->mo->momz = JUMPGRAVITY*5;
+                   if ((tmthing->eflags & MF_JUSTHITFLOOR))
+                   {
+                    tmthing->eflags &= ~MF_JUSTHITFLOOR;
+                   }
+                   if((tmthing->eflags & MF_JUSTJUMPED))
+                   {
+                    tmthing->eflags &= ~MF_JUSTJUMPED;
+                   }
+                   if ((tmthing->eflags & MF_JUMPED))
+                   {
+                    tmthing->eflags &= ~MF_JUMPED;
+                   }
+                   P_SetMobjState (thing, S_COLONGIBS2);
+                if(tmthing->player->powers[pw_super])
+                   P_SetMobjState (tmthing->player->mo, S_PLAY_SPC1);
+                else
+                   P_SetMobjState (tmthing->player->mo, S_PLAY_PLG1);
+                   }
+                   break;
+                   }
+                 case MT_YELLOWDIAG:
+                 {
+               if(tmthing->type == MT_PLAYER)
+                  {
+                   tmthing->player->mo->momx = 0;
+                   tmthing->player->mo->momy = 0;
+                   tmthing->player->mo->momz = JUMPGRAVITY*3;
+                   P_Thrust(tmthing->player->mo, thing->angle, 3*512000);
+                   if ((tmthing->eflags & MF_JUSTHITFLOOR))
+                   {
+                    tmthing->eflags &= ~MF_JUSTHITFLOOR;
+                   }
+                   if((tmthing->eflags & MF_JUSTJUMPED))
+                   {
+                    tmthing->eflags &= ~MF_JUSTJUMPED;
+                   }
+                   if ((tmthing->eflags & MF_JUMPED))
+                   {
+                    tmthing->eflags &= ~MF_JUMPED;
+                   }
+                   P_SetMobjState (thing, S_YDIAG2);
+                if(tmthing->player->powers[pw_super])
+                   P_SetMobjState (tmthing->player->mo, S_PLAY_SPC1);
+                else
+                   P_SetMobjState (tmthing->player->mo, S_PLAY_PLG1);
+                   }
+                   break;
+                   }
+                 default:
+ //                  tmthing->player->mo->momx = 0;
+ //                  tmthing->player->mo->momy = 0;
+                   break;
+                }
+               }
+
+            else if((tmthing->player->powers[pw_invulnerability] || tmthing->player->powers[pw_super] || (tmthing->eflags & MF_SPINNING))  && tmthing->type==MT_PLAYER)
+     //       else if(((tmthing->eflags & MF_JUMPED) || (tmthing->eflags & MF_JUSTJUMPED) || tmthing->player->powers[pw_invulnerability] || tmthing->player->powers[pw_super] || (tmthing->eflags & MF_SPINNING))  && tmthing->type==MT_PLAYER)
+               {
+               //SOM: Don't kill spring boards!
+               switch(thing->type) {
+                 case MT_POSSESSED:
+                 case MT_SHOTGUY:
+                 case MT_UNDEAD:
+                 case MT_FATSO:
+                 case MT_CHAINGUY:
+                 case MT_TROOP:
+                 case MT_SERGEANT:
+                 case MT_SHADOWS:
+                 case MT_PAIN:
+                 case MT_MISC50:
+                 case MT_MISC31:
+                 case MT_MISC48:
+                 case MT_MISC10:
+                 case MT_MISC11:
+                 case MT_MISC74:
+                 case MT_PRUP:
+                 case MT_BKTV:
+                 case MT_INV: // invincibility box tails
+                 case MT_BABY:
+                 case MT_SKIM:
+                 case MT_GFZFISH:
+                   P_DamageMobj(thing, tmthing, tmthing, 1);
+                   break;
+                 case MT_MINE:
+                   if(!(tmthing->player->powers[pw_super] || tmthing->player->powers[pw_invulnerability]) && (tmthing->type == MT_PLAYER))
+                     {
+                     P_ExplodeMissile(thing);
+                     }
+                 break;
+                 case MT_CYBORG:
+                   {
+                   tmthing->player->mo->momz = JUMPGRAVITY*1.5;
+                   if((tmthing->eflags & MF_JUSTJUMPED))
+                   {
+                    tmthing->eflags &= ~MF_JUSTJUMPED;
+                   }
+                   if (!(tmthing->eflags & MF_JUMPED))
+                   {
+                    tmthing->eflags += MF_JUMPED;
+                   }
+                   if ((tmthing->eflags & MF_JUSTHITFLOOR))
+                   {
+                    tmthing->eflags &= ~MF_JUSTHITFLOOR;
+                   }
+                if(tmthing->player->powers[pw_super])
+                   P_SetMobjState (tmthing->player->mo, S_PLAY_ABL1);
+                else
+                   P_SetMobjState (tmthing->player->mo, S_PLAY_ATK3);
+              if (!(thing->state->nextstate == S_EGGMOBILE_PAIN || thing->state->nextstate == S_EGGMOBILE_PAIN2 || thing->state->nextstate == S_EGGMOBILE_PAIN3 || thing->state->nextstate == S_EGGMOBILE_PAIN4 || thing->state->nextstate == S_EGGMOBILE_PAIN5 || thing->state->nextstate == S_EGGMOBILE_PAIN6 || 
+                   thing->state->nextstate == S_EGGMOBILE_PAIN7 || thing->state->nextstate == S_EGGMOBILE_PAIN8 || thing->state->nextstate == S_EGGMOBILE_PAIN9 || thing->state->nextstate == S_EGGMOBILE_PAIN10 || thing->state->nextstate == S_EGGMOBILE_PAIN11 || thing->state->nextstate == S_EGGMOBILE_PAIN12)) 
+                  {
+                   P_SetMobjState (thing, S_EGGMOBILE_PAIN);
+                   P_DamageMobj(thing, tmthing, tmthing, 1);
+                  }
+                   break;
+                  }
+                 default:
+ //                  tmthing->player->mo->momx = 0;
+ //                  tmthing->player->mo->momy = 0;
+                   break;
+                  }
+                  }
+
+             else
+               {
+               //SOM: Spring boards don't kill!
+               switch(thing->type) {
+                 case MT_POSSESSED:
+                 case MT_SHOTGUY:
+                 case MT_UNDEAD:
+                 case MT_FATSO:
+                 case MT_CHAINGUY:
+                 case MT_TROOP:
+                 case MT_SERGEANT:
+                 case MT_SHADOWS:
+                 case MT_CYBORG:
+                 case MT_PAIN:
+                 case MT_SKIM:
+                 case MT_GFZFISH:
+//                   tmthing->player->mo->momz = JUMPGRAVITY*1.5;
+                if(tmthing->type == MT_PLAYER)
+                   P_DamageMobj(tmthing, thing, thing, 1);
+//                   tmthing->player->mo->momx = -tmthing->player->mo->momx;
+//                   tmthing->player->mo->momy = -tmthing->player->mo->momy;
+                   break;
+                 case MT_MINE:
+                   if(!(tmthing->player->powers[pw_super] || tmthing->player->powers[pw_invulnerability]) && (tmthing->type == MT_PLAYER))
+                     {
+                     P_ExplodeMissile(thing);
+                     }
+                 break;
+                 case MT_MISC70:
+                 if(tmthing->type == MT_PLAYER)
+                   {
+                   tmthing->player->mo->momz = JUMPGRAVITY*3;
+                   P_SetMobjState (thing, S_HEADSONSTICK2);
+                   if ((tmthing->eflags & MF_JUSTHITFLOOR)) {
+                   tmthing->eflags &= ~MF_JUSTHITFLOOR; }
+                   if((tmthing->eflags & MF_JUSTJUMPED)) {
+                   tmthing->eflags &= ~MF_JUSTJUMPED; }
+                   if ((tmthing->eflags & MF_JUMPED)) {
+                   tmthing->eflags &= ~MF_JUMPED; }
+                  if(tmthing->player->powers[pw_super])
+                   P_SetMobjState (tmthing->player->mo, S_PLAY_SPC1);
+                  else
+                   P_SetMobjState (tmthing->player->mo, S_PLAY_PLG1);
+             //      tmthing->player->mo->momx = 0;
+             //      tmthing->player->mo->momy = 0;
+                   }
+                   break;
+                 case MT_MISC84:
+                 if(tmthing->type == MT_PLAYER)
+                   {
+                   tmthing->player->mo->momz = JUMPGRAVITY*5;
+                   if ((tmthing->eflags & MF_JUSTHITFLOOR)) {
+                   tmthing->eflags &= ~MF_JUSTHITFLOOR; }
+                   if((tmthing->eflags & MF_JUSTJUMPED)) {
+                   tmthing->eflags &= ~MF_JUSTJUMPED; }
+                   if ((tmthing->eflags & MF_JUMPED)) {
+                   tmthing->eflags &= ~MF_JUMPED; }
+                   P_SetMobjState (thing, S_COLONGIBS2);
+                  if(tmthing->player->powers[pw_super])
+                   P_SetMobjState (tmthing->player->mo, S_PLAY_SPC1);
+                  else
+                   P_SetMobjState (tmthing->player->mo, S_PLAY_PLG1);
+         //          tmthing->player->mo->momx = 0;
+        //           tmthing->player->mo->momy = 0;
+                   }
+                   break;
+                 case MT_YELLOWDIAG:
+               if(tmthing->type == MT_PLAYER)
+                  {
+                   tmthing->player->mo->momx = 0;
+                   tmthing->player->mo->momy = 0;
+                   tmthing->player->mo->momz = JUMPGRAVITY*3;
+                   P_Thrust(tmthing->player->mo, thing->angle, 3*512000);
+                   if ((tmthing->eflags & MF_JUSTHITFLOOR))
+                   {
+                    tmthing->eflags &= ~MF_JUSTHITFLOOR;
+                   }
+                   if((tmthing->eflags & MF_JUSTJUMPED))
+                   {
+                    tmthing->eflags &= ~MF_JUSTJUMPED;
+                   }
+                   if ((tmthing->eflags & MF_JUMPED))
+                   {
+                    tmthing->eflags &= ~MF_JUMPED;
+                   }
+                   P_SetMobjState (thing, S_YDIAG2);
+                if(tmthing->player->powers[pw_super])
+                   P_SetMobjState (tmthing->player->mo, S_PLAY_SPC1);
+                else
+                   P_SetMobjState (tmthing->player->mo, S_PLAY_PLG1);
+                   }
+                   break;
+                 default:
+                   break;
+                }
+             }
+          }
         }
 
-    }
-
+// Start fan code Tails 12-03-99
+           if (tmthing->z >= tmfloorz)
+               {
+               switch(thing->type) {
+                 case MT_MISC34:
+                 tmthing->player->mo->momz = JUMPGRAVITY;
+                   if ((tmthing->eflags & MF_JUSTHITFLOOR)) {
+                   tmthing->eflags &= ~MF_JUSTHITFLOOR; }
+                   if((tmthing->eflags & MF_JUSTJUMPED)) {
+                   tmthing->eflags &= ~MF_JUSTJUMPED; }
+                   if ((tmthing->eflags & MF_JUMPED)) {
+                   tmthing->eflags &= ~MF_JUMPED; }
+              if(tmthing->player->powers[pw_super])
+                 P_SetMobjState (tmthing->player->mo, S_PLAY_SPC1);
+              else
+                 P_SetMobjState (tmthing->player->mo, S_PLAY_PAIN);
+                 break;
+                 default:
+                 break;
+             }
+           }
+// End fan code Tails 12-03-99
+      }
+}
     // not solid not blocked
     return true;
 }
@@ -475,11 +912,123 @@ boolean P_CheckPosition ( mobj_t*       thing,
              // SOM: Begin jumping damage code
              if (!P_BlockThingsIterator(bx, by, PIT_CheckThing)) 
                  {
-                 if(thing->player && thing->eflags & MF_JUMPED) 
-                     P_DamageMobj(blockthing, NULL, NULL,1); 
-                 if(thing->player && !(thing->eflags & MF_JUMPED))
-                     P_DamageMobj(thing,NULL,NULL,1); 
-                 return false; 
+                 //SOM: Improved the jumping damage code
+     // made even better -- Stealth
+if(thing->player)
+{
+             if(((thing->eflags & MF_JUMPED) || (thing->eflags & MF_JUSTJUMPED) || thing->player->powers[pw_invulnerability] || thing->player->powers[pw_super]) && thing->type == MT_PLAYER)
+                   {
+                   //SOM: Don't kill spring boards!
+                   switch(blockthing->type) {
+                     case MT_POSSESSED:
+                     case MT_SHOTGUY:
+                     case MT_UNDEAD:
+                     case MT_FATSO:
+                     case MT_CHAINGUY:
+                     case MT_TROOP:
+                     case MT_SERGEANT:
+                     case MT_SHADOWS:
+                     case MT_PAIN:
+                     case MT_MISC50:
+                     case MT_MISC31:
+                     case MT_MISC48:
+                     case MT_MISC10:
+                     case MT_MISC11:
+                     case MT_MISC74:
+                     case MT_PRUP:
+                     case MT_BKTV:
+                     case MT_INV: // invincibility box tails
+                     case MT_BABY:
+                     case MT_SKIM:
+                     case MT_GFZFISH:
+                       P_DamageMobj(blockthing, thing, thing, 1);
+                     if(thing->player->powers[pw_super])
+                       P_SetMobjState (thing->player->mo, S_PLAY_ABL1);
+                     else
+                       P_SetMobjState (thing->player->mo, S_PLAY_ATK3);
+                   if ((thing->eflags & MF_JUSTHITFLOOR)) {
+                   thing->eflags &= ~MF_JUSTHITFLOOR; }
+                   if((thing->eflags & MF_JUSTJUMPED)) {
+                   thing->eflags &= ~MF_JUSTJUMPED; }
+                   if (!(thing->eflags & MF_JUMPED)) {
+                   thing->eflags += MF_JUMPED; }
+                   thing->player->mo->momz = JUMPGRAVITY;
+//                       thing->player->mo->momx = -thing->player->mo->momx;
+//                       thing->player->mo->momy = -thing->player->mo->momy;
+                       break;
+                 case MT_MINE:
+                   if(!(thing->player->powers[pw_super] || thing->player->powers[pw_invulnerability]) && (thing->type == MT_PLAYER))
+                     {
+                     P_ExplodeMissile(blockthing);
+                     }
+                 break;
+                 case MT_CYBORG:
+                   {
+//                   thing->player->mo->momz = JUMPGRAVITY*1.5;
+                       thing->player->mo->momz = -thing->player->mo->momz;
+                       thing->player->mo->momx = -thing->player->mo->momx;
+                       thing->player->mo->momy = -thing->player->mo->momy;
+                   if((thing->eflags & MF_JUSTJUMPED))
+                   {
+                    thing->eflags &= ~MF_JUSTJUMPED;
+                   }
+                   if (!(thing->eflags & MF_JUMPED))
+                   {
+                    thing->eflags += MF_JUMPED;
+                   }
+                   if ((thing->eflags & MF_JUSTHITFLOOR))
+                   {
+                    thing->eflags &= ~MF_JUSTHITFLOOR;
+                   }
+                     if(thing->player->powers[pw_super])
+                       P_SetMobjState (thing->player->mo, S_PLAY_ABL1);
+                     else
+                       P_SetMobjState (thing->player->mo, S_PLAY_ATK3);
+              if (!(blockthing->state->nextstate == S_EGGMOBILE_PAIN || blockthing->state->nextstate == S_EGGMOBILE_PAIN2 || blockthing->state->nextstate == S_EGGMOBILE_PAIN3 || blockthing->state->nextstate == S_EGGMOBILE_PAIN4 || blockthing->state->nextstate == S_EGGMOBILE_PAIN5 || blockthing->state->nextstate == S_EGGMOBILE_PAIN6 || 
+                   blockthing->state->nextstate == S_EGGMOBILE_PAIN7 || blockthing->state->nextstate == S_EGGMOBILE_PAIN8 || blockthing->state->nextstate == S_EGGMOBILE_PAIN9 || blockthing->state->nextstate == S_EGGMOBILE_PAIN10 || blockthing->state->nextstate == S_EGGMOBILE_PAIN11 || blockthing->state->nextstate == S_EGGMOBILE_PAIN12)) 
+                  {
+                   P_SetMobjState (blockthing, S_EGGMOBILE_PAIN);
+                   P_DamageMobj(blockthing, thing, thing, 1);
+                  }
+                   break;
+                     default:
+    //                   thing->player->mo->momx = 0;
+     //                  thing->player->mo->momy = 0;
+                       break;
+                     }
+                   }
+}
+                 else
+                   {
+                   //SOM: Spring boards don't kill!
+                   switch(blockthing->type) {
+                     case MT_POSSESSED:
+                     case MT_SHOTGUY:
+                     case MT_UNDEAD:
+                     case MT_FATSO:
+                     case MT_CHAINGUY:
+                     case MT_TROOP:
+                     case MT_SERGEANT:
+                     case MT_SHADOWS:
+                     case MT_CYBORG:
+                     case MT_PAIN:
+                     case MT_SKIM:
+                     case MT_GFZFISH:
+                     if(thing->type == MT_PLAYER)
+                       P_DamageMobj(thing, blockthing, blockthing, 1);
+                       break;
+                   if(!(thing->player->powers[pw_super] || thing->player->powers[pw_invulnerability]) && (thing->type == MT_PLAYER))
+                     {
+                     P_ExplodeMissile(blockthing);
+                     }
+                     default:
+       //                thing->momx = thing->momy = 0;
+                       break;
+                     }
+				 }
+                   }
+
+                 return false;
                  }
              // SOM: End jumping damage code 
 

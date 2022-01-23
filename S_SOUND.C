@@ -663,7 +663,6 @@ void S_ChangeMusic( int                   musicnum,
     mus_playing = music;
 }
 
-
 void S_StopMusic(void)
 {
     if (mus_playing)

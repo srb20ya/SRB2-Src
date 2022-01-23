@@ -159,6 +159,14 @@ typedef enum
     pw_ironfeet,
     pw_allmap,
     pw_infrared,
+    pw_blueshield, // blue shield Tails 03-04-2000
+    pw_tailsfly, // tails flying Tails 03-05-2000
+    pw_underwater, // underwater timer Tails 03-06-2000
+    pw_extralife, // Extra Life timer Tails 03-14-2000
+    pw_yellowshield, // yellow shield Tails 03-15-2000
+    pw_blackshield, // black shield Tails 04-08-2000
+    pw_greenshield, // green shield Tails 04-08-2000
+    pw_super, // Are you super? Tails 04-08-2000
     NUMPOWERS
 
 } powertype_t;
@@ -172,10 +180,13 @@ typedef enum
 //
 typedef enum
 {
-    INVULNTICS  = (30*TICRATE),
-    INVISTICS   = (60*TICRATE),
+    INVULNTICS  = (20*TICRATE),
+    INVISTICS   = (3*TICRATE), // just hit Tails 2-26-2000
     INFRATICS   = (120*TICRATE),
-    IRONTICS    = (60*TICRATE)
+    IRONTICS    = (60*TICRATE), // Tails 02-28-2000
+    SPEEDTICS   = (20*TICRATE), // for super sneaker timer Tails 02-28-2000
+    TAILSTICS   = (10*TICRATE), // tails flying Tails 03-05-2000
+    WATERTICS   = (30*TICRATE), // underwater timer Tails 03-07-2000
 
 } powerduration_t;
 

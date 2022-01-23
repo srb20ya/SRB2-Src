@@ -24,20 +24,18 @@ weaponinfo_t    weaponinfo[NUMWEAPONS] =
     {
         // fist
         am_noammo,
-        S_PUNCHUP,
-        S_PUNCHDOWN,
-        S_PUNCH,
-        S_PUNCH1,
+// no more punches Tails 11-06-99
+        S_NULL,
+        S_NULL,
+        S_NULL,
+        S_NULL,
         S_NULL
     },
     {
         // pistol
         am_clip,
-        S_PISTOLUP,
-        S_PISTOLDOWN,
-        S_PISTOL,
-        S_PISTOL1,
-        S_PISTOLFLASH
+// no more pistol Tails 11-06-99
+        S_NULL
     },
     {
         // shotgun

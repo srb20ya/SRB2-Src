@@ -3,7 +3,7 @@
 #include "dstrings.h"
 
 char *text[] = {
-   "Development mode ON.\n",
+   "Debug mode ON.\n",
    "CD-ROM Version: default.cfg from c:\\doomdata\n",
    "press a key.",
    "press y or n.",
@@ -122,23 +122,23 @@ char *text[] = {
    "E4M7: And Hell Followed",
    "E4M8: Unto The Cruel",
    "E4M9: Fear",
-   "Greenflower Zone Act 1", // Changed by Tails: 9-14-99
-   "Greenflower Zone Act 2", // Changed by Tails: 9-14-99
-   "Greenflower Zone Act 3", // Changed by Tails: 9-14-99
-   "Techno Hill Zone Act 1", // Changed by Tails: 9-14-99
-   "Techno Hill Zone Act 2", // Changed by Tails: 9-14-99
-   "Techno Hill Zone Act 3", // Changed by Tails: 9-14-99
-   "Deep Sea Zone Act 1", // Changed by Tails: 9-14-99
-   "Deep Sea Zone Act 2", // Changed by Tails: 9-14-99
-   "Deep Sea Zone Act 3", // Changed by Tails: 9-14-99
-   "Mine Maze Zone Act 1", // Changed by Tails: 9-14-99
+   "Springin' Around", // Changed by Tails: 9-14-99
+   "Blustery Day", // Changed by Tails: 9-14-99
+   "Snow Mountain Zone", // Changed by Tails: 9-14-99
+   "Gleaming Glacier Zone", // Changed by Tails: 9-14-99
+   "EggBase", // Changed by Tails: 9-14-99
+   "Having fun?", // Changed by Tails: 9-14-99
+   "Close Corners", // Changed by Tails: 9-14-99
+   "Xmas Factory", // Changed by Tails: 9-14-99
+   "Snow Valley", // Changed by Tails: 9-14-99
+   "Final Boss", // Changed by Tails: 9-14-99
    "Mine Maze Zone Act 2", // Changed by Tails: 9-14-99
 
    "Mine Maze Zone Act 3", // Changed by Tails: 9-14-99
    "Rocky Mountain Zone Act 1", // Changed by Tails: 9-14-99
    "Rocky Mountain Zone Act 2", // Changed by Tails: 9-14-99
-   "Rocky Mountain Zone Act 3", // Changed by Tails: 9-14-99
-   "Red Volcano Zone Act 1", // Changed by Tails: 9-14-99
+   "Emerald Coast?!?!?", // Changed by Tails: 9-14-99
+   "Sonic's Nightmare!", // Changed by Tails: 9-14-99
    "Red Volcano Zone Act 2", // Changed by Tails: 9-14-99
    "Red Volcano Zone Act 3", // Changed by Tails: 9-14-99
    "Dark City Zone Act 1", // Changed by Tails: 9-14-99
@@ -257,8 +257,8 @@ char *text[] = {
 
    "Music Change",
    "IMPOSSIBLE SELECTION, you stupid-head!", // Changed by Tails: 9-14-99
-   "Degreelessness Mode On",
-   "Degreelessness Mode Off",
+   "Wuss Mode On", // Tails 05-10-2000
+   "Wuss Mode Off", // Tails 05-10-2000
 
    "Gun Cheat Added",
    "Ammo (no keys) Added",
@@ -341,73 +341,66 @@ char *text[] = {
    "\n"\
    "next stop, hell on earth!",
 
-   "YOU HAVE ENTERED DEEPLY INTO THE INFESTED\n" \
-   "STARPORT. BUT SOMETHING IS WRONG. THE\n" \
-   "MONSTERS HAVE BROUGHT THEIR OWN REALITY\n" \
-   "WITH THEM, AND THE STARPORT'S TECHNOLOGY\n" \
-   "IS BEING SUBVERTED BY THEIR PRESENCE.\n" \
-   "\n"\
-   "AHEAD, YOU SEE AN OUTPOST OF HELL, A\n" \
-   "FORTIFIED ZONE. IF YOU CAN GET PAST IT,\n" \
-   "YOU CAN PENETRATE INTO THE HAUNTED HEART\n" \
-   "OF THE STARBASE AND FIND THE CONTROLLING\n" \
-   "SWITCH WHICH HOLDS EARTH'S POPULATION\n" \
-   "HOSTAGE.",
+   "As Sonic arrives home, he finds a note\n" \
+   "tacked to his door. 'Oh great, what is\n" \
+   "it NOW?', Sonic ponders, expecting it to\n" \
+   "be another of Eggman's Cliches. He reads\n" \
+   "the note:\n" \
+   "Sonic,\n" \
+   "I invite you and your friends to set aside\n" \
+   "old discrepancies and come join me at my\n" \
+   "place for Christmas dinner.\n" \
+   "Hope to see you soon,\n" \
+   "Eggman\n" \
+   "                          \n" \
+   "'Well', said Sonic, 'I guess a little\n" \
+   "get-together wouldn't hurt, but I'll\n" \
+   "be on my toes just in case.'\n" \
+   "\n" \
+   "And with that, Sonic speeds off...\n",
 
-   "YOU HAVE WON! YOUR VICTORY HAS ENABLED\n" \
-   "HUMANKIND TO EVACUATE EARTH AND ESCAPE\n"\
-   "THE NIGHTMARE.  NOW YOU ARE THE ONLY\n"\
-   "HUMAN LEFT ON THE FACE OF THE PLANET.\n"\
-   "CANNIBAL MUTATIONS, CARNIVOROUS ALIENS,\n"\
-   "AND EVIL SPIRITS ARE YOUR ONLY NEIGHBORS.\n"\
-   "YOU SIT BACK AND WAIT FOR DEATH, CONTENT\n"\
-   "THAT YOU HAVE SAVED YOUR SPECIES.\n"\
-   "\n"\
-   "BUT THEN, EARTH CONTROL BEAMS DOWN A\n"\
-   "MESSAGE FROM SPACE: \"SENSORS HAVE LOCATED\n"\
-   "THE SOURCE OF THE ALIEN INVASION. IF YOU\n"\
-   "GO THERE, YOU MAY BE ABLE TO BLOCK THEIR\n"\
-   "ENTRY.  THE ALIEN BASE IS IN THE HEART OF\n"\
-   "YOUR OWN HOME CITY, NOT FAR FROM THE\n"\
-   "STARPORT.\" SLOWLY AND PAINFULLY YOU GET\n"\
-   "UP AND RETURN TO THE FRAY.",
+   "And finally, you reach Eggman's Christmas\n" \
+   "dinner party, and have some Eggnog!\n"\
+   "                                   \n"\
+   "Oh?!        \n"\
+   "So you wanted to *FIGHT* Eggman?   \n"\
+   "OK! We can soon change that....!\n"\
+   "......But don't say we didn't warn you!",
 
-   "YOU ARE AT THE CORRUPT HEART OF THE CITY,\n"\
-   "SURROUNDED BY THE CORPSES OF YOUR ENEMIES.\n"\
-   "YOU SEE NO WAY TO DESTROY THE CREATURES'\n"\
-   "ENTRYWAY ON THIS SIDE, SO YOU CLENCH YOUR\n"\
-   "TEETH AND PLUNGE THROUGH IT.\n"\
+   "Alright! You beat Eggman! Woohoo!,\n"\
+   "...uh oh... Seems like he doesn't\n"\
+   "like the fact that you attacked him\n"\
+   "for no reason at all... Now you've\n"\
+   "set him off!\n"\
    "\n"\
-   "THERE MUST BE A WAY TO CLOSE IT ON THE\n"\
-   "OTHER SIDE. WHAT DO YOU CARE IF YOU'VE\n"\
-   "GOT TO GO THROUGH HELL TO GET TO IT?",
+   "All the holiday spirit is out of\n"\
+   "him, so you'd better watch out!",
 
-   "THE HORRENDOUS VISAGE OF THE BIGGEST\n"\
-   "DEMON YOU'VE EVER SEEN CRUMBLES BEFORE\n"\
-   "YOU, AFTER YOU PUMP YOUR ROCKETS INTO\n"\
-   "HIS EXPOSED BRAIN. THE MONSTER SHRIVELS\n"\
-   "UP AND DIES, ITS THRASHING LIMBS\n"\
-   "DEVASTATING UNTOLD MILES OF HELL'S\n"\
-   "SURFACE.\n"\
+   "Merry Christmas from Sonic Team Jr.!\n"\
+   "We hope that you enjoyed this!\n"\
+   "                    \n"\
+   "Level CREDITS:            \n"\
    "\n"\
-   "YOU'VE DONE IT. THE INVASION IS OVER.\n"\
-   "EARTH IS SAVED. HELL IS A WRECK. YOU\n"\
-   "WONDER WHERE BAD FOLKS WILL GO WHEN THEY\n"\
-   "DIE, NOW. WIPING THE SWEAT FROM YOUR\n"\
-   "FOREHEAD YOU BEGIN THE LONG TREK BACK\n"\
-   "HOME. REBUILDING EARTH OUGHT TO BE A\n"\
-   "LOT MORE FUN THAN RUINING IT WAS.\n",
+   "LEVEL 1:SPRINGIN' AROUND-A.J. Freda\n"\
+   "LEVEL 2:BLUSTERY DAY-A.J. Freda\n"\
+   "LEVEL 3:SNOW MOUNTAIN-Johnny Wallbank\n"\
+   "LEVEL 4:GLEAMING GLACIER-Johnny Wallbank\n"\
+   "LEVEL 5:EGGBASE-Johnny & A.J.\n"\
+   "LEVEL 6:EGGARENA-Johnny Wallbank\n"\
+   "LEVEL 7:CLOSE CORNERS-Buddy Fischer\n"\
+   "LEVEL 8:XMAS FACTORY-Johnny Wallbank\n"\
+   "LEVEL 9:SNOW VALLEY-Johnny & A.J.\n"\
+   "LEVEL 10: FINAL BOSS - A.J. Freda",
 
-   "CONGRATULATIONS, YOU'VE FOUND THE SECRET\n"\
-   "LEVEL! LOOKS LIKE IT'S BEEN BUILT BY\n"\
-   "HUMANS, RATHER THAN DEMONS. YOU WONDER\n"\
-   "WHO THE INMATES OF THIS CORNER OF HELL\n"\
-   "WILL BE.",
+   "CONGRATULATIONS, YOU'VE\n"\
+   "FOUND THE SECRET LEVEL!\n"\
+   "TIRED OF ALL THAT SNOW?\n"\
+   "LET'S HIT THE BEACH!",
 
    "CONGRATULATIONS, YOU'VE FOUND THE\n"\
-   "SUPER SECRET LEVEL!  YOU'D BETTER\n"\
-   "BLAZE THROUGH THIS ONE!\n",
-
+   "SUPER SECRET LEVEL!  LOTS OF\n"\
+   "STRANGE THINGS CAN HAPPEN IN\n"\
+   "SONIC'S NIGHTMARE!!",
 
    "You've fought your way out of the infested\n"\
    "experimental labs.   It seems that UAC has\n"\
@@ -479,16 +472,16 @@ char *text[] = {
    "MINVS", // Changed by Tails: 9-14-99
    "DRILLAKILLA", // Changed by Tails: 9-14-99
    "ROCKBOT", // Changed by Tails: 9-14-99
-   "CACODEMON",
+   "EGG HEAD",
    "HELL KNIGHT",
    "BARON OF HELL",
-   "ARACHNOTRON",
+   "EGG TURRET",
    "DETON", // Changed by Tails: 9-14-99
    "REVENANT",
    "MANCUBUS",
    "ARCH-VILE",
    "THE SPIDER MASTERMIND",
-   "THE CYBERDEMON",
+   "EGGMAN",
    "OUR HERO",
 
   // DOOM1
@@ -529,7 +522,7 @@ char *text[] = {
   "===========================================================================\n"
   "                       Sonic Robo Blast II!\n"                                  // Changed by Tails: 9-14-99
   "                       by Sonic Team Junior\n"                                  // Changed by Tails: 9-14-99
-  "                      http://stjr.segasonic.net\n"                              // Changed by Tails: 9-14-99
+  "                      http://stjr.cjb.net\n"                              // Changed by Tails: 9-14-99
   "      This is a modified version. Go to our site for the original.\n"           // Changed by Tails: 9-14-99
   "===========================================================================\n",
 
@@ -547,7 +540,7 @@ char *text[] = {
   "Z_Init: Init zone memory allocation daemon. \n",
   "W_Init: Init WADfiles.\n",
   "M_Init: Init miscellaneous info.\n",
-  "R_Init: Init DOOM refresh daemon - ",
+  "R_Init: Init SRB2 refresh daemon - ",
   "\nP_Init: Init Playloop state.\n",
   "I_Init: Setting up machine state.\n",
   "D_CheckNetGame: Checking network game status.\n",
@@ -556,7 +549,7 @@ char *text[] = {
   "ST_Init: Init status bar.\n",
   "External statistics registered.\n",
 
-  "doom2.wad",
+  "srb2xmas.wad",
   "doomu.wad",
   "doom.wad",
   "doom1.wad",
@@ -568,7 +561,7 @@ char *text[] = {
   "c:\\doomdata\\"SAVEGAMENAME"%d.dsg",
   SAVEGAMENAME"%d.dsg",
 
-  "Sonic Robo Blast 2: V1.0", // Changed by Tails: 9-14-99
+  "Sonic Robo Blast 2 Christmas: V0.96", // Changed by Tails: 9-14-99
   "The Ultimate DOOM Startup",
   "DOOM Registered Startup",
   "DOOM Shareware Startup"

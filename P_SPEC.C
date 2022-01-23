@@ -784,6 +784,11 @@ P_CrossSpecialLine
         G_SecretExitLevel ();
         break;
 
+      case 51://xmas
+        // Secret EXIT 2//xmas
+        G_SecretExitLevel ();//xmas
+        break;//xmas
+
       case 125:
         // TELEPORT MonsterONLY
         if (!thing->player)
@@ -804,12 +809,12 @@ P_CrossSpecialLine
         EV_DoCeiling(line,silentCrushAndRaise);
         line->special = 0;
         break;
-/*
+
       //SOM: Added to move the floor down instantly to the lowest surrounding
       //floor
-      case 197:
-        EV_DoFloor(line,instantLower);
-*/
+//      case 197:
+ //       EV_DoFloor(line,instantLower);
+
         // RETRIGGERS.  All from here till end.
       case 72:
         // Ceiling Crush
@@ -1035,6 +1040,7 @@ void P_PlayerInSpecialSector (player_t* player)
 {
     sector_t*   sector;
     boolean     instantdamage=false;
+    line_t      junk; // Tails 12-03-99 buttons and more
 
     sector = player->mo->subsector->sector;
 
@@ -1056,8 +1062,7 @@ void P_PlayerInSpecialSector (player_t* player)
         player->specialsector = 887;
         return;
     }
-
-
+   
     if (!player->specialsector)     // nothing special, exit
         return;
 
@@ -1075,34 +1080,38 @@ void P_PlayerInSpecialSector (player_t* player)
     {
       case 5:
         // HELLSLIME DAMAGE
-        if (!player->powers[pw_ironfeet])
-            if (instantdamage || !(leveltime&0x1f))
+            if (!(gameskill == sk_baby)) // don't do damage on lowest skill Tails 03-12-2000
             {
-                P_DamageMobj (player->mo, NULL, NULL, 200); // Tails 9-15-99
-
-                // spawn a puff of smoke
-                //CONS_Printf ("damage!\n"); //debug
-                P_SpawnSmoke (player->mo->x, player->mo->y, player->mo->z);
+//Instant death in bottomless pits with value 9999: Stealth 12-25-99
+                P_DamageMobj (player->mo, NULL, NULL, 9999);
             }
+       else if (gameskill == sk_baby) // don't do damage on lowest skill Tails 03-12-2000
+            { // don't do damage on lowest skill Tails 03-12-2000
+             player->mo->momz = JUMPGRAVITY*5; // It's no good, Jim. Throw 'im back! Tails 03-12-2000
+            } // Tails 03-12-2000
         break;
 
       case 7:
         // NUKAGE DAMAGE
-        if (!player->powers[pw_ironfeet])
-            if (instantdamage || !(leveltime&0x1f))
-                P_DamageMobj (player->mo, NULL, NULL, 5);
+                P_DamageMobj (player->mo, NULL, NULL, 1);
         break;
+
+      case 4:
+        P_DamageMobj (player->mo, NULL, NULL, 1);
+      break;
 
       case 16:
         // SUPER HELLSLIME DAMAGE
-      case 4:
-        // STROBE HURT
-        if (!player->powers[pw_ironfeet]
-            || (P_Random()<5) )
-        {
-            if (instantdamage || !(leveltime&0x1f))
-                P_DamageMobj (player->mo, NULL, NULL, 20);
-        }
+        // STROBE HURT/BOTTOMLESS PIT (updated 12-25-99 Stealth)
+            if (!(gameskill == sk_baby)) // don't do damage on lowest skill Tails 03-12-2000
+            {
+//Instant death in bottomless pits with value 9999: Stealth 12-25-99
+                P_DamageMobj (player->mo, NULL, NULL, 9999);
+            }
+       else if (gameskill == sk_baby) // don't do damage on lowest skill Tails 03-12-2000
+            { // don't do damage on lowest skill Tails 03-12-2000
+             player->mo->momz = JUMPGRAVITY*5; // It's no good, Jim. Throw 'im back! Tails 03-12-2000
+            } // Tails 03-12-2000
         break;
 
       case 9:
@@ -1126,7 +1135,176 @@ void P_PlayerInSpecialSector (player_t* player)
         if (player->health <= 10)
             G_ExitLevel();
         break;
-
+// ignore ice Tails 12-03-99
+      case 689:
+        break;
+// end ignore ice Tails 12-03-99
+// start button 1 Tails 12-03-99
+      case 690:
+        junk.tag = 700;
+        EV_DoDoor(&junk,dooropen);
+        junk.tag = 701;
+        EV_DoFloor( &junk, lowerFloorToLowest );
+        break;
+// end button 1 Tails 12-03-99
+// start button 2 Tails 12-03-99
+      case 691:
+        junk.tag = 702;
+        EV_DoDoor(&junk,dooropen);
+        junk.tag = 703;
+        EV_DoFloor( &junk, lowerFloorToLowest );
+        break;
+// end button 2 Tails 12-03-99
+// start button 3 Tails 12-03-99
+      case 692:
+        junk.tag = 704;
+        EV_DoDoor(&junk,dooropen);
+        junk.tag = 705;
+        EV_DoFloor( &junk, lowerFloorToLowest );
+        break;
+// end button 3 Tails 12-03-99
+// start button 4 Tails 12-03-99
+      case 693:
+        junk.tag = 706;
+        EV_DoDoor(&junk,dooropen);
+        junk.tag = 707;
+        EV_DoFloor( &junk, lowerFloorToLowest );
+        break;
+// end button 4 Tails 12-03-99
+// start button 5 Tails 12-03-99
+      case 694:
+        junk.tag = 708;
+        EV_DoDoor(&junk,dooropen);
+        junk.tag = 709;
+        EV_DoFloor( &junk, lowerFloorToLowest );
+        break;
+// end button 5 Tails 12-03-99
+// start button 6 Tails 12-03-99
+      case 695:
+        junk.tag = 710;
+        EV_DoDoor(&junk,dooropen);
+        junk.tag = 711;
+        EV_DoFloor( &junk, lowerFloorToLowest );
+        break;
+// end button 6 Tails 12-03-99
+// start button 7 Tails 12-03-99
+      case 696:
+        junk.tag = 712;
+        EV_DoDoor(&junk,dooropen);
+        junk.tag = 713;
+        EV_DoFloor( &junk, lowerFloorToLowest );
+        break;
+// end button 7 Tails 12-03-99
+// start button 8 Tails 12-03-99
+      case 697:
+        junk.tag = 714;
+        EV_DoDoor(&junk,dooropen);
+        junk.tag = 715;
+        EV_DoFloor( &junk, lowerFloorToLowest );
+        break;
+// end button 8 Tails 12-03-99
+// start button 9 Tails 12-03-99
+      case 698:
+        junk.tag = 716;
+        EV_DoDoor(&junk,dooropen);
+        junk.tag = 717;
+        EV_DoFloor( &junk, lowerFloorToLowest );
+        break;
+// end button 9 Tails 12-03-99
+// start button 10 Tails 12-03-99
+      case 699:
+        junk.tag = 718;
+        EV_DoDoor(&junk,dooropen);
+        junk.tag = 719;
+        EV_DoFloor( &junk, lowerFloorToLowest );
+        break;
+// end button 10 Tails 12-03-99
+// start button 11 Tails 12-03-99
+      case 700:
+        junk.tag = 720;
+        EV_DoDoor(&junk,dooropen);
+        junk.tag = 721;
+        EV_DoFloor( &junk, lowerFloorToLowest );
+        break;
+// end button 11 Tails 12-03-99
+// start button 12 Tails 12-03-99
+      case 701:
+        junk.tag = 722;
+        EV_DoDoor(&junk,dooropen);
+        junk.tag = 723;
+        EV_DoFloor( &junk, lowerFloorToLowest );
+        break;
+// end button 12 Tails 12-03-99
+// start button 13 Tails 12-03-99
+      case 702:
+        junk.tag = 724;
+        EV_DoDoor(&junk,dooropen);
+        junk.tag = 725;
+        EV_DoFloor( &junk, lowerFloorToLowest );
+        break;
+// end button 13 Tails 12-03-99
+// start button 14 Tails 12-03-99
+      case 703:
+        junk.tag = 726;
+        EV_DoDoor(&junk,dooropen);
+        junk.tag = 727;
+        EV_DoFloor( &junk, lowerFloorToLowest );
+        break;
+// end button 14 Tails 12-03-99
+// start button 15 Tails 12-03-99
+      case 704:
+        junk.tag = 728;
+        EV_DoDoor(&junk,dooropen);
+        junk.tag = 729;
+        EV_DoFloor( &junk, lowerFloorToLowest );
+        break;
+// end button 15 Tails 12-03-99
+// start button 16 Tails 12-03-99
+      case 705:
+        junk.tag = 730;
+        EV_DoDoor(&junk,dooropen);
+        junk.tag = 731;
+        EV_DoFloor( &junk, lowerFloorToLowest );
+        break;
+// end button 16 Tails 12-03-99
+// start button 17 Tails 12-03-99
+      case 706:
+        junk.tag = 732;
+        EV_DoDoor(&junk,dooropen);
+        junk.tag = 733;
+        EV_DoFloor( &junk, lowerFloorToLowest );
+        break;
+// end button 17 Tails 12-03-99
+// start button 18 Tails 12-03-99
+      case 707:
+        junk.tag = 734;
+        EV_DoDoor(&junk,dooropen);
+        junk.tag = 735;
+        EV_DoFloor( &junk, lowerFloorToLowest );
+        break;
+// end button 18 Tails 12-03-99
+// start button 19 Tails 12-03-99
+      case 708:
+        junk.tag = 736;
+        EV_DoDoor(&junk,dooropen);
+        junk.tag = 737;
+        EV_DoFloor( &junk, lowerFloorToLowest );
+        break;
+// end button 19 Tails 12-03-99
+// start button 20 Tails 12-03-99
+      case 709:
+        junk.tag = 738;
+        EV_DoDoor(&junk,dooropen);
+        junk.tag = 739;
+        EV_DoFloor( &junk, lowerFloorToLowest );
+        break;
+// end button 20 Tails 12-03-99
+// start wooden sound Tails 05-13-2000
+      case 800:
+        break;
+// end wooden sound Tails 05-13-2000
+case 801://xmas
+break;//xmas
       default:
         CONS_Printf ("P_PlayerInSpecialSector: unknown special %i",
                      sector->special);
@@ -1316,6 +1494,7 @@ line_t*         linespeciallist[MAXLINEANIMS];
 void P_SpawnSpecials (void)
 {
     sector_t*   sector;
+    player_t*   player;
     int         i;
     int         episode;
 
@@ -1396,6 +1575,11 @@ void P_SpawnSpecials (void)
           case 17:
             P_SpawnFireFlicker(sector);
             break;
+// start ice
+          case 689:
+            player->specialsector = 689;
+            break;
+// end ice
         }
     }
 
@@ -1437,9 +1621,11 @@ void  P_WaterSector(sector_t* sector) {
     if(lines[i].special == 242 && lines[i].tag == sector->tag) {
       sector->watersector = lines[i].frontsector;
       return;
-      }
-    }
-  }
+       }
+   }
+}
+
+// Tails 05-24-2000 : Finds a ring sector
 void  P_RingSector() {
   int i;
   for(i = 0; i < numlines; i++) {

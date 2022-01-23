@@ -224,7 +224,7 @@ void P_FireWeapon (player_t* player)
     if (!P_CheckAmmo (player))
         return;
 
-//    P_SetMobjState (player->mo, S_PLAY_ATK1);
+//    P_SetMobjState (player->mo, S_PLAY_ATK1); // nono Tails 12-03-99
     newstate = weaponinfo[player->readyweapon].atkstate;
     P_SetPsprite (player, ps_weapon, newstate);
     P_NoiseAlert (player->mo, player->mo);
@@ -258,12 +258,12 @@ void A_WeaponReady ( player_t*     player,
     statenum_t  newstate;
     int         angle;
 
-    // get out of attack state
-    if (player->mo->state == &states[S_PLAY_ATK1]
-        || player->mo->state == &states[S_PLAY_ATK2] )
-    {
-        P_SetMobjState (player->mo, S_PLAY);
-    }
+    // get out of attack state nono Tails 12-03-99
+//    if (player->mo->state == &states[S_PLAY_ATK1]
+//        || player->mo->state == &states[S_PLAY_ATK2] )
+//    {
+//        P_SetMobjState (player->mo, S_PLAY);
+//    }
 
     if (player->readyweapon == wp_chainsaw
         && psp->state == &states[S_SAW])
@@ -422,7 +422,7 @@ A_GunFlash
 ( player_t*     player,
   pspdef_t*     psp )
 {
-    P_SetMobjState (player->mo, S_PLAY_ATK2);
+//    P_SetMobjState (player->mo, S_PLAY_ATK2); // nono Tails 12-03-99
     P_SetPsprite (player,ps_flash,weaponinfo[player->readyweapon].flashstate);
 }
 
@@ -623,7 +623,7 @@ void A_FirePistol ( player_t*     player,
 {
     S_StartSound (player->mo, sfx_pistol);
 
-    P_SetMobjState (player->mo, S_PLAY_ATK2);
+//    P_SetMobjState (player->mo, S_PLAY_ATK2); // nono Tails 12-03-99
     player->ammo[weaponinfo[player->readyweapon].ammo]--;
 
     P_SetPsprite (player,
@@ -656,7 +656,7 @@ void A_FireShotgun ( player_t*     player,
     int         i;
 
     S_StartSound (player->mo, sfx_shotgn);
-    P_SetMobjState (player->mo, S_PLAY_ATK2);
+//    P_SetMobjState (player->mo, S_PLAY_ATK2); //nono Tails 12-03-99
 
     player->ammo[weaponinfo[player->readyweapon].ammo]--;
     P_SetPsprite (player,
@@ -694,7 +694,7 @@ void A_FireShotgun2 ( player_t*     player,
 
 
     S_StartSound (player->mo, sfx_dshtgn);
-    P_SetMobjState (player->mo, S_PLAY_ATK2);
+//    P_SetMobjState (player->mo, S_PLAY_ATK2); //nono Tails 12-03-99
 
     player->ammo[weaponinfo[player->readyweapon].ammo]-=2;
 
@@ -740,7 +740,7 @@ void A_FireCGun ( player_t*     player,
     if (!player->ammo[weaponinfo[player->readyweapon].ammo])
         return;
 
-    P_SetMobjState (player->mo, S_PLAY_ATK2);
+//    P_SetMobjState (player->mo, S_PLAY_ATK2); // nono Tails 12-03-99
     player->ammo[weaponinfo[player->readyweapon].ammo]--;
 
     P_SetPsprite (player,

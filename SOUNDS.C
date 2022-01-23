@@ -84,7 +84,11 @@ musicinfo_t S_music[NUMMUSIC] =
     { "ultima"  , 0 },
     { "read_m"  , 0 },
     { "dm2ttl"  , 0 },
-    { "dm2int"  , 0 }
+    { "dm2int"  , 0 },
+    { "invinc"  , 0 }, // invincibility Tails
+    { "drown\0" , 0 }, // drowning Tails 03-06-2000
+    { "gmover"  , 0 }, // Tails 03-14-2000
+    { "xtlife"  , 0 }, // Tails 03-14-2000
 };
 
 
@@ -110,9 +114,9 @@ sfxinfo_t S_sfx[NUMSFX] =
   { "plasma"   , false,  64, 0, -1, -1, 0, -1},
   { "bfg\0\0\0", false,  64, 0, -1, -1, 0, -1},
   { "sawup\0"  , false,  64, 0, -1, -1, 0, -1},
-  { "sawidl"   , false, 118, 0, -1, -1, 0, -1},
+  { "sawidl"   , false,  64, 0, -1, -1, 0, -1}, // not as high a priority
   { "sawful"   , false,  64, 0, -1, -1, 0, -1},
-  { "sawhit"   , false,  64, 0, -1, -1, 0, -1},
+  { "sawhit"   , true,  120, 0, -1, -1, 0, -1}, // make sure you can hear the DING DING! Tails 03-08-2000
   { "rlaunc"   , false,  64, 0, -1, -1, 0, -1},
   { "rxplod"   , false,  70, 0, -1, -1, 0, -1},
   { "firsht"   , false,  70, 0, -1, -1, 0, -1},
@@ -175,8 +179,8 @@ sfxinfo_t S_sfx[NUMSFX] =
   { "pedth\0"  , false,  32, 0, -1, -1, 0, -1},
   { "skedth"   , false,  32, 0, -1, -1, 0, -1},
   { "posact"   ,  true, 120, 0, -1, -1, 0, -1},
-  { "bgact\0"  ,  true,  78, 0, -1, -1, 0, -1},
-  { "dmact\0"  ,  true,  78, 0, -1, -1, 0, -1},
+  { "bgact\0"  ,  true, 120, 0, -1, -1, 0, -1},
+  { "dmact\0"  ,  true, 120, 0, -1, -1, 0, -1},
   { "bspact"   ,  true, 100, 0, -1, -1, 0, -1},
   { "bspwlk"   ,  true, 100, 0, -1, -1, 0, -1},
   { "vilact"   ,  true, 100, 0, -1, -1, 0, -1},
@@ -216,7 +220,18 @@ sfxinfo_t S_sfx[NUMSFX] =
   //added:09-08-98:test water sounds
   { "gloop\0"  , false,  60, 0, -1, -1, 0, -1},
   { "splash"   , false,  64, 0, -1, -1, 0, -1},
-  { "floush"   , false,  64, 0, -1, -1, 0, -1}
+  { "floush"   , false,  64, 0, -1, -1, 0, -1}, // Tails 06-10-2000
+  //Ambient Water Sounds Tails 06-10-2000
+  { "amwtr1"   , false,  64, 0, -1, -1, 0, -1},
+  { "amwtr2"   , false,  64, 0, -1, -1, 0, -1},
+  { "amwtr3"   , false,  64, 0, -1, -1, 0, -1},
+  { "amwtr4"   , false,  64, 0, -1, -1, 0, -1},
+  { "amwtr5"   , false,  64, 0, -1, -1, 0, -1},
+  { "amwtr6"   , false,  64, 0, -1, -1, 0, -1},
+  { "amwtr7"   , false,  64, 0, -1, -1, 0, -1},
+  { "amwtr8"   , false,  64, 0, -1, -1, 0, -1},
+  { "amwtr9"   , false,  64, 0, -1, -1, 0, -1},
+
   // skin sounds free slots to add sounds at run time (Boris HACK!!!)
   // initialized to NULL
 };

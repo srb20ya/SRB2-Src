@@ -261,8 +261,8 @@ char *gamecontrolname[num_gamecontrols] =
     "forward",
     "backward",
     "strafe",
-    "straferight",
-    "strafeleft",
+    "camright", // cam right Tails 05-05-2000
+    "camleft", // cam left Tails 05-05-2000
     "speed",
     "turnleft",
     "turnright",
@@ -354,8 +354,10 @@ void G_Controldefault(void)
     gamecontrol[gc_backward   ][0]=KEY_DOWNARROW;
     gamecontrol[gc_strafe     ][0]=KEY_ALT;
     gamecontrol[gc_strafe     ][1]=KEY_MOUSE1+1;
-    gamecontrol[gc_straferight][0]='.';
-    gamecontrol[gc_strafeleft ][0]=',';
+    gamecontrol[gc_camright   ][0]='.'; // Tails
+    gamecontrol[gc_camright   ][1]='h'; // Tails
+    gamecontrol[gc_camleft    ][0]=','; // Tails
+    gamecontrol[gc_camleft    ][1]='g'; // Tails
     gamecontrol[gc_speed      ][0]=KEY_SHIFT;
     gamecontrol[gc_turnleft   ][0]=KEY_LEFTARROW;
     gamecontrol[gc_turnright  ][0]=KEY_RIGHTARROW;

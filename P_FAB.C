@@ -96,10 +96,20 @@ void P_SetTranslucencies (void)
     //mobjinfo[MT_IFOG].flags |= MF_SHADOW;           //respawn item fog
     R_SetTrans (S_IFOG, S_IFOG5, tr_transmed);
 
-    //mobjinfo[MT_MISC12].flags |= MF_SHADOW;         //soulsphere
-    R_SetTrans (S_SOUL, S_SOUL6, tr_transmed);
+    //mobjinfo[MT_EMMY].flags |= MF_SHADOW;         //emerald transies tails
+    R_SetTrans (S_EMMY1, S_EMMY2, tr_transmed); // emerald transies tails
+    R_SetTrans (S_EMMY3, S_EMMY4, tr_transmed); // emerald transies tails
+    R_SetTrans (S_EMMY5, S_EMMY6, tr_transmed); // emerald transies tails
+    R_SetTrans (S_EMMY7, S_EMMY8, tr_transmed); // emerald transies tails
+    R_SetTrans (S_EMMY9, S_EMMY10, tr_transmed); // emerald transies tails
+    R_SetTrans (S_EMMY11, S_EMMY12, tr_transmed); // emerald transies tails
+    R_SetTrans (S_EMMY13, S_EMMY14, tr_transmed); // emerald transies tails
+    R_SetTrans (S_EMMY15, S_EMMY16, tr_transmed); // emerald transies tails
+    R_SetTrans (S_EMMY17, S_EMMY18, tr_transmed); // emerald transies tails
+    R_SetTrans (S_EMMY19, S_EMMY20, tr_transmed); // emerald transies tails
+    R_SetTrans (S_EMMY21, 0, tr_transmed); // emerald transies tails
     //mobjinfo[MT_INV].flags |= MF_SHADOW;            //invulnerability
-    R_SetTrans (S_PINV, S_PINV4, tr_transmed);
+//    R_SetTrans (S_PINV, S_PINV4, tr_transmed);
     //mobjinfo[MT_INS].flags |= MF_SHADOW;            //blur artifact
     R_SetTrans (S_PINS, S_PINS4, tr_transmed);
     //mobjinfo[MT_MEGA].flags |= MF_SHADOW;           //megasphere
@@ -116,7 +126,7 @@ void P_SetTranslucencies (void)
     R_SetTrans (S_GTORCHSHRT, S_RTORCHSHRT4, tr_transfx1);
 
     // flaming barrel !!
-    R_SetTrans (S_BBAR1, S_BBAR3, tr_transfx1);
+//    R_SetTrans (S_BBAR1, S_BBAR3, tr_transfx1); Don't make the seaweed trans!! Tails 10-31-99
 
     //added:27-02-98: transparency ahoy!! people want it, they have it!!
     //mobjinfo[MT_SKULL].flags |= MF_SHADOW;           //lost soul
@@ -158,6 +168,60 @@ void P_SetTranslucencies (void)
     //Fab: lava/slime damage smoke test
     R_SetTrans (S_SMOK1, S_SMOK5, tr_transmed/*(FF_SMOKESHADE>>FF_TRANSSHIFT)*/);
     R_SetTrans (S_SPLASH1, S_SPLASH3, tr_transmor);
+
+    R_SetTrans (S_THOK1, 0, tr_transmed); // Thok! mobj Tails 12-05-99
+
+// if higher translucency needed, toy around with the other tr_trans variables
+
+    R_SetTrans (S_BORB1, S_YORB1, tr_transmed); // Tails shield translucencies 12-30-99
+    R_SetTrans (S_GORB1, S_KORB1, tr_transmed); // Tails shield translucencies 12-30-99
+    R_SetTrans (S_BORB2, S_YORB2, tr_transmed); // Tails shield translucencies 12-30-99
+    R_SetTrans (S_GORB2, S_KORB2, tr_transmed); // Tails shield translucencies 12-30-99
+    R_SetTrans (S_BORB3, S_YORB3, tr_transmed); // Tails shield translucencies 12-30-99
+    R_SetTrans (S_GORB3, S_KORB3, tr_transmed); // Tails shield translucencies 12-30-99
+    R_SetTrans (S_BORB4, S_YORB4, tr_transmed); // Tails shield translucencies 12-30-99
+    R_SetTrans (S_GORB4, S_KORB4, tr_transmed); // Tails shield translucencies 12-30-99
+    R_SetTrans (S_BORB5, S_YORB5, tr_transmed); // Tails shield translucencies 12-30-99
+    R_SetTrans (S_GORB5, S_KORB5, tr_transmed); // Tails shield translucencies 12-30-99
+    R_SetTrans (S_BORB6, S_YORB6, tr_transmed); // Tails shield translucencies 12-30-99
+    R_SetTrans (S_GORB6, S_KORB6, tr_transmed); // Tails shield translucencies 12-30-99
+    R_SetTrans (S_BORB7, S_YORB7, tr_transmed); // Tails shield translucencies 12-30-99
+    R_SetTrans (S_GORB7, S_KORB7, tr_transmed); // Tails shield translucencies 12-30-99
+    R_SetTrans (S_BORB8, S_YORB8, tr_transmed); // Tails shield translucencies 12-30-99
+    R_SetTrans (S_GORB8, S_KORB8, tr_transmed); // Tails shield translucencies 12-30-99
+
+    R_SetTrans (S_SPRK1, S_SPRK2, tr_transfir); // start trans spark tails
+    R_SetTrans (S_SPRK3, S_SPRK4, tr_transfir);
+    R_SetTrans (S_SPRK5, S_SPRK6, tr_transmed);
+    R_SetTrans (S_SPRK7, S_SPRK8, tr_transmed);
+    R_SetTrans (S_SPRK9, S_SPRK10, tr_transmor);
+    R_SetTrans (S_SPRK11, S_SPRK12, tr_transmor);
+    R_SetTrans (S_SPRK13, S_SPRK14, tr_transhi);
+    R_SetTrans (S_SPRK15, S_SPRK16, tr_transhi); // end trans spark tails
+/*
+    R_SetTrans (S_IVSP1, S_IVSP2, tr_transmed); // start invincibility spark tails
+    R_SetTrans (S_IVSP3, S_IVSP4, tr_transmed);
+    R_SetTrans (S_IVSP5, S_IVSP6, tr_transmed);
+    R_SetTrans (S_IVSP7, S_IVSP8, tr_transmed);
+    R_SetTrans (S_IVSP9, S_IVSP10, tr_transmed);
+    R_SetTrans (S_IVSP11, S_IVSP12, tr_transmed);
+    R_SetTrans (S_IVSP13, S_IVSP14, tr_transmed);
+    R_SetTrans (S_IVSP15, S_IVSP16, tr_transmed);
+    R_SetTrans (S_IVSP17, S_IVSP18, tr_transmed);
+    R_SetTrans (S_IVSP19, S_IVSP20, tr_transmed);
+    R_SetTrans (S_IVSP21, S_IVSP22, tr_transmed);
+    R_SetTrans (S_IVSP23, S_IVSP24, tr_transmed);
+    R_SetTrans (S_IVSP25, S_IVSP26, tr_transmed);
+    R_SetTrans (S_IVSP27, S_IVSP28, tr_transmed);
+    R_SetTrans (S_IVSP29, 0, tr_transmed);
+    R_SetTrans (S_IVSQ1, S_IVSQ2, tr_transmed);
+    R_SetTrans (S_IVSQ3, 0, tr_transmed); // end invincibility spark tails
+*/
+    R_SetTrans (S_SMALLBUBBLE, S_SMALLBUBBLE1, tr_transmed);
+    R_SetTrans (S_MEDIUMBUBBLE, S_MEDIUMBUBBLE1, tr_transmed);
+    R_SetTrans (S_LARGEBUBBLE, S_EXTRALARGEBUBBLE, tr_transmed);
+    R_SetTrans (S_EXTRALARGEBUBBLE1, 0, tr_transmed);
+
 }
 
 

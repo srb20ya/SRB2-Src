@@ -140,7 +140,8 @@ CV_PossibleValue_t showmessages_cons_t[]={{0,"Off"},{1,"On"},{2,"Not All"},{0,NU
 CV_PossibleValue_t crosshair_cons_t[]   ={{0,"Off"},{1,"Cross"},{2,"Angle"},{3,"Point"},{0,NULL}};
 
 consvar_t cv_crosshair      = {"crosshair"   ,"0",CV_SAVE,crosshair_cons_t};
-consvar_t cv_autorun        = {"autorun"     ,"0",CV_SAVE,CV_OnOff};
+consvar_t cv_autorun        = {"autorun"     ,"1",CV_SAVE,CV_OnOff};// Tails 04-22-2000
+consvar_t cv_analog        = {"analog"     ,"0",CV_SAVE,CV_OnOff};// Tails 04-22-2000
 consvar_t cv_invertmouse    = {"invertmouse" ,"0",CV_SAVE,CV_OnOff};
 consvar_t cv_alwaysfreelook = {"alwaysmlook" ,"0",CV_SAVE,CV_OnOff};
 consvar_t cv_showmessages   = {"showmessages","1",CV_SAVE | CV_CALL | CV_NOINIT,showmessages_cons_t,ShowMessage_OnChange};
@@ -288,7 +289,8 @@ short G_ClipAimingPitch (int* aiming)
 
     //note: the current software mode implementation doesn't have true perspective
     if ( rendermode == render_soft )
-        limitangle = 732<<ANGLETOFINESHIFT;
+        limitangle = ANG90 - 10; // Tails 10-31-99 Some viewing fun, but not too far down...
+    //    limitangle = 732<<ANGLETOFINESHIFT;
     else
         limitangle = ANG90 - 1;
 
@@ -414,26 +416,35 @@ void G_BuildTiccmd (ticcmd_t* cmd, int realtics)
     // let movement keys cancel each other out
     if (strafe)
     {
-        if (turnright)
+        if (turnright) {
             side += sidemove[speed];
-        if (turnleft)
+            cmd->angleturn -= angleturn[tspeed];} // Tails 04-06-2000
+        if (turnleft)  {
             side -= sidemove[speed];
+            cmd->angleturn += angleturn[tspeed];} // Tails 04-06-2000
         
         if (!Joystick.bGamepadStyle && !cv_splitscreen.value) 
         {
             //faB: JOYAXISRANGE is supposed to be 1023 ( divide by 1024 )
             side += ( (joyxmove * sidemove[1]) >> 10 );
+            cmd->angleturn -= ( (joyxmove * angleturn[1]) >> 10 ); // Tails 04-06-2000
         }
     }
     else
     {
-        if ( turnright )
+        if ( turnright ) {
             cmd->angleturn -= angleturn[tspeed];
+          if(cv_analog.value && !(netgame || multiplayer)) // Tails 04-22-2000
+            side += sidemove[speed];} // Tails 04-06-2000
         else
-        if ( turnleft  )
+        if ( turnleft  ) {
             cmd->angleturn += angleturn[tspeed];
+          if(cv_analog.value && !(netgame || multiplayer)) // Tails 04-22-2000
+            side -= sidemove[speed];} // Tails 04-06-2000
         if ( joyxmove && !Joystick.bGamepadStyle && !cv_splitscreen.value) {
             //faB: JOYAXISRANGE should be 1023 ( divide by 1024 )
+          if(cv_analog.value && !(netgame || multiplayer)) // Tails 04-22-2000
+            side += ( (joyxmove * sidemove[1]) >> 10 ); // Tails 04-06-2000
             cmd->angleturn -= ( (joyxmove * angleturn[1]) >> 10 );        // ANALOG!
             //CONS_Printf ("joyxmove %d  angleturn %d\n", joyxmove, cmd->angleturn);
         }
@@ -460,13 +471,14 @@ void G_BuildTiccmd (ticcmd_t* cmd, int realtics)
 
 
     //added:07-02-98: some people strafe left & right with mouse buttons
-    if (gamekeydown[gamecontrol[gc_straferight][0]] ||
-        gamekeydown[gamecontrol[gc_straferight][1]])
-        side += sidemove[speed];
-    if (gamekeydown[gamecontrol[gc_strafeleft][0]] ||
-        gamekeydown[gamecontrol[gc_strafeleft][1]])
-        side -= sidemove[speed];
+    if (gamekeydown[gamecontrol[gc_camright][0]] ||
+        gamekeydown[gamecontrol[gc_camright][1]])
+  cmd->buttons |= BT_CAMRIGHT; // Tails 03-04-2000
 
+    if (gamekeydown[gamecontrol[gc_camleft][0]] ||
+        gamekeydown[gamecontrol[gc_camleft][1]])
+          cmd->buttons |= BT_CAMLEFT; // Tails 03-04-2000
+                                    
     //added:07-02-98: fire with any button/key
     if (gamekeydown[gamecontrol[gc_fire][0]] ||
         gamekeydown[gamecontrol[gc_fire][1]])
@@ -481,7 +493,6 @@ void G_BuildTiccmd (ticcmd_t* cmd, int realtics)
     if (cv_allowjump.value && (gamekeydown[gamecontrol[gc_jump][0]] ||
                                gamekeydown[gamecontrol[gc_jump][1]]))
         cmd->buttons |= BT_JUMP;
-
 
     //added:07-02-98: any key / button can trigger a weapon
     // chainsaw overrides
@@ -621,27 +632,36 @@ void G_BuildTiccmd2 (ticcmd_t* cmd, int realtics)
     // let movement keys cancel each other out
     if (strafe)
     {
-        if (turnright)
+        if (turnright) {
             side += sidemove[speed];
-        if (turnleft)
+            cmd->angleturn -= angleturn[tspeed];} // Tails 04-06-2000
+        if (turnleft) {
             side -= sidemove[speed];
+            cmd->angleturn += angleturn[tspeed];} // Tails 04-06-2000
 
         if (!Joystick.bGamepadStyle) 
         {
             //faB: JOYAXISRANGE is supposed to be 1023 ( divide by 1024 )
             side += ( (joyxmove * sidemove[1]) >> 10 );
+            cmd->angleturn -= ( (joyxmove * angleturn[1]) >> 10 ); // Tails 04-06-2000
         }
     }
     else
     {
-        if (turnright )
+        if (turnright ){
             cmd->angleturn -= angleturn[tspeed];
-        if (turnleft  )
+          if(cv_analog.value && !(netgame || multiplayer)) // Tails 04-22-2000)
+            side += sidemove[speed];} // Tails 04-06-2000
+        if (turnleft  ){
             cmd->angleturn += angleturn[tspeed];
+          if(cv_analog.value && !(netgame || multiplayer)) // Tails 04-22-2000)
+            side -= sidemove[speed];} // Tails 04-06-2000
         
         if ( joyxmove && !Joystick.bGamepadStyle ) 
         {
             //faB: JOYAXISRANGE should be 1023 ( divide by 1024 )
+          if(cv_analog.value && !(netgame || multiplayer)) // Tails 04-22-2000)
+            side += ( (joyxmove * sidemove[1]) >> 10 ); // Tails 04-06-2000
             cmd->angleturn -= ( (joyxmove * angleturn[1]) >> 10 );        // ANALOG!
             //CONS_Printf ("joyxmove %d  angleturn %d\n", joyxmove, cmd->angleturn);
         }
@@ -667,12 +687,12 @@ void G_BuildTiccmd2 (ticcmd_t* cmd, int realtics)
     }
 
     //added:07-02-98: some people strafe left & right with mouse buttons
-    if (gamekeydown[gamecontrolbis[gc_straferight][0]] ||
-        gamekeydown[gamecontrolbis[gc_straferight][1]])
-        side += sidemove[speed];
-    if (gamekeydown[gamecontrolbis[gc_strafeleft][0]] ||
-        gamekeydown[gamecontrolbis[gc_strafeleft][1]])
-        side -= sidemove[speed];
+    if (gamekeydown[gamecontrolbis[gc_camright][0]] ||
+        gamekeydown[gamecontrolbis[gc_camright][1]])
+        cmd->buttons |= BT_CAMRIGHT; // Tails 03-04-2000
+    if (gamekeydown[gamecontrolbis[gc_camleft][0]] ||
+        gamekeydown[gamecontrolbis[gc_camleft][1]])
+        cmd->buttons |= BT_CAMLEFT; // Tails 03-04-2000
 
     // buttons
 //    cmd->chatchar = HU_dequeueChatChar();
@@ -691,7 +711,6 @@ void G_BuildTiccmd2 (ticcmd_t* cmd, int realtics)
     if (cv_allowjump.value && (gamekeydown[gamecontrolbis[gc_jump][0]] ||
                                gamekeydown[gamecontrolbis[gc_jump][1]]))
         cmd->buttons |= BT_JUMP;
-
 
     //added:07-02-98: any key / button can trigger a weapon
     // chainsaw overrides
@@ -1077,6 +1096,7 @@ void G_PlayerFinishLevel (int player)
     p->fixedcolormap = 0;               // cancel ir gogles
     p->damagecount = 0;                 // no palette changes
     p->bonuscount = 0;
+    p->score = (p->timebonus + p->ringbonus + p->score); // Tails 03-12-2000
 
     //added:16-02-98: hmm.. I should reset the aiming stuff between each
     //                level and each life... maybe that sould be done
@@ -1103,9 +1123,20 @@ void G_PlayerReborn (int player)
     player_t*   p;
     int         i;
     int         frags[MAXPLAYERS];
+    int         score; // Score Tails 03-09-2000
+    int         timebonus; // Time Bonus Tails 03-10-2000
+    int         ringbonus; // Ring Bonus Tails 03-10-2000
     int         killcount;
     int         itemcount;
     int         secretcount;
+    int         lives; // Lives Tails 03-11-2000
+    int         emerald1;
+    int         emerald2;
+    int         emerald3;
+    int         emerald4; // Emeralds Tails 04-11-2000
+    int         emerald5;
+    int         emerald6;
+    int         emerald7;
 
     //from Boris
     int         skincolor;
@@ -1115,9 +1146,20 @@ void G_PlayerReborn (int player)
     int         skin;                           //Fab: keep same skin
 
     memcpy (frags,players[player].frags,sizeof(frags));
+    score = players[player].score; // Score Tails 03-09-2000
+    timebonus = players[player].timebonus; // Time Bonus Tails 03-10-2000
+    ringbonus = players[player].ringbonus; // Ring Bonus Tails 03-10-2000
     killcount = players[player].killcount;
     itemcount = players[player].itemcount;
     secretcount = players[player].secretcount;
+    lives       = players[player].lives; // Tails 03-11-2000
+    emerald1 = players[player].emerald1; // Tails 04-11-2000
+    emerald2 = players[player].emerald2; // Tails 04-11-2000
+    emerald3 = players[player].emerald3; // Tails 04-11-2000
+    emerald4 = players[player].emerald4; // Tails 04-11-2000
+    emerald5 = players[player].emerald5; // Tails 04-11-2000
+    emerald6 = players[player].emerald6; // Tails 04-11-2000
+    emerald7 = players[player].emerald7; // Tails 04-11-2000
 
     //from Boris
     skincolor = players[player].skincolor;
@@ -1130,9 +1172,20 @@ void G_PlayerReborn (int player)
     memset (p, 0, sizeof(*p));
 
     memcpy (players[player].frags, frags, sizeof(players[player].frags));
+    players[player].score     = score; // Score Tails 03-09-2000
+    players[player].timebonus = timebonus; // Time Bonus Tails 03-09-2000
+    players[player].ringbonus = ringbonus; // Ring Bonus Tails 03-10-2000
     players[player].killcount = killcount;
     players[player].itemcount = itemcount;
     players[player].secretcount = secretcount;
+    players[player].lives = lives; // Tails 03-11-2000
+    players[player].emerald1 = emerald1; // Tails 04-11-2000
+    players[player].emerald2 = emerald2; // Tails 04-11-2000
+    players[player].emerald3 = emerald3; // Tails 04-11-2000
+    players[player].emerald4 = emerald4; // Tails 04-11-2000
+    players[player].emerald5 = emerald5; // Tails 04-11-2000
+    players[player].emerald6 = emerald6; // Tails 04-11-2000
+    players[player].emerald7 = emerald7; // Tails 04-11-2000
 
     // save player config truth reborn
     players[player].skincolor = skincolor;
@@ -1144,9 +1197,9 @@ void G_PlayerReborn (int player)
     p->usedown = p->attackdown = true;  // don't do anything immediately
     p->playerstate = PST_LIVE;
     p->health = initial_health;
-    p->readyweapon = p->pendingweapon = wp_pistol;
-    p->weaponowned[wp_fist] = true;
-    p->weaponowned[wp_pistol] = true;
+    p->readyweapon = p->pendingweapon = wp_fist;
+    p->weaponowned[wp_fist] = true; // Tails 11-06-99
+    p->weaponowned[wp_pistol] = false; // Tails 11-06-99
     p->ammo[am_clip] = initial_bullets;
 
     // Boris stuff
@@ -1378,7 +1431,7 @@ void G_SecretExitLevel (void)
 {
     // IF NO WOLF3D LEVELS, NO SECRET EXIT!
     if ( (gamemode == commercial)
-      && (W_CheckNumForName("map31")<0))
+      && (W_CheckNumForName("map15")<0))//xmas
         secretexit = false;
     else
         secretexit = true;
@@ -1417,19 +1470,19 @@ void G_DoCompleted (void)
     // wminfo.next is 0 biased, unlike gamemap
     if ( gamemode == commercial)
     {
-        if (secretexit)
-            switch(gamemap)
-            {
-              case 15: wminfo.next = 30; break;
-              case 31: wminfo.next = 31; break;
-            }
-        else
-            switch(gamemap)
-            {
-              case 31:
-              case 32: wminfo.next = 15; break;
-              default: wminfo.next = gamemap;
-            }
+        if (secretexit)//xmas
+            switch(gamemap)//xmas
+            {//xmas
+              case 9: wminfo.next = 14; break;//xmas
+              case 15: wminfo.next = 15; break;//xmas
+            }//xmas
+        else//xmas
+            switch(gamemap)//xmas
+            {//xmas
+              case 15://xmas
+              case 16: wminfo.next = 9; break;//xmas
+              default: wminfo.next = gamemap;//xmas
+            }//xmas
     }
     else
     {
@@ -1471,6 +1524,9 @@ void G_DoCompleted (void)
     for (i=0 ; i<MAXPLAYERS ; i++)
     {
         wminfo.plyr[i].in = playeringame[i];
+        wminfo.plyr[i].sscore = players[i].fscore; // show da score man! Tails 03-09-2000
+        wminfo.plyr[i].stimeb = players[i].timebonus; // Time Bonus Tails 03-10-2000
+        wminfo.plyr[i].sringb = players[i].ringbonus; // Ring Bonus Tails 03-10-2000
         wminfo.plyr[i].skills = players[i].killcount;
         wminfo.plyr[i].sitems = players[i].itemcount;
         wminfo.plyr[i].ssecret = players[i].secretcount;
@@ -1505,18 +1561,18 @@ void G_WorldDone (void)
     {
         switch (gamemap)
         {
-          case 15:
-          case 31:
-            if (!secretexit)
-                break;
-          case 6:
-          case 11:
-          case 20:
-          case 30:
-            F_StartFinale ();
-            break;
-        }
-    }
+          case 9://xmas
+          case 15://xmas
+            if (!secretexit)//xmas
+                break;//xmas
+          case 1://xmas
+          case 5://xmas
+          case 6://xmas
+          case 10://xmas
+            F_StartFinale ();//xmas
+            break;//xmas
+        }//xmas
+    }//xmas
 }
 
 void G_DoWorldDone (void)
@@ -1738,6 +1794,51 @@ void G_DeferedInitNew (skill_t skill, char* mapname)
     automapactive = false;
     viewactive    = true;
 
+// start set lives/continues via game skill Tails 03-11-2000
+
+players[0].emerald1 = false;
+players[0].emerald2 = false;
+players[0].emerald3 = false;
+players[0].emerald4 = false;
+players[0].emerald5 = false;
+players[0].emerald6 = false;
+players[0].emerald7 = false;
+
+if (skill == sk_nightmare)
+{
+players[0].lives = 1;
+players[0].continues = 0;
+}
+
+if (skill == sk_hard)
+{
+players[0].lives = 3;
+players[0].continues = 1;
+}
+
+if (skill == sk_medium)
+{
+players[0].lives = 5;
+players[0].continues = 2;
+}
+
+if (skill == sk_easy)
+{
+players[0].lives = 6;
+players[0].continues = 3;
+}
+
+if (skill == sk_baby)
+{
+players[0].lives = 9;
+players[0].continues = 5;
+}
+
+// end set lives/continues via game skill Tails 03-11-2000
+
+players[0].score = 0; // Set score to 0 Tails 03-10-2000
+players[0].timebonus = players[0].ringbonus = 0; // Reset the bonus counters Tails 03-10-2000
+
     nomonsters    = false;
     CV_SetValue(&cv_deathmatch,0);
     CV_SetValue(&cv_fastmonsters,0);
@@ -1803,9 +1904,54 @@ void G_InitNew (skill_t skill, char* mapname)
     }
 
     // force players to be initialized upon first level load
-    for (i=0 ; i<MAXPLAYERS ; i++)
+    for (i=0 ; i<MAXPLAYERS ; i++){
         players[i].playerstate = PST_REBORN;
 
+players[i].emerald1 = false;
+players[i].emerald2 = false;
+players[i].emerald3 = false;
+players[i].emerald4 = false;
+players[i].emerald5 = false;
+players[i].emerald6 = false;
+players[i].emerald7 = false;
+
+// start set lives/continues via game skill Tails 03-11-2000
+
+if (skill == sk_nightmare)
+{
+players[i].lives = 1;
+players[i].continues = 0;
+}
+
+if (skill == sk_hard)
+{
+players[i].lives = 3;
+players[i].continues = 1;
+}
+
+if (skill == sk_medium)
+{
+players[i].lives = 5;
+players[i].continues = 2;
+}
+
+if (skill == sk_easy)
+{
+players[i].lives = 6;
+players[i].continues = 3;
+}
+
+if (skill == sk_baby)
+{
+players[i].lives = 9;
+players[i].continues = 5;
+}
+
+// end set lives/continues via game skill Tails 03-11-2000
+
+players[i].score = 0; // Set score to 0 Tails 03-10-2000
+players[i].timebonus = players[i].ringbonus = 0; // Reset the bonus counters Tails 03-10-2000
+}
     // for internal maps only
     if (FIL_CheckExtension(mapname))
     {

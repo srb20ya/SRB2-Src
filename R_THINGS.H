@@ -67,6 +67,7 @@ typedef struct
     char        name[SKINNAMESIZE+1];   // short descriptive name of the skin
     spritedef_t spritedef;
     char        faceprefix[4];          // 3 chars+'\0', default is "STF"
+    char        typechar[1]; // character type identification Tails 03-01-2000
 
     // specific sounds per skin
     short       soundsid[NUMSKINSOUNDS]; // sound # in S_sfx table

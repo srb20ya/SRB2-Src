@@ -172,6 +172,10 @@ typedef enum
     mus_read_m,
     mus_dm2ttl,
     mus_dm2int,
+    mus_invinc, // invincibility Tails
+    mus_drown, // drowning Tails 03-06-2000
+    mus_gmover, // Tails 03-14-2000
+    mus_xtlife, // Tails 03-14-2000
     NUMMUSIC
 } musicenum_t;
 
@@ -299,6 +303,15 @@ typedef enum
     sfx_gloop,
     sfx_splash,
     sfx_floush,
+    sfx_amwtr1,
+    sfx_amwtr2,
+    sfx_amwtr3,
+    sfx_amwtr4,
+    sfx_amwtr5,
+    sfx_amwtr6,
+    sfx_amwtr7,
+    sfx_amwtr8,
+    sfx_amwtr9,
 
     // free slots for S_AddSoundFx() at run-time --------------------
     sfx_freeslot0,

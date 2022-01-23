@@ -143,14 +143,14 @@ void R_RecalcFuzzOffsets (void)
 char *Color_Names[MAXSKINCOLORS]={
    "Green",
    "Gray" ,
-   "Brown",
+   "Peach", // tails 02-19-2000
    "Red"  ,
-   "light gray" ,
-   "light brown",
-   "light red"  ,
-   "light blue" ,
+   "Silver" , // tails 02-19-2000
+   "Orange", // tails 02-19-2000
+   "Pink"  , // tails 02-19-2000
+   "Light blue" ,
    "Blue"       ,
-   "Yellow"     ,
+   "Army"     , // tails 02-19-2000
    "Beige"
 };
 
@@ -191,13 +191,13 @@ void R_InitTranslationTables (void)
         {
             // map green ramp to gray, brown, red
             translationtables [i      ] = 0x60 + (i&0xf);
-            translationtables [i+  256] = 0x40 + (i&0xf);
+            translationtables [i+  256] = 0x30 + (i&0xf); // Peach // Tails 02-19-2000
             translationtables [i+2*256] = 0x20 + (i&0xf);
 
             // added 9-2-98
-            translationtables [i+3*256] = 0x58 + (i&0xf); // light gray
-            translationtables [i+4*256] = 0x38 + (i&0xf); // light brown
-            translationtables [i+5*256] = 0xb0 + (i&0xf); // light red
+            translationtables [i+3*256] = 0x50 + (i&0xf); // silver // tails 02-19-2000
+            translationtables [i+4*256] = 0xd0 + (i&0xf); // orange // tails 02-19-2000
+            translationtables [i+5*256] = 0x10 + (i&0xf); // pink // tails 02-19-2000
             translationtables [i+6*256] = 0xc0 + (i&0xf); // light blue
 
             if ((i&0xf) <9)
@@ -206,9 +206,9 @@ void R_InitTranslationTables (void)
                translationtables [i+7*256] = 0xf0-9 + (i&0xf);
 
             if ((i&0xf) <8)
-               translationtables [i+8*256] = 0xe0 + (i&0xf);   // yellow
+               translationtables [i+8*256] = 0x98 + (i&0xf);   // army // Tails 02-19-2000
             else
-               translationtables [i+8*256] = 0xa0-8 + (i&0xf);
+               translationtables [i+8*256] = 0x90-8 + (i&0xf);
 
             translationtables [i+9*256] = 0x80 + (i&0xf);     // beige
 

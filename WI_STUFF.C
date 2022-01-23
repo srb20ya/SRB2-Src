@@ -47,8 +47,8 @@
 #define SP_STATSX               50
 #define SP_STATSY               50
 
-#define SP_TIMEX                16
-#define SP_TIMEY                (BASEVIDHEIGHT-32)
+#define SP_TIMEX                17 // Tails 03-14-2000
+#define SP_TIMEY                26 //(BASEVIDHEIGHT-32) // Tails 03-14-2000
 
 
 // NET GAME STUFF
@@ -286,11 +286,15 @@ static int              bcnt;
 // signals to refresh everything for one frame
 static int              firstrefresh;
 
-static int              cnt_kills[MAXPLAYERS];
-static int              cnt_items[MAXPLAYERS];
-static int              cnt_secret[MAXPLAYERS];
+static int              cnt_fscore[MAXPLAYERS]; // Tails 03-14-2000
+static int              cnt_score[MAXPLAYERS]; // Score Tails 03-09-2000
+static int              cnt_timebonus[MAXPLAYERS]; // Time Bonus Tails 03-10-2000
+static int              cnt_ringbonus[MAXPLAYERS]; // Ring Bonus Tails 03-10-2000
+//static int              cnt_kills[MAXPLAYERS];
+//static int              cnt_items[MAXPLAYERS];
+//static int              cnt_secret[MAXPLAYERS];
 static int              cnt_time;
-static int              cnt_par;
+//static int              cnt_par;
 static int              cnt_pause;
 
 // # of commercial levels
@@ -335,10 +339,11 @@ static patch_t*         kills;
 static patch_t*         secret;
 static patch_t*         items;
 static patch_t*         frags;
+static patch_t*         fscore; // Tails 03-14-2000
 
 // Time sucks.
 static patch_t*         time;
-static patch_t*         par;
+//static patch_t*         par;
 static patch_t*         sucks;
 
 // "killers", "victims"
@@ -646,7 +651,7 @@ WI_drawPercent
     if (p < 0)
         return;
 
-    V_DrawScaledPatch(x, y, FB, percent);
+//    V_DrawScaledPatch(x, y, FB, percent);
     WI_drawNum(x, y, p, -1);
 }
 
@@ -1290,7 +1295,13 @@ void WI_initNetgameStats(void)
         if (!playeringame[i])
             continue;
 
-        cnt_kills[i] = cnt_items[i] = cnt_secret[i] = cnt_frags[i] = 0;
+        cnt_fscore[i] = (plrs[i].sscore);  // Tails 03-14-2000
+        cnt_score[i] = (plrs[i].sscore); // Score Tails 03-09-2000
+        cnt_timebonus[i] = (plrs[i].stimeb); // Time Bonus Tails 03-10-2000
+        cnt_ringbonus[i] = (plrs[i].sringb); // Ring Bonus Tails 03-10-2000
+
+//        cnt_kills[i] = 
+// cnt_items[i] = cnt_secret[i] = cnt_frags[i] = 0;
 
         dofrags += ST_PlayerFrags(i);
     }
@@ -1321,9 +1332,13 @@ void WI_updateNetgameStats(void)
             if (!playeringame[i])
                 continue;
 
-            cnt_kills[i] = (plrs[i].skills * 100) / wbs->maxkills;
-            cnt_items[i] = (plrs[i].sitems * 100) / wbs->maxitems;
-            cnt_secret[i] = (plrs[i].ssecret * 100) / wbs->maxsecret;
+            cnt_fscore[i] = (plrs[i].sscore + plrs[i].stimeb + plrs[i].sringb); // Tails 03-14-2000
+            cnt_score[i] = (plrs[i].sscore + plrs[i].stimeb + plrs[i].sringb); // Score Tails 03-09-2000
+            cnt_timebonus[i] = 0; // Time Bonus Tails 03-10-2000
+            cnt_ringbonus[i] = 0; // Ring Bonus Tails 03-10-2000
+//            cnt_kills[i] = (plrs[i].skills * 100) / wbs->maxkills;
+//            cnt_items[i] = (plrs[i].sitems * 100) / wbs->maxitems;
+//            cnt_secret[i] = (plrs[i].ssecret * 100) / wbs->maxsecret;
 
             if (dofrags)
                 cnt_frags[i] = ST_PlayerFrags(i);
@@ -1334,7 +1349,7 @@ void WI_updateNetgameStats(void)
 
     if (ng_state == 2)
     {
-        if (!(bcnt&3))
+        if (!(bcnt&1)) // count sound faster! Tails 03-10-2000
             S_StartSound(0, sfx_pistol);
 
         stillticking = false;
@@ -1344,10 +1359,30 @@ void WI_updateNetgameStats(void)
             if (!playeringame[i])
                 continue;
 
-            cnt_kills[i] += 2;
+              cnt_fscore[i] += 111; // Tails 03-14-2000
+              cnt_score[i] += 111; // Score Tails 03-09-2000
+//            cnt_kills[i] += 2;
+              cnt_timebonus[i] -= 111; // Time Bonus Tails 03-10-2000
+              cnt_ringbonus[i] -= 111; // Ring Bonus Tails 03-10-2000
 
-            if (cnt_kills[i] >= (plrs[i].skills * 100) / wbs->maxkills)
-                cnt_kills[i] = (plrs[i].skills * 100) / wbs->maxkills;
+              if (cnt_fscore[i] >= (plrs[i].sscore + plrs[i].stimeb + plrs[i].sringb)) // Score
+                  cnt_fscore[i] = (plrs[i].sscore + plrs[i].stimeb + plrs[i].sringb);  // Tails 03-09-2000
+
+              if (cnt_score[i] >= (plrs[i].sscore + plrs[i].stimeb + plrs[i].sringb)) // Score
+                  cnt_score[i] = (plrs[i].sscore + plrs[i].stimeb + plrs[i].sringb);  // Tails 03-09-2000
+// start timebonus, ringbonus & stuff Tails 03-10-2000
+        if (cnt_timebonus[i] <= 0)
+        {
+            cnt_timebonus[i] = 0;
+        }
+
+        if (cnt_ringbonus[i] <= 0)
+        {
+            cnt_ringbonus[i] = 0;
+        }
+// end timebonus, ringbonus & stuff Tails 03-10-2000
+//            if (cnt_kills[i] >= (plrs[i].skills * 100) / wbs->maxkills)
+//                cnt_kills[i] = (plrs[i].skills * 100) / wbs->maxkills;
             else
                 stillticking = true;
         }
@@ -1355,7 +1390,8 @@ void WI_updateNetgameStats(void)
         if (!stillticking)
         {
             S_StartSound(0, sfx_barexp);
-            ng_state++;
+            ng_state = 10; // Only need round once Tails 03-10-2000
+//            ng_state++;
         }
     }
     else if (ng_state == 4)
@@ -1370,9 +1406,9 @@ void WI_updateNetgameStats(void)
             if (!playeringame[i])
                 continue;
 
-            cnt_items[i] += 2;
-            if (cnt_items[i] >= (plrs[i].sitems * 100) / wbs->maxitems)
-                cnt_items[i] = (plrs[i].sitems * 100) / wbs->maxitems;
+//            cnt_items[i] += 2;
+//            if (cnt_items[i] >= (plrs[i].sitems * 100) / wbs->maxitems)
+//                cnt_items[i] = (plrs[i].sitems * 100) / wbs->maxitems;
             else
                 stillticking = true;
         }
@@ -1394,12 +1430,12 @@ void WI_updateNetgameStats(void)
             if (!playeringame[i])
                 continue;
 
-            cnt_secret[i] += 2;
+//            cnt_secret[i] += 2;
 
-            if (cnt_secret[i] >= (plrs[i].ssecret * 100) / wbs->maxsecret)
-                cnt_secret[i] = (plrs[i].ssecret * 100) / wbs->maxsecret;
-            else
-                stillticking = true;
+//            if (cnt_secret[i] >= (plrs[i].ssecret * 100) / wbs->maxsecret)
+//                cnt_secret[i] = (plrs[i].ssecret * 100) / wbs->maxsecret;
+//            else
+//                stillticking = true;
         }
 
         if (!stillticking)
@@ -1410,7 +1446,7 @@ void WI_updateNetgameStats(void)
     }
     else if (ng_state == 8)
     {
-        if (!(bcnt&3))
+        if (!(bcnt&1)) // count sound faster! Tails 03-10-2000
             S_StartSound(0, sfx_pistol);
 
         stillticking = false;
@@ -1474,8 +1510,14 @@ void WI_drawNetgameStats(void)
     WI_drawLF();
 
     // draw stat titles (top line)
-    V_DrawScaledPatch(NG_STATSX+NG_SPACINGX-SHORT(kills->width),
+
+// start draw the TOTAL Tails 03-10-2000
+    V_DrawScaledPatch(NG_STATSX+5*NG_SPACINGX-SHORT(kills->width),
                 NG_STATSY, FB, kills);
+// end draw the TOTAL Tails 03-10-2000
+
+//    V_DrawScaledPatch(NG_STATSX+NG_SPACINGX-SHORT(kills->width),
+//                NG_STATSY, FB, kills);
 
     V_DrawScaledPatch(NG_STATSX+2*NG_SPACINGX-SHORT(items->width),
                 NG_STATSY, FB, items);
@@ -1508,9 +1550,14 @@ void WI_drawNetgameStats(void)
             V_DrawScaledPatch(x-SHORT(stpb->width), y, FB, star);
 
         x += NG_SPACINGX;
-        WI_drawPercent(x-pwidth, y+10, cnt_kills[i]);   x += NG_SPACINGX;
-        WI_drawPercent(x-pwidth, y+10, cnt_items[i]);   x += NG_SPACINGX;
-        WI_drawPercent(x-pwidth, y+10, cnt_secret[i]);  x += NG_SPACINGX;
+        WI_drawPercent(x-pwidth, y+10, cnt_timebonus[i]);   x += NG_SPACINGX; // Time Bonus Tails 03-09-2000
+        WI_drawPercent(x-pwidth, y+10, cnt_ringbonus[i]);   x += NG_SPACINGX; // Ring Bonus Tails 03-09-2000
+        WI_drawPercent(x-pwidth, y+10, cnt_score[i]);   x += NG_SPACINGX; // Score Tails 03-09-2000
+        WI_drawPercent(128, 10, cnt_fscore[i]);   x += NG_SPACINGX; // Score Tails 03-09-2000
+
+//        WI_drawPercent(x-pwidth, y+10, cnt_kills[i]);   x += NG_SPACINGX;
+//        WI_drawPercent(x-pwidth, y+10, cnt_items[i]);   x += NG_SPACINGX;
+//        WI_drawPercent(x-pwidth, y+10, cnt_secret[i]);  x += NG_SPACINGX;
 
         if (dofrags)
             WI_drawNum(x, y+10, cnt_frags[i], -1);
@@ -1527,8 +1574,13 @@ void WI_initStats(void)
     state = StatCount;
     acceleratestage = 0;
     sp_state = 1;
-    cnt_kills[0] = cnt_items[0] = cnt_secret[0] = -1;
-    cnt_time = cnt_par = -1;
+    cnt_fscore[0] = (plrs[me].sscore); // Tails 03-14-2000
+    cnt_score[0] = (plrs[me].sscore); // Score Tails 03-09-2000
+    cnt_timebonus[0] = (plrs[me].stimeb); // Time Bonus Tails 03-10-2000
+    cnt_ringbonus[0] = (plrs[me].sringb); // Ring Bonus Tails 03-10-2000
+//    cnt_kills[0] = 
+// cnt_items[0] = cnt_secret[0] = -1;
+    cnt_time = plrs[me].stime / TICRATE; // Tails 03-14-2000
     cnt_pause = TICRATE;
 
     WI_initAnimatedBack();
@@ -1542,61 +1594,106 @@ void WI_updateStats(void)
     if (acceleratestage && sp_state != 10)
     {
         acceleratestage = 0;
-        cnt_kills[0] = (plrs[me].skills * 100) / wbs->maxkills;
-        cnt_items[0] = (plrs[me].sitems * 100) / wbs->maxitems;
-        cnt_secret[0] = (plrs[me].ssecret * 100) / wbs->maxsecret;
+        cnt_fscore[0] = (plrs[me].sscore + plrs[me].stimeb + plrs[me].sringb); // Tails 03-14-2000
+        cnt_score[0] = (plrs[me].sscore + plrs[me].stimeb + plrs[me].sringb); // Score Tails 03-09-2000
+        cnt_timebonus[0] = 0; // Time Bonus Tails 03-10-2000
+        cnt_ringbonus[0] = 0; // Ring Bonus Tails 03-10-2000
+//        cnt_kills[0] = (plrs[me].skills * 100) / wbs->maxkills;
+//        cnt_items[0] = (plrs[me].sitems * 100) / wbs->maxitems;
+//        cnt_secret[0] = (plrs[me].ssecret * 100) / wbs->maxsecret;
         cnt_time = plrs[me].stime / TICRATE;
-        cnt_par = wbs->partime / TICRATE;
+//        cnt_par = wbs->partime / TICRATE;
         S_StartSound(0, sfx_barexp);
         sp_state = 10;
     }
 
     if (sp_state == 2)
     {
-        cnt_kills[0] += 2;
+//        cnt_kills[0] += 2;
+          cnt_fscore[0] += 111; // Tails 03-14-2000
+          cnt_score[0] += 111; // Score Tails 03-09-2000
+          cnt_timebonus[0] -= 111; // Time Bonus Tails 03-10-2000
+          cnt_ringbonus[0] -= 111; // Ring Bonus Tails 03-10-2000
 
-        if (!(bcnt&3))
+        cnt_time = plrs[me].stime / TICRATE; // Tails 03-14-2000
+
+        if (!(bcnt&1)) // count sound faster! Tails 03-10-2000
             S_StartSound(0, sfx_pistol);
 
-        if (cnt_kills[0] >= (plrs[me].skills * 100) / wbs->maxkills)
+// start score, time bonus, ring bonus Tails 03-09-2000
+
+        if (cnt_fscore[0] >= (plrs[me].sscore + plrs[me].stimeb + plrs[me].sringb))
         {
-            cnt_kills[0] = (plrs[me].skills * 100) / wbs->maxkills;
-            S_StartSound(0, sfx_barexp);
-            sp_state++;
+            cnt_fscore[0] = (plrs[me].sscore + plrs[me].stimeb + plrs[me].sringb);
         }
+
+        if (cnt_score[0] >= (plrs[me].sscore + plrs[me].stimeb + plrs[me].sringb))
+        {
+            cnt_score[0] = (plrs[me].sscore + plrs[me].stimeb + plrs[me].sringb);
+//            S_StartSound(0, sfx_barexp);
+//            sp_state++;
+        }
+
+        if (cnt_timebonus[0] <= 0)
+        {
+            cnt_timebonus[0] = 0;
+//            S_StartSound(0, sfx_barexp);
+//            sp_state++;
+        }
+
+        if (cnt_ringbonus[0] <= 0)
+        {
+            cnt_ringbonus[0] = 0;
+//            S_StartSound(0, sfx_barexp);
+//            sp_state++;
+        }
+
+        if ((cnt_ringbonus[0] == 0) && (cnt_timebonus[0] == 0) && (cnt_score[0] == plrs[me].sscore + plrs[me].stimeb + plrs[me].sringb))
+        {
+            S_StartSound(0, sfx_barexp);
+            sp_state = 10;
+        }
+// end score, time bonus, ring bonus Tails 03-09-2000
+
+//        if (cnt_kills[0] >= (plrs[me].skills * 100) / wbs->maxkills)
+//        {
+//            cnt_kills[0] = (plrs[me].skills * 100) / wbs->maxkills;
+//            S_StartSound(0, sfx_barexp);
+//            sp_state++;
+//        }
     }
     else if (sp_state == 4)
     {
-        cnt_items[0] += 2;
+//        cnt_items[0] += 2;
 
         if (!(bcnt&3))
             S_StartSound(0, sfx_pistol);
 
-        if (cnt_items[0] >= (plrs[me].sitems * 100) / wbs->maxitems)
-        {
-            cnt_items[0] = (plrs[me].sitems * 100) / wbs->maxitems;
-            S_StartSound(0, sfx_barexp);
-            sp_state++;
-        }
+//        if (cnt_items[0] >= (plrs[me].sitems * 100) / wbs->maxitems)
+//        {
+//            cnt_items[0] = (plrs[me].sitems * 100) / wbs->maxitems;
+//            S_StartSound(0, sfx_barexp);
+//            sp_state++;
+//        }
     }
     else if (sp_state == 6)
     {
-        cnt_secret[0] += 2;
+//        cnt_secret[0] += 2;
 
         if (!(bcnt&3))
             S_StartSound(0, sfx_pistol);
 
-        if (cnt_secret[0] >= (plrs[me].ssecret * 100) / wbs->maxsecret)
-        {
-            cnt_secret[0] = (plrs[me].ssecret * 100) / wbs->maxsecret;
-            S_StartSound(0, sfx_barexp);
-            sp_state++;
-        }
+//        if (cnt_secret[0] >= (plrs[me].ssecret * 100) / wbs->maxsecret)
+//        {
+//            cnt_secret[0] = (plrs[me].ssecret * 100) / wbs->maxsecret;
+//            S_StartSound(0, sfx_barexp);
+//            sp_state++;
+//        }
     }
-
+/*
     else if (sp_state == 8)
     {
-        if (!(bcnt&3))
+        if (!(bcnt&1)) // count faster! Tails 03-10-2000
             S_StartSound(0, sfx_pistol);
 
         cnt_time += 3;
@@ -1616,7 +1713,7 @@ void WI_updateStats(void)
                 sp_state++;
             }
         }
-    }
+    } */
     else if (sp_state == 10)
     {
         if (acceleratestage)
@@ -1654,23 +1751,32 @@ void WI_drawStats(void)
 
     WI_drawLF();
 
-    V_DrawScaledPatch(SP_STATSX, SP_STATSY, FB, kills);
-    WI_drawPercent(BASEVIDWIDTH - SP_STATSX, SP_STATSY, cnt_kills[0]);
+//    V_DrawScaledPatch(SP_STATSX, SP_STATSY, FB, kills);
+
+//    WI_drawPercent(BASEVIDWIDTH - SP_STATSX, SP_STATSY, cnt_kills[0]);
 
     V_DrawScaledPatch(SP_STATSX, SP_STATSY+lh, FB, items);
-    WI_drawPercent(BASEVIDWIDTH - SP_STATSX, SP_STATSY+lh, cnt_items[0]);
+    WI_drawPercent(BASEVIDWIDTH - SP_STATSX, SP_STATSY+lh, cnt_timebonus[0]); // Time Bonus Tails 03-10-2000
+//    WI_drawPercent(BASEVIDWIDTH - SP_STATSX, SP_STATSY+lh, cnt_items[0]);
 
     V_DrawScaledPatch(SP_STATSX, SP_STATSY+2*lh, FB, sp_secret);
-    WI_drawPercent(BASEVIDWIDTH - SP_STATSX, SP_STATSY+2*lh, cnt_secret[0]);
+    WI_drawPercent(BASEVIDWIDTH - SP_STATSX, SP_STATSY+2*lh, cnt_ringbonus[0]); // Ring Bonus Tails 03-10-2000
+//    WI_drawPercent(BASEVIDWIDTH - SP_STATSX, SP_STATSY+2*lh, cnt_secret[0]);
+
+    V_DrawScaledPatch(SP_STATSX+20, SP_STATSY+4*lh, FB, kills);
+    WI_drawPercent(BASEVIDWIDTH - SP_STATSX, SP_STATSY+4*lh, cnt_score[0]); // Total Tails 03-10-2000
+
+    V_DrawScaledPatch(16, 10, FB, fscore);
+    WI_drawPercent(128, 10, cnt_fscore[0]); // Score Tails 03-10-2000
 
     V_DrawScaledPatch(SP_TIMEX, SP_TIMEY, FB, time);
-    WI_drawTime(BASEVIDWIDTH/2 - SP_TIMEX, SP_TIMEY, cnt_time);
+    WI_drawTime(112, 26, cnt_time); // Tails 03-14-2000
 
-    if (wbs->epsd < 3)
-    {
-        V_DrawScaledPatch(BASEVIDWIDTH/2 + SP_TIMEX, SP_TIMEY, FB, par);
-        WI_drawTime(BASEVIDWIDTH - SP_TIMEX, SP_TIMEY, cnt_par);
-    }
+//    if (wbs->epsd < 3)
+//    {
+//        V_DrawScaledPatch(BASEVIDWIDTH/2 + SP_TIMEX, SP_TIMEY, FB, par);
+//        WI_drawTime(BASEVIDWIDTH - SP_TIMEX, SP_TIMEY, cnt_par);
+//    }
 
 }
 
@@ -1716,7 +1822,10 @@ void WI_Ticker(void)
     {
         // intermission music
         if ( gamemode == commercial )
-          S_ChangeMusic(mus_dm2int, true);
+        {
+          S_ChangeMusic(mus_dm2int, false); // Tails 03-14-2000
+          I_PlayCD(23, false);
+        }
         else
           S_ChangeMusic(mus_inter, true);
     }
@@ -1750,10 +1859,42 @@ void WI_loadData(void)
     char        name[9];
 
     // choose the background of the intermission
-    if (gamemode == commercial)
-        strcpy(bgname, "INTERPIC");
-    else
-        sprintf(bgname, "WIMAP%d", wbs->epsd);
+    if (gamemode == commercial){ // Tails 12-02-99//xmas
+       if (gamemap == 1) { // Tails 12-02-99//xmas
+        strcpy(bgname, "MAP1PIC"); } // Tails 12-02-99//xmas
+       if (gamemap == 2) {//xmas
+        strcpy(bgname, "MAP2PIC"); }//xmas
+       if (gamemap == 3) {//xmas
+        strcpy(bgname, "MAP3PIC"); }//xmas
+       if (gamemap == 4) {//xmas
+        strcpy(bgname, "MAP4PIC"); }//xmas
+       if (gamemap == 5) {//xmas
+        strcpy(bgname, "MAP5PIC"); }//xmas
+       if (gamemap == 6) {//xmas
+        strcpy(bgname, "INTERPIC"); }//xmas
+       if (gamemap == 7) {//xmas
+        strcpy(bgname, "MAP7PIC"); }//xmas
+       if (gamemap == 8) {//xmas
+        strcpy(bgname, "MAP8PIC"); }//xmas
+       if (gamemap == 9) {//xmas
+        strcpy(bgname, "MAP9PIC"); }//xmas
+       if (gamemap == 10) {//xmas
+        strcpy(bgname, "MAP10PIC"); }//xmas
+       if (gamemap == 11) {//xmas
+        strcpy(bgname, "MAP11PIC"); }//xmas
+       if (gamemap == 12) {//xmas
+        strcpy(bgname, "MAP12PIC"); }//xmas
+       if (gamemap == 13) {//xmas
+        strcpy(bgname, "MAP13PIC"); }//xmas
+       if (gamemap == 14) {//xmas
+        strcpy(bgname, "MAP14PIC"); }//xmas
+       if (gamemap == 15) {//xmas
+        strcpy(bgname, "MAP15PIC"); }//xmas
+       if (gamemap == 16) {//xmas
+        strcpy(bgname, "MAP16PIC"); }}//xmas
+//       else strcpy(bgname, "INTERPIC"); } // Tails 12-02-99//xmas
+    else//xmas
+        sprintf(bgname, "WIMAP%d", wbs->epsd);//xmas
 
     if ( gamemode == retail )
     {
@@ -1852,6 +1993,8 @@ void WI_loadData(void)
     // "kills"
     kills = W_CachePatchName("WIOSTK", PU_STATIC);
 
+    fscore = W_CachePatchName("SBOFRAGS", PU_STATIC); // Tails 03-14-2000
+
     // "scrt"
     secret = W_CachePatchName("WIOSTS", PU_STATIC);
 
@@ -1878,13 +2021,13 @@ void WI_loadData(void)
     colon = W_CachePatchName("WICOLON", PU_STATIC);
 
     // "time"
-    time = W_CachePatchName("WITIME", PU_STATIC);
+    time = W_CachePatchName("SBOARMOR", PU_STATIC);
 
     // "sucks"
     sucks = W_CachePatchName("WISUCKS", PU_STATIC);
 
     // "par"
-    par = W_CachePatchName("WIPAR", PU_STATIC);
+//    par = W_CachePatchName("WIPAR", PU_STATIC);
 
     // "killers" (vertical)
     killers = W_CachePatchName("WIKILRS", PU_STATIC);
@@ -1965,7 +2108,7 @@ void WI_unloadData(void)
     Z_ChangeTag(frags, PU_CACHE);
     Z_ChangeTag(time, PU_CACHE);
     Z_ChangeTag(sucks, PU_CACHE);
-    Z_ChangeTag(par, PU_CACHE);
+//    Z_ChangeTag(par, PU_CACHE);
 
     Z_ChangeTag(victims, PU_CACHE);
     Z_ChangeTag(killers, PU_CACHE);

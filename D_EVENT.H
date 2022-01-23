@@ -49,7 +49,9 @@ typedef enum
 
     // Jump button.
     BT_JUMP             = 64,
-    BT_EXTRAWEAPON      = 128
+    BT_EXTRAWEAPON      = 128, // Tails 03-03-2000
+    BT_CAMLEFT          = 256, // Move cammy wammy left Tails 03-03-2000
+    BT_CAMRIGHT         = 512, // Move cammy wammy right Tails 03-03-2000
 } buttoncode_t;
 
 

@@ -11,21 +11,25 @@
 #include "p_mobj.h"
 
 char *sprnames[NUMSPRITES] = {
-    "TROO","SHTG","PUNG","PISG","PISF","SHTF","SHT2","CHGG","CHGF","MISG",
+    "TROO","SHTG","SHTF","SHT2","CHGG","CHGF","MISG", // no more punch or pistol Tails 11-06-99
     "MISF","SAWG","PLSG","PLSF","BFGG","BFGF","BLUD","PUFF","BAL1","BAL2",
     "PLSS","PLSE","MISL","BFS1","BFE1","BFE2","TFOG","IFOG","PLAY","POSS",
     "SPOS","VILE","FIRE","FATB","FBXP","SKEL","MANF","FATT","CPOS","SARG",
-    "HEAD","BAL7","BOSS","BOS2","SKUL","SPID","BSPI","APLS","APBX","CYBR",
+    "HEAD","BAL7","BOSS","BOS2","SKUL","SPID","BSPI","APLS","APBX","EGGM",
     "PAIN","SSWV","KEEN","BBRN","BOSF","ARM1","ARM2","BAR1","BEXP","FCAN",
     "BON1","BON2","BKEY","RKEY","YKEY","BSKU","RSKU","YSKU","STIM","MEDI",
-    "SOUL","PINV","PSTR","PINS","MEGA","SUIT","PMAP","PVIS","CLIP","AMMO",
+    "EMMY","PINV","PSTR","PINS","MEGA","SUIT","PMAP","PVIS","CLIP","AMMO",
     "ROCK","BROK","CELL","CELP","SHEL","SBOX","BPAK","BFUG","MGUN","CSAW",
     "LAUN","PLAS","SHOT","SGN2","GRTV","SMT2","GOR1","POL2","POL5","POL4", // Tails 9-30-99
     "POL3","SHTV","POL6","GOR2","GOR3","GOR4","GOR5","SMIT","COL1","COL2", // Tails 9-30-99
-    "COL3","COL4","CAND","BLTV","COL6","TRE1","TRE2","YLTV","CEYE","FSKU", // Tails 9-30-99
+    "COL3","BUBL","CAND","BLTV","COL6","TRE1","TRE2","YLTV","CEYE","FSKU", // Tails 9-30-99
     "COL5","TBLU","TGRN","TRED","SMBT","SMGT","SMRT","HDB1","HDB2","HDB3",
     "HDB4","HDB5","HDB6","POB1","POB2","BRS1","TLMP","TLP2","SMOK","SPLA",
-    "BIRD","SQRL", // Tails 10-20-99
+    "BIRD","SQRL","THOK","BORB","YORB","GORB","KORB","SPRK","IVSP","IVSQ",
+    "IVSR","IVSS","DISS","BUBP","BUBO","BUBN","BUBM","CNTA","CNTB","CNTC",
+    "CNTD","CNTE","CNTF","POPP","PRUP","BKTV","SCRA","SCRB","SCRC","SCRD",
+    "SSPK","GRAS","YSPR","WTRA","WTRB","WTRC","WTRD","WTRE","WTRF","WTRG",
+    "WTRH","SKIM","MINE","FISH","GARG", // Tails 10-20-99
     
 };
 
@@ -105,6 +109,36 @@ void A_BrainSpit();
 void A_SpawnSound();
 void A_SpawnFly();
 void A_BrainExplode();
+void A_BlueShield(); // Obtained Blue Shield Tails 12-05-99
+void A_YellowShield(); // Obtained Yellow Shield Tails 03-15-2000
+void A_ShieldPos(); // Obtained Blue Shield Tails 12-05-99
+void A_RingBox(); // Obtained Ring Box Tails
+void A_SuperRingBox(); // Obtained Grey Ring Box Tails
+void A_Invincibility(); // Obtained Invincibility Box Tails
+void A_SuperSneakers(); // Obtained Super Sneakers Box Tails
+void A_BunnyHop(); // have bunny hop tails
+void A_BubbleSpawn(); // Randomly spawn bubbles Tails 03-07-2000
+void A_BubbleRise(); // Bubbles float to surface Tails 03-07-2000
+void A_ExtraLife(); // Extra Life Tails 03-12-2000
+void A_BlackShield(); // Obtained Black Shield Tails 04-08-2000
+void A_GreenShield(); // Obtained Green Shield Tails 04-08-2000
+void A_ScoreRise(); // Rise the score logo Tails 04-16-2000
+void A_RingChase(); // ring chase tails (What the heck does this do?) 02-27-2000
+void A_Step(); // Environmental steps Tails 05-12-2000
+void A_AWaterA(); // Ambient Water 1
+void A_AWaterB(); // Ambient Water 2
+void A_AWaterC(); // Ambient Water 3
+void A_AWaterD(); // Ambient Water 4
+void A_AWaterE(); // Ambient Water 5
+void A_AWaterF(); // Ambient Water 6
+void A_AWaterG(); // Ambient Water 7
+void A_AWaterH(); // Ambient Water 8
+void A_DropMine(); // Drop Mine from Skim Tails 06-13-2000
+void A_GreenLook(); // Green Shield player position Tails 06-28-2000
+void A_BlueLook(); // Blue Shield player position Tails 06-28-2000
+void A_YellowLook(); // Yellow Shield player position Tails 06-28-2000
+void A_BlackLook(); // Black shield player position Tails 06-28-2000
+void A_FishJump(); // Fish Jump Tails 07-03-2000
 
 
 // Fab note : frame is masked through FF_FRAMEMASK
@@ -114,22 +148,7 @@ void A_BrainExplode();
 state_t states[NUMSTATES] = {
     {SPR_TROO,0,-1,{NULL}         ,S_NULL,0,0},        // S_NULL
     {SPR_SHTG,4,0,{A_Light0}      ,S_NULL,0,0},        // S_LIGHTDONE
-    {SPR_PUNG,0,1,{A_WeaponReady} ,S_PUNCH,0,0},       // S_PUNCH
-    {SPR_PUNG,0,1,{A_Lower}       ,S_PUNCHDOWN,0,0},   // S_PUNCHDOWN
-    {SPR_PUNG,0,1,{A_Raise}       ,S_PUNCHUP,0,0},     // S_PUNCHUP
-    {SPR_PUNG,1,4,{NULL}          ,S_PUNCH2,0,0},      // S_PUNCH1
-    {SPR_PUNG,2,4,{A_Punch}       ,S_PUNCH3,0,0},      // S_PUNCH2
-    {SPR_PUNG,3,5,{NULL}          ,S_PUNCH4,0,0},      // S_PUNCH3
-    {SPR_PUNG,2,4,{NULL}          ,S_PUNCH5,0,0},      // S_PUNCH4
-    {SPR_PUNG,1,5,{A_ReFire}      ,S_PUNCH,0,0},       // S_PUNCH5
-    {SPR_PISG,0,1,{A_WeaponReady} ,S_PISTOL,0,0},      // S_PISTOL
-    {SPR_PISG,0,1,{A_Lower}       ,S_PISTOLDOWN,0,0},  // S_PISTOLDOWN
-    {SPR_PISG,0,1,{A_Raise}       ,S_PISTOLUP,0,0},    // S_PISTOLUP
-    {SPR_PISG,0,4,{NULL}          ,S_PISTOL2,0,0},     // S_PISTOL1
-    {SPR_PISG,1,6,{A_FirePistol}  ,S_PISTOL3,0,0},     // S_PISTOL2
-    {SPR_PISG,2,4,{NULL}          ,S_PISTOL4,0,0},     // S_PISTOL3
-    {SPR_PISG,1,5,{A_ReFire}      ,S_PISTOL,0,0},      // S_PISTOL4
-    {SPR_PISF,32768,7,{A_Light1}  ,S_LIGHTDONE,0,0},   // S_PISTOLFLASH
+// no more punch or pistol Tails 11-06-99
     {SPR_SHTG,0,1,{A_WeaponReady} ,S_SGUN,0,0},        // S_SGUN
     {SPR_SHTG,0,1,{A_Lower}       ,S_SGUNDOWN,0,0},    // S_SGUNDOWN
     {SPR_SHTG,0,1,{A_Raise}       ,S_SGUNUP,0,0},      // S_SGUNUP
@@ -261,90 +280,88 @@ state_t states[NUMSTATES] = {
     {SPR_IFOG,32770,6,{NULL},S_IFOG4,0,0},      // S_IFOG3
     {SPR_IFOG,32771,6,{NULL},S_IFOG5,0,0},      // S_IFOG4
     {SPR_IFOG,32772,6,{NULL},S_NULL,0,0},       // S_IFOG5
-    {SPR_PLAY,0,-1,{NULL},S_NULL,0,0},  // S_PLAY // Tails 9-28-99 stand
-    {SPR_PLAY,1,2,{NULL},S_PLAY_RUN2,0,0},      // S_PLAY_RUN1
-    {SPR_PLAY,2,2,{NULL},S_PLAY_RUN3,0,0},      // S_PLAY_RUN2
-    {SPR_PLAY,3,2,{NULL},S_PLAY_RUN4,0,0},      // S_PLAY_RUN3
-    {SPR_PLAY,4,2,{NULL},S_PLAY_RUN5,0,0},      // S_PLAY_RUN4 // Tails 9-14-99
-    {SPR_PLAY,5,2,{NULL},S_PLAY_RUN6,0,0},      // S_PLAY_RUN5 // Tails 9-14-99
-    {SPR_PLAY,6,2,{NULL},S_PLAY_RUN7,0,0},      // S_PLAY_RUN6 // Tails 9-14-99
-    {SPR_PLAY,7,2,{NULL},S_PLAY_RUN8,0,0},      // S_PLAY_RUN7 // Tails 9-14-99
-    {SPR_PLAY,8,2,{NULL},S_PLAY_RUN1,0,0},      // S_PLAY_RUN8 // Tails 9-14-99
-    {SPR_PLAY,9,4,{NULL},S_PLAY_ATK2,0,0},  // S_PLAY_ATK1 // Tails 9-28-99  special
-    {SPR_PLAY,10,4,{NULL},S_PLAY_ATK1,0,0},  // S_PLAY_ATK2 // Tails 9-28-99  special
-    {SPR_PLAY,11,1,{NULL},S_PLAY_ATK4,0,0},  // S_PLAY_ATK3 // Tails 9-14-99
-    {SPR_PLAY,12,1,{NULL},S_PLAY_ATK5,0,0},  // S_PLAY_ATK4 // Tails 9-14-99
-    {SPR_PLAY,13,1,{NULL},S_PLAY_ATK6,0,0},  // S_PLAY_ATK5 // Tails 9-14-99
-    {SPR_PLAY,14,1,{NULL},S_PLAY_ATK7,0,0},  // S_PLAY_ATK6 // Tails 9-14-99
-    {SPR_PLAY,15,1,{NULL},S_PLAY_ATK8,0,0},  // S_PLAY_ATK7 // Tails 9-14-99
-    {SPR_PLAY,16,1,{NULL},S_PLAY_ATK9,0,0},  // S_PLAY_ATK8 // Tails 9-14-99
-    {SPR_PLAY,17,1,{NULL},S_PLAY_ATK10,0,0},  // S_PLAY_ATK9 // Tails 9-14-99
-    {SPR_PLAY,18,1,{NULL},S_PLAY_ATK11,0,0},  // S_PLAY_ATK10 // Tails 9-14-99
-    {SPR_PLAY,19,1,{NULL},S_PLAY_ATK3,0,0},  // S_PLAY_ATK11 // Tails 9-14-99
-    {SPR_PLAY,20,1,{NULL},S_PLAY_ATK3,0,0},  // S_PLAY_ATK12 // Tails 9-14-99
-    {SPR_PLAY,20,24,{NULL},S_PLAY_PAIN2,0,0},     // S_PLAY_PAIN // Tails 9-14-99
-    {SPR_PLAY,21,24,{A_Pain},S_PLAY,0,0}, // S_PLAY_PAIN2 // Tails 9-14-99
-    {SPR_PLAY,22,8,{NULL},S_PLAY_DIE2,0,0},     // S_PLAY_DIE1 // Tails 9-14-99
-    {SPR_PLAY,23,7,{A_PlayerScream},S_PLAY_DIE3,0,0},   // S_PLAY_DIE2 // Tails 9-14-99
-    {SPR_PLAY,24,6,{A_Fall},S_PLAY_DIE4,0,0},   // S_PLAY_DIE3 // Tails 9-14-99
-    {SPR_PLAY,25,5,{NULL},S_PLAY_DIE5,0,0},    // S_PLAY_DIE4 // Tails 9-14-99
-    {SPR_PLAY,26,5,{NULL},S_PLAY_DIE6,0,0},    // S_PLAY_DIE5 // Tails 9-14-99
-    {SPR_PLAY,27,5,{NULL},S_PLAY_DIE7,0,0},    // S_PLAY_DIE6 // Tails 9-14-99
-    {SPR_PLAY,28,2,{NULL},S_PLAY_DIE8,0,0},    // S_PLAY_DIE7 // Tails 9-14-99
-    {SPR_PLAY,28,2,{NULL},S_PLAY_DIE9,0,0},    // S_PLAY_DIE8 // Tails 9-14-99
-    {SPR_PLAY,28,2,{NULL},S_PLAY_DIE10,0,0},    // S_PLAY_DIE9 // Tails 9-14-99
-    {SPR_PLAY,28,-1,{NULL},S_NULL,0,0}, // S_PLAY_DIE10 // Tails 9-14-99
-    {SPR_POSS,0,10,{A_Look},S_POSS_STND2,0,0},  // S_POSS_STND
-    {SPR_POSS,1,10,{A_Look},S_POSS_STND,0,0},   // S_POSS_STND2
-    {SPR_POSS,0,4,{A_Chase},S_POSS_RUN2,0,0},   // S_POSS_RUN1
-    {SPR_POSS,0,4,{A_Chase},S_POSS_RUN3,0,0},   // S_POSS_RUN2
-    {SPR_POSS,1,4,{A_Chase},S_POSS_RUN4,0,0},   // S_POSS_RUN3
-    {SPR_POSS,1,4,{A_Chase},S_POSS_RUN5,0,0},   // S_POSS_RUN4
-    {SPR_POSS,2,4,{A_Chase},S_POSS_RUN6,0,0},   // S_POSS_RUN5
-    {SPR_POSS,2,4,{A_Chase},S_POSS_RUN7,0,0},   // S_POSS_RUN6
-    {SPR_POSS,3,4,{A_Chase},S_POSS_RUN8,0,0},   // S_POSS_RUN7
-    {SPR_POSS,3,4,{A_Chase},S_POSS_RUN1,0,0},   // S_POSS_RUN8
-    {SPR_POSS,4,10,{A_FaceTarget},S_POSS_ATK2,0,0},     // S_POSS_ATK1
-    {SPR_POSS,5,8,{A_PosAttack},S_POSS_ATK3,0,0},       // S_POSS_ATK2
-    {SPR_POSS,4,8,{NULL},S_POSS_RUN1,0,0},      // S_POSS_ATK3
-    {SPR_POSS,6,3,{NULL},S_POSS_PAIN2,0,0},     // S_POSS_PAIN
-    {SPR_POSS,6,3,{A_Pain},S_POSS_RUN1,0,0},    // S_POSS_PAIN2
-    {SPR_POSS,7,5,{NULL},S_POSS_DIE2,0,0},      // S_POSS_DIE1
-    {SPR_POSS,8,5,{A_Scream},S_POSS_DIE3,0,0},  // S_POSS_DIE2
-    {SPR_POSS,9,5,{A_Fall},S_POSS_DIE4,0,0},    // S_POSS_DIE3
-    {SPR_POSS,10,5,{NULL},S_POSS_DIE5,0,0},     // S_POSS_DIE4
-    {SPR_POSS,11,-1,{NULL},S_NULL,0,0}, // S_POSS_DIE5
+    {SPR_PLAY,0,256,{NULL},S_PLAY_TAP1,0,0},  // S_PLAY // Tails 9-28-99 stand
+    {SPR_PLAY,1,16,{NULL},S_PLAY_TAP2,0,0},  // S_PLAY_TAP1 // Tails 9-28-99
+    {SPR_PLAY,2,16,{NULL},S_PLAY_TAP1,0,0},  // S_PLAY_TAP2 // Tails 9-28-99
+    {SPR_PLAY,3,4,{NULL},S_PLAY_RUN2,0,0},      // S_PLAY_RUN1
+    {SPR_PLAY,4,4,{NULL},S_PLAY_RUN3,0,0},      // S_PLAY_RUN2
+    {SPR_PLAY,5,4,{A_Step},S_PLAY_RUN4,0,0},      // S_PLAY_RUN3
+    {SPR_PLAY,6,4,{NULL},S_PLAY_RUN5,0,0},      // S_PLAY_RUN4 // Tails 9-14-99
+    {SPR_PLAY,7,4,{NULL},S_PLAY_RUN6,0,0},      // S_PLAY_RUN5 // Tails 9-14-99
+    {SPR_PLAY,8,4,{NULL},S_PLAY_RUN7,0,0},      // S_PLAY_RUN6 // Tails 9-14-99
+    {SPR_PLAY,9,4,{A_Step},S_PLAY_RUN8,0,0},      // S_PLAY_RUN7 // Tails 9-14-99
+    {SPR_PLAY,10,4,{NULL},S_PLAY_RUN1,0,0},      // S_PLAY_RUN8 // Tails 9-14-99
+    {SPR_PLAY,11,1,{NULL},S_PLAY_ATK2,0,0},  // S_PLAY_ATK1 // Tails 9-14-99
+    {SPR_PLAY,12,1,{NULL},S_PLAY_ATK3,0,0},  // S_PLAY_ATK2 // Tails 9-14-99
+    {SPR_PLAY,13,1,{NULL},S_PLAY_ATK4,0,0},  // S_PLAY_ATK3 // Tails 9-14-99
+    {SPR_PLAY,14,1,{NULL},S_PLAY_ATK1,0,0},  // S_PLAY_ATK4 // Tails 9-14-99
+    {SPR_PLAY,15,32,{NULL},S_PLAY_RUN1,0,0},  // S_PLAY_PLG1 // Tails 9-14-99
+    {SPR_PLAY,16,2,{NULL},S_PLAY_SPD2,0,0},  // S_PLAY_SPD1 // Tails 9-14-99
+    {SPR_PLAY,17,2,{A_Step},S_PLAY_SPD3,0,0},  // S_PLAY_SPD2 // Tails 9-14-99
+    {SPR_PLAY,18,2,{NULL},S_PLAY_SPD4,0,0},  // S_PLAY_SPD3 // Tails 9-14-99
+    {SPR_PLAY,19,2,{A_Step},S_PLAY_SPD1,0,0},  // S_PLAY_SPD4 // Tails 9-14-99
+    {SPR_PLAY,20,2,{NULL},S_PLAY_ABL2,0,0},  // S_PLAY_ABL1 // Tails 9-14-99
+    {SPR_PLAY,21,2,{NULL},S_PLAY_ABL1,0,0},     // S_PLAY_ABL2 // Tails 9-14-99
+    {SPR_PLAY,22,6,{NULL},S_PLAY_SPC2,0,0},     // S_PLAY_SPC1 // Tails 9-14-99
+    {SPR_PLAY,23,6,{NULL},S_PLAY_SPC3,0,0},     // S_PLAY_SPC2 // Tails 9-14-99
+    {SPR_PLAY,24,6,{NULL},S_PLAY_SPC4,0,0},     // S_PLAY_SPC3 // Tails 9-14-99
+    {SPR_PLAY,25,6,{NULL},S_PLAY_SPC1,0,0},     // S_PLAY_SPC4 // Tails 9-14-99
+    {SPR_PLAY,26,-1,{NULL},S_NULL,0,0},     // S_PLAY_MPTY // Tails 9-14-99
+    {SPR_PLAY,27,4,{NULL},S_PLAY_PAIN2,0,0},     // S_PLAY_PAIN // Tails 9-14-99
+    {SPR_PLAY,27,24,{NULL},S_PLAY,0,0}, // S_PLAY_PAIN2 // Sounds will play manually so ring loss doesnt sound on shield loss: Stealth 12-26-99
+    {SPR_PLAY,28,8,{A_PlayerScream},S_PLAY_DIE2,0,0},     // S_PLAY_DIE1 // Tails 9-14-99
+    {SPR_PLAY,28,7,{A_Fall},S_PLAY_DIE3,0,0},   // S_PLAY_DIE2 // Tails 9-14-99
+    {SPR_PLAY,28,-1,{NULL},S_NULL,0,0}, // S_PLAY_DIE3 // Tails 9-14-99
+// New Crawla Animations Tails 06-13-2000
+    {SPR_POSS,0,5,{A_Look},S_POSS_STND2,0,0},  // S_POSS_STND
+    {SPR_POSS,0,5,{A_Look},S_POSS_STND,0,0},   // S_POSS_STND2
+    {SPR_POSS,0,3,{A_Chase},S_POSS_RUN2,0,0},   // S_POSS_RUN1
+    {SPR_POSS,1,3,{A_Chase},S_POSS_RUN3,0,0},   // S_POSS_RUN2
+    {SPR_POSS,2,3,{A_Chase},S_POSS_RUN4,0,0},   // S_POSS_RUN3
+    {SPR_POSS,3,3,{A_Chase},S_POSS_RUN5,0,0},   // S_POSS_RUN4
+    {SPR_POSS,4,3,{A_Chase},S_POSS_RUN6,0,0},   // S_POSS_RUN5
+    {SPR_POSS,5,3,{A_Chase},S_POSS_RUN7,0,0},   // S_POSS_RUN6
+    {SPR_POSS,6,3,{A_Chase},S_POSS_RUN8,0,0},   // S_POSS_RUN7
+    {SPR_POSS,7,3,{A_Chase},S_POSS_RUN9,0,0},   // S_POSS_RUN8
+    {SPR_POSS,8,3,{A_Chase},S_POSS_RUN10,0,0},   // S_POSS_RUN9
+    {SPR_POSS,9,3,{A_Chase},S_POSS_RUN11,0,0},   // S_POSS_RUN10
+    {SPR_POSS,10,3,{A_Chase},S_POSS_RUN12,0,0},   // S_POSS_RUN11
+    {SPR_POSS,11,3,{A_Chase},S_POSS_RUN13,0,0},   // S_POSS_RUN12
+    {SPR_POSS,12,3,{A_Chase},S_POSS_RUN14,0,0},   // S_POSS_RUN13
+    {SPR_POSS,13,3,{A_Chase},S_POSS_RUN15,0,0},   // S_POSS_RUN14
+    {SPR_POSS,14,3,{A_Chase},S_POSS_RUN16,0,0},   // S_POSS_RUN15
+    {SPR_POSS,15,3,{A_Chase},S_POSS_RUN17,0,0},   // S_POSS_RUN16
+    {SPR_POSS,16,3,{A_Chase},S_POSS_RUN1,0,0},   // S_POSS_RUN17
+    {SPR_POSS,17,1,{A_Fall},S_POSS_DIE2,0,0},      // S_POSS_DIE1
+    {SPR_POSS,18,5,{A_Scream},S_POSS_DIE3,0,0},  // S_POSS_DIE2
+    {SPR_POSS,19,5,{NULL},S_POSS_DIE4,0,0},    // S_POSS_DIE3
+    {SPR_POSS,20,5,{NULL},S_DISS,0,0},     // S_POSS_DIE4
 // XDIE frames deleted - Tails 10-25-99
-    {SPR_POSS,10,5,{NULL},S_POSS_RAISE2,0,0},   // S_POSS_RAISE1
-    {SPR_POSS,9,5,{NULL},S_POSS_RAISE3,0,0},    // S_POSS_RAISE2
-    {SPR_POSS,8,5,{NULL},S_POSS_RAISE4,0,0},    // S_POSS_RAISE3
-    {SPR_POSS,7,5,{NULL},S_POSS_RUN1,0,0},      // S_POSS_RAISE4
-    {SPR_SPOS,0,10,{A_Look},S_SPOS_STND2,0,0},  // S_SPOS_STND
-    {SPR_SPOS,1,10,{A_Look},S_SPOS_STND,0,0},   // S_SPOS_STND2
-    {SPR_SPOS,0,3,{A_Chase},S_SPOS_RUN2,0,0},   // S_SPOS_RUN1
-    {SPR_SPOS,0,3,{A_Chase},S_SPOS_RUN3,0,0},   // S_SPOS_RUN2
-    {SPR_SPOS,1,3,{A_Chase},S_SPOS_RUN4,0,0},   // S_SPOS_RUN3
-    {SPR_SPOS,1,3,{A_Chase},S_SPOS_RUN5,0,0},   // S_SPOS_RUN4
-    {SPR_SPOS,2,3,{A_Chase},S_SPOS_RUN6,0,0},   // S_SPOS_RUN5
-    {SPR_SPOS,2,3,{A_Chase},S_SPOS_RUN7,0,0},   // S_SPOS_RUN6
-    {SPR_SPOS,3,3,{A_Chase},S_SPOS_RUN8,0,0},   // S_SPOS_RUN7
-    {SPR_SPOS,3,3,{A_Chase},S_SPOS_RUN1,0,0},   // S_SPOS_RUN8
-    {SPR_SPOS,4,10,{A_FaceTarget},S_SPOS_ATK2,0,0},     // S_SPOS_ATK1
-    {SPR_SPOS,32773,10,{A_SPosAttack},S_SPOS_ATK3,0,0}, // S_SPOS_ATK2
-    {SPR_SPOS,4,10,{NULL},S_SPOS_RUN1,0,0},     // S_SPOS_ATK3
-    {SPR_SPOS,6,3,{NULL},S_SPOS_PAIN2,0,0},     // S_SPOS_PAIN
-    {SPR_SPOS,6,3,{A_Pain},S_SPOS_RUN1,0,0},    // S_SPOS_PAIN2
-    {SPR_SPOS,7,5,{NULL},S_SPOS_DIE2,0,0},      // S_SPOS_DIE1
-    {SPR_SPOS,8,5,{A_Scream},S_SPOS_DIE3,0,0},  // S_SPOS_DIE2
-    {SPR_SPOS,9,5,{A_Fall},S_SPOS_DIE4,0,0},    // S_SPOS_DIE3
-    {SPR_SPOS,10,5,{NULL},S_SPOS_DIE5,0,0},     // S_SPOS_DIE4
-    {SPR_SPOS,11,-1,{NULL},S_NULL,0,0}, // S_SPOS_DIE5
+// New Crawla Animations Tails 06-13-2000
+    {SPR_SPOS,0,5,{A_Look},S_SPOS_STND2,0,0},  // S_SPOS_STND
+    {SPR_SPOS,0,5,{A_Look},S_SPOS_STND,0,0},   // S_SPOS_STND2
+    {SPR_SPOS,0,1,{A_Chase},S_SPOS_RUN2,0,0},   // S_SPOS_RUN1
+    {SPR_SPOS,1,1,{A_Chase},S_SPOS_RUN3,0,0},   // S_SPOS_RUN2
+    {SPR_SPOS,2,1,{A_Chase},S_SPOS_RUN4,0,0},   // S_SPOS_RUN3
+    {SPR_SPOS,3,1,{A_Chase},S_SPOS_RUN5,0,0},   // S_SPOS_RUN4
+    {SPR_SPOS,4,1,{A_Chase},S_SPOS_RUN6,0,0},   // S_SPOS_RUN5
+    {SPR_SPOS,5,1,{A_Chase},S_SPOS_RUN7,0,0},   // S_SPOS_RUN6
+    {SPR_SPOS,6,1,{A_Chase},S_SPOS_RUN8,0,0},   // S_SPOS_RUN7
+    {SPR_SPOS,7,1,{A_Chase},S_SPOS_RUN9,0,0},   // S_SPOS_RUN8
+    {SPR_SPOS,8,1,{A_Chase},S_SPOS_RUN10,0,0},   // S_SPOS_RUN9
+    {SPR_SPOS,9,1,{A_Chase},S_SPOS_RUN11,0,0},   // S_SPOS_RUN10
+    {SPR_SPOS,10,1,{A_Chase},S_SPOS_RUN12,0,0},   // S_SPOS_RUN11
+    {SPR_SPOS,11,1,{A_Chase},S_SPOS_RUN13,0,0},   // S_SPOS_RUN12
+    {SPR_SPOS,12,1,{A_Chase},S_SPOS_RUN14,0,0},   // S_SPOS_RUN13
+    {SPR_SPOS,13,1,{A_Chase},S_SPOS_RUN15,0,0},   // S_SPOS_RUN14
+    {SPR_SPOS,14,1,{A_Chase},S_SPOS_RUN16,0,0},   // S_SPOS_RUN15
+    {SPR_SPOS,15,1,{A_Chase},S_SPOS_RUN17,0,0},   // S_SPOS_RUN16
+    {SPR_SPOS,16,1,{A_Chase},S_SPOS_RUN1,0,0},   // S_SPOS_RUN17
+    {SPR_SPOS,17,1,{A_Fall},S_SPOS_DIE2,0,0},      // S_SPOS_DIE1
+    {SPR_SPOS,18,5,{A_Scream},S_SPOS_DIE3,0,0},  // S_SPOS_DIE2
+    {SPR_SPOS,19,5,{NULL},S_SPOS_DIE4,0,0},    // S_SPOS_DIE3
+    {SPR_SPOS,20,5,{NULL},S_DISS,0,0},     // S_SPOS_DIE4
 // XDIE frames deleted - Tails 10-25-99
-    {SPR_SPOS,11,5,{NULL},S_SPOS_RAISE2,0,0},   // S_SPOS_RAISE1
-    {SPR_SPOS,10,5,{NULL},S_SPOS_RAISE3,0,0},   // S_SPOS_RAISE2
-    {SPR_SPOS,9,5,{NULL},S_SPOS_RAISE4,0,0},    // S_SPOS_RAISE3
-    {SPR_SPOS,8,5,{NULL},S_SPOS_RAISE5,0,0},    // S_SPOS_RAISE4
-    {SPR_SPOS,7,5,{NULL},S_SPOS_RUN1,0,0},      // S_SPOS_RAISE5
     {SPR_VILE,0,10,{A_Look},S_VILE_STND2,0,0},  // S_VILE_STND
     {SPR_VILE,1,10,{A_Look},S_VILE_STND,0,0},   // S_VILE_STND2
     {SPR_VILE,0,2,{A_VileChase},S_VILE_RUN2,0,0},       // S_VILE_RUN1
@@ -556,10 +573,10 @@ state_t states[NUMSTATES] = {
     {SPR_TROO,6,6,{A_TroopAttack},S_TROO_RUN1,0,0},     // S_TROO_ATK3
     {SPR_TROO,7,2,{NULL},S_TROO_PAIN2,0,0},     // S_TROO_PAIN
     {SPR_TROO,7,2,{A_Pain},S_TROO_RUN1,0,0},    // S_TROO_PAIN2
-    {SPR_TROO,8,8,{NULL},S_TROO_DIE2,0,0},      // S_TROO_DIE1
+    {SPR_TROO,8,8,{A_Fall},S_TROO_DIE2,0,0},      // S_TROO_DIE1
     {SPR_TROO,9,8,{A_Scream},S_TROO_DIE3,0,0},  // S_TROO_DIE2
     {SPR_TROO,10,6,{NULL},S_TROO_DIE4,0,0},     // S_TROO_DIE3
-    {SPR_TROO,11,6,{A_Fall},S_TROO_DIE5,0,0},   // S_TROO_DIE4
+    {SPR_TROO,11,6,{NULL},S_TROO_DIE5,0,0},   // S_TROO_DIE4
     {SPR_TROO,12,-1,{NULL},S_NULL,0,0}, // S_TROO_DIE5
 // XDIE frames deleted - Tails 10-25-99
     {SPR_TROO,12,8,{NULL},S_TROO_RAISE2,0,0},   // S_TROO_RAISE1
@@ -598,22 +615,17 @@ state_t states[NUMSTATES] = {
     {SPR_HEAD,0,3,{A_Chase},S_HEAD_RUN1,0,0},   // S_HEAD_RUN1
     {SPR_HEAD,1,5,{A_FaceTarget},S_HEAD_ATK2,0,0},      // S_HEAD_ATK1
     {SPR_HEAD,2,5,{A_FaceTarget},S_HEAD_ATK3,0,0},      // S_HEAD_ATK2
-    {SPR_HEAD,3,5,{A_HeadAttack},S_HEAD_RUN1,0,0},  // S_HEAD_ATK3
-    {SPR_HEAD,3,3,{NULL},S_HEAD_PAIN2,0,0},     // S_HEAD_PAIN
-    {SPR_HEAD,3,3,{A_Pain},S_HEAD_PAIN3,0,0},   // S_HEAD_PAIN2
-    {SPR_HEAD,3,6,{NULL},S_HEAD_RUN1,0,0},      // S_HEAD_PAIN3
-    {SPR_HEAD,4,8,{NULL},S_HEAD_DIE2,0,0},      // S_HEAD_DIE1
-    {SPR_HEAD,4,8,{A_Scream},S_HEAD_DIE3,0,0},  // S_HEAD_DIE2
-    {SPR_HEAD,4,8,{NULL},S_HEAD_DIE4,0,0},      // S_HEAD_DIE3
-    {SPR_HEAD,4,8,{NULL},S_HEAD_DIE5,0,0},      // S_HEAD_DIE4
-    {SPR_HEAD,4,8,{A_Fall},S_HEAD_DIE6,0,0},   // S_HEAD_DIE5
-    {SPR_HEAD,4,-1,{NULL},S_NULL,0,0}, // S_HEAD_DIE6
-    {SPR_HEAD,4,8,{NULL},S_HEAD_RAISE2,0,0},   // S_HEAD_RAISE1
-    {SPR_HEAD,3,8,{NULL},S_HEAD_RAISE3,0,0},   // S_HEAD_RAISE2
-    {SPR_HEAD,2,8,{NULL},S_HEAD_RAISE4,0,0},    // S_HEAD_RAISE3
-    {SPR_HEAD,1,8,{NULL},S_HEAD_RAISE5,0,0},    // S_HEAD_RAISE4
-    {SPR_HEAD,0,8,{NULL},S_HEAD_RAISE6,0,0},    // S_HEAD_RAISE5
-    {SPR_HEAD,0,8,{NULL},S_HEAD_RUN1,0,0},      // S_HEAD_RAISE6
+    {SPR_HEAD,3,10,{A_HeadAttack},S_HEAD_ATK4,0,0},  // S_HEAD_ATK3
+    {SPR_HEAD,4,5,{A_FaceTarget},S_HEAD_ATK5,0,0},  // S_HEAD_ATK4
+    {SPR_HEAD,5,5,{A_FaceTarget},S_HEAD_RUN1,0,0},  // S_HEAD_ATK5
+    {SPR_HEAD,0,3,{A_Pain},S_HEAD_RUN1,0,0},   // S_HEAD_PAIN
+    {SPR_HEAD,6,5,{NULL},S_HEAD_DIE2,0,0},      // S_HEAD_DIE1
+    {SPR_HEAD,7,5,{A_Scream},S_HEAD_DIE3,0,0},  // S_HEAD_DIE2
+    {SPR_HEAD,8,5,{NULL},S_HEAD_DIE4,0,0},      // S_HEAD_DIE3
+    {SPR_HEAD,9,5,{NULL},S_HEAD_DIE5,0,0},      // S_HEAD_DIE4
+    {SPR_HEAD,10,5,{A_Fall},S_HEAD_DIE6,0,0},   // S_HEAD_DIE5
+    {SPR_HEAD,10,-1,{NULL},S_NULL,0,0}, // S_HEAD_DIE6
+// raise states for HEAD removed -- Tails
     {SPR_BAL7,32768,4,{NULL},S_BRBALL2,0,0},    // S_BRBALL1
     {SPR_BAL7,32769,4,{NULL},S_BRBALL1,0,0},    // S_BRBALL2
     {SPR_BAL7,32770,6,{NULL},S_BRBALLX2,0,0},   // S_BRBALLX1
@@ -745,7 +757,7 @@ state_t states[NUMSTATES] = {
     {SPR_BSPI,32775,8,{A_SpidRefire},S_BSPI_ATK2,0,0},  // S_BSPI_ATK4 //Tails 9-15-99
     {SPR_BSPI,8,3,{NULL},S_BSPI_PAIN2,0,0},     // S_BSPI_PAIN
     {SPR_BSPI,8,3,{A_Pain},S_BSPI_RUN1,0,0},    // S_BSPI_PAIN2
-    {SPR_BSPI,9,20,{A_Scream},S_BSPI_DIE2,0,0}, // S_BSPI_DIE1
+    {SPR_BSPI,9,20,{NULL},S_BSPI_DIE2,0,0}, // S_BSPI_DIE1 // no more scream Tails 04-18-2000
     {SPR_BSPI,10,7,{A_Fall},S_BSPI_DIE3,0,0},   // S_BSPI_DIE2
     {SPR_BSPI,11,7,{NULL},S_BSPI_DIE4,0,0},     // S_BSPI_DIE3
     {SPR_BSPI,12,7,{NULL},S_BSPI_DIE5,0,0},     // S_BSPI_DIE4
@@ -766,33 +778,40 @@ state_t states[NUMSTATES] = {
     {SPR_APBX,32770,5,{NULL},S_ARACH_PLEX4,0,0},        // S_ARACH_PLEX3
     {SPR_APBX,32771,5,{NULL},S_ARACH_PLEX5,0,0},        // S_ARACH_PLEX4
     {SPR_APBX,32772,5,{NULL},S_NULL,0,0},       // S_ARACH_PLEX5
-    {SPR_CYBR,0,10,{A_Look},S_CYBER_STND2,0,0}, // S_CYBER_STND
-    {SPR_CYBR,1,10,{A_Look},S_CYBER_STND,0,0},  // S_CYBER_STND2
-    {SPR_CYBR,0,3,{A_Hoof},S_CYBER_RUN2,0,0},   // S_CYBER_RUN1
-    {SPR_CYBR,0,3,{A_Chase},S_CYBER_RUN3,0,0},  // S_CYBER_RUN2
-    {SPR_CYBR,1,3,{A_Chase},S_CYBER_RUN4,0,0},  // S_CYBER_RUN3
-    {SPR_CYBR,1,3,{A_Chase},S_CYBER_RUN5,0,0},  // S_CYBER_RUN4
-    {SPR_CYBR,2,3,{A_Chase},S_CYBER_RUN6,0,0},  // S_CYBER_RUN5
-    {SPR_CYBR,2,3,{A_Chase},S_CYBER_RUN7,0,0},  // S_CYBER_RUN6
-    {SPR_CYBR,3,3,{A_Metal},S_CYBER_RUN8,0,0},  // S_CYBER_RUN7
-    {SPR_CYBR,3,3,{A_Chase},S_CYBER_RUN1,0,0},  // S_CYBER_RUN8
-    {SPR_CYBR,4,6,{A_FaceTarget},S_CYBER_ATK2,0,0},     // S_CYBER_ATK1
-    {SPR_CYBR,5,12,{A_CyberAttack},S_CYBER_ATK3,0,0},   // S_CYBER_ATK2
-    {SPR_CYBR,4,12,{A_FaceTarget},S_CYBER_ATK4,0,0},    // S_CYBER_ATK3
-    {SPR_CYBR,5,12,{A_CyberAttack},S_CYBER_ATK5,0,0},   // S_CYBER_ATK4
-    {SPR_CYBR,4,12,{A_FaceTarget},S_CYBER_ATK6,0,0},    // S_CYBER_ATK5
-    {SPR_CYBR,5,12,{A_CyberAttack},S_CYBER_RUN1,0,0},   // S_CYBER_ATK6
-    {SPR_CYBR,6,10,{A_Pain},S_CYBER_RUN1,0,0},  // S_CYBER_PAIN
-    {SPR_CYBR,7,10,{NULL},S_CYBER_DIE2,0,0},    // S_CYBER_DIE1
-    {SPR_CYBR,8,10,{A_Scream},S_CYBER_DIE3,0,0},        // S_CYBER_DIE2
-    {SPR_CYBR,9,10,{NULL},S_CYBER_DIE4,0,0},    // S_CYBER_DIE3
-    {SPR_CYBR,10,10,{NULL},S_CYBER_DIE5,0,0},   // S_CYBER_DIE4
-    {SPR_CYBR,11,10,{NULL},S_CYBER_DIE6,0,0},   // S_CYBER_DIE5
-    {SPR_CYBR,12,10,{A_Fall},S_CYBER_DIE7,0,0}, // S_CYBER_DIE6
-    {SPR_CYBR,13,10,{NULL},S_CYBER_DIE8,0,0},   // S_CYBER_DIE7
-    {SPR_CYBR,14,10,{NULL},S_CYBER_DIE9,0,0},   // S_CYBER_DIE8
-    {SPR_CYBR,15,30,{NULL},S_CYBER_DIE10,0,0},  // S_CYBER_DIE9
-    {SPR_CYBR,15,-1,{A_BossDeath},S_NULL,0,0},  // S_CYBER_DIE10
+    {SPR_EGGM,0,10,{A_Look},S_EGGMOBILE_STND2,0,0}, // S_EGGMOBILE_STND // Boss 1 Tails 11-29-99
+    {SPR_EGGM,1,10,{A_Look},S_EGGMOBILE_STND,0,0},  // S_EGGMOBILE_STND2 // Boss 1 Tails 11-29-99
+    {SPR_EGGM,0,3,{A_Chase},S_EGGMOBILE_RUN2,0,0},   // S_EGGMOBILE_RUN1 // Boss 1 Tails 11-29-99
+    {SPR_EGGM,1,3,{A_Chase},S_EGGMOBILE_RUN3,0,0},  // S_EGGMOBILE_RUN2 // Boss 1 Tails 11-29-99
+    {SPR_EGGM,2,3,{A_Chase},S_EGGMOBILE_RUN4,0,0},  // S_EGGMOBILE_RUN3 // Boss 1 Tails 11-29-99
+    {SPR_EGGM,3,3,{A_Chase},S_EGGMOBILE_RUN1,0,0},  // S_EGGMOBILE_RUN4 // Boss 1 Tails 11-29-99
+    {SPR_EGGM,4,6,{A_FaceTarget},S_EGGMOBILE_ATK2,0,0},     // S_EGGMOBILE_ATK1 // Boss 1 Tails 11-29-99
+    {SPR_EGGM,4,12,{A_CyberAttack},S_EGGMOBILE_RUN1,0,0},   // S_EGGMOBILE_ATK2 // Boss 1 Tails 11-29-99
+    {SPR_EGGM,5,2,{A_Pain},S_EGGMOBILE_PAIN2,0,0},  // S_EGGMOBILE_PAIN // Boss 1 Tails 11-29-99
+    {SPR_EGGM,6,2,{NULL},S_EGGMOBILE_PAIN3,0,0},  // S_EGGMOBILE_PAIN2 // Boss 1 Tails 11-29-99
+    {SPR_EGGM,5,2,{NULL},S_EGGMOBILE_PAIN4,0,0},  // S_EGGMOBILE_PAIN3 // Boss 1 Tails 11-29-99
+    {SPR_EGGM,6,2,{NULL},S_EGGMOBILE_PAIN5,0,0},  // S_EGGMOBILE_PAIN4 // Boss 1 Tails 11-29-99
+    {SPR_EGGM,5,2,{NULL},S_EGGMOBILE_PAIN6,0,0},  // S_EGGMOBILE_PAIN5 // Boss 1 Tails 11-29-99
+    {SPR_EGGM,6,2,{NULL},S_EGGMOBILE_PAIN7,0,0},  // S_EGGMOBILE_PAIN6 // Boss 1 Tails 11-29-99
+    {SPR_EGGM,5,2,{NULL},S_EGGMOBILE_PAIN8,0,0},  // S_EGGMOBILE_PAIN7 // Boss 1 Tails 11-29-99
+    {SPR_EGGM,6,2,{NULL},S_EGGMOBILE_PAIN9,0,0},  // S_EGGMOBILE_PAIN8 // Boss 1 Tails 11-29-99
+    {SPR_EGGM,5,2,{NULL},S_EGGMOBILE_PAIN10,0,0},  // S_EGGMOBILE_PAIN9 // Boss 1 Tails 11-29-99
+    {SPR_EGGM,6,2,{NULL},S_EGGMOBILE_PAIN11,0,0},  // S_EGGMOBILE_PAIN10 // Boss 1 Tails 11-29-99
+    {SPR_EGGM,5,2,{NULL},S_EGGMOBILE_PAIN12,0,0},  // S_EGGMOBILE_PAIN11 // Boss 1 Tails 11-29-99
+    {SPR_EGGM,6,2,{NULL},S_EGGMOBILE_RUN1,0,0},  // S_EGGMOBILE_PAIN12 // Boss 1 Tails 11-29-99
+    {SPR_EGGM,7,8,{A_Fall},S_EGGMOBILE_DIE2,0,0},    // S_EGGMOBILE_DIE1 // Boss 1 Tails 11-29-99
+    {SPR_EGGM,8,8,{A_Scream},S_EGGMOBILE_DIE3,0,0},        // S_EGGMOBILE_DIE2 // Boss 1 Tails 11-29-99
+    {SPR_EGGM,9,8,{A_Scream},S_EGGMOBILE_DIE4,0,0},    // S_EGGMOBILE_DIE3 // Boss 1 Tails 11-29-99
+    {SPR_EGGM,10,8,{A_Scream},S_EGGMOBILE_DIE5,0,0},   // S_EGGMOBILE_DIE4 // Boss 1 Tails 11-29-99
+    {SPR_EGGM,11,8,{A_Scream},S_EGGMOBILE_DIE6,0,0},   // S_EGGMOBILE_DIE5 // Boss 1 Tails 11-29-99
+    {SPR_EGGM,12,8,{A_Scream},S_EGGMOBILE_DIE7,0,0}, // S_EGGMOBILE_DIE6 // Boss 1 Tails 11-29-99
+    {SPR_EGGM,13,8,{A_Scream},S_EGGMOBILE_DIE8,0,0},   // S_EGGMOBILE_DIE7 // Boss 1 Tails 11-29-99
+    {SPR_EGGM,14,8,{A_Scream},S_EGGMOBILE_DIE9,0,0},   // S_EGGMOBILE_DIE8 // Boss 1 Tails 11-29-99
+    {SPR_EGGM,15,8,{A_Scream},S_EGGMOBILE_DIE10,0,0},   // S_EGGMOBILE_DIE9 // Boss 1 Tails 11-29-99
+    {SPR_EGGM,16,8,{A_Scream},S_EGGMOBILE_DIE11,0,0},   // S_EGGMOBILE_DIE10 // Boss 1 Tails 11-29-99
+    {SPR_EGGM,17,8,{A_Scream},S_EGGMOBILE_DIE12,0,0},   // S_EGGMOBILE_DIE11 // Boss 1 Tails 11-29-99
+    {SPR_EGGM,18,8,{A_Scream},S_EGGMOBILE_DIE13,0,0},   // S_EGGMOBILE_DIE12 // Boss 1 Tails 11-29-99
+    {SPR_EGGM,19,8,{A_Scream},S_EGGMOBILE_DIE14,0,0},   // S_EGGMOBILE_DIE13 // Boss 1 Tails 11-29-99
+    {SPR_EGGM,20,-1,{A_BossDeath},S_NULL,0,0},  // S_EGGMOBILE_DIE14 // Boss 1 Tails 11-29-99
     {SPR_PAIN,0,10,{A_Look},S_PAIN_STND,0,0},   // S_PAIN_STND
     {SPR_PAIN,0,3,{A_Chase},S_PAIN_RUN2,0,0},   // S_PAIN_RUN1
     {SPR_PAIN,0,3,{A_Chase},S_PAIN_RUN3,0,0},   // S_PAIN_RUN2
@@ -894,25 +913,37 @@ state_t states[NUMSTATES] = {
     {SPR_BEXP,32770,5,{NULL},S_BEXP4,0,0},      // S_BEXP3
     {SPR_BEXP,32771,10,{A_Explode},S_BEXP5,0,0},        // S_BEXP4
     {SPR_BEXP,32772,10,{NULL},S_NULL,0,0},      // S_BEXP5
-    {SPR_FCAN,32768,4,{NULL},S_BBAR2,0,0},      // S_BBAR1
-    {SPR_FCAN,32769,4,{NULL},S_BBAR3,0,0},      // S_BBAR2
-    {SPR_FCAN,32770,4,{NULL},S_BBAR1,0,0},      // S_BBAR3
-    {SPR_BON1,0,2,{NULL},S_BON1A,0,0},  // S_BON1 // Tails 9-15-99
-    {SPR_BON1,1,2,{NULL},S_BON1B,0,0},  // S_BON1A // Tails 9-15-99
-    {SPR_BON1,2,2,{NULL},S_BON1C,0,0},  // S_BON1B // Tails 9-15-99
-    {SPR_BON1,3,2,{NULL},S_BON1D,0,0},  // S_BON1C // Tails 9-15-99
-    {SPR_BON1,4,2,{NULL},S_BON1E,0,0},  // S_BON1D // Tails 9-15-99
-    {SPR_BON1,5,2,{NULL},S_BON1F,0,0},   // S_BON1E // Tails 9-15-99
-    {SPR_BON1,6,2,{NULL},S_BON1G,0,0},   // S_BON1F // Tails 9-15-99
-    {SPR_BON1,7,2,{NULL},S_BON1H,0,0},   // S_BON1G // Tails 9-15-99
-    {SPR_BON1,8,2,{NULL},S_BON1I,0,0},   // S_BON1H // Tails 9-15-99
-    {SPR_BON1,9,2,{NULL},S_BON1J,0,0},   // S_BON1I // Tails 9-15-99
-    {SPR_BON1,10,2,{NULL},S_BON1K,0,0},   // S_BON1J // Tails 9-15-99
-    {SPR_BON1,11,2,{NULL},S_BON1L,0,0},   // S_BON1K // Tails 9-15-99
-    {SPR_BON1,12,2,{NULL},S_BON1M,0,0},   // S_BON1L // Tails 9-15-99
-    {SPR_BON1,13,2,{NULL},S_BON1N,0,0},   // S_BON1M // Tails 9-15-99
-    {SPR_BON1,14,2,{NULL},S_BON1O,0,0},   // S_BON1N // Tails 9-15-99
-    {SPR_BON1,15,2,{NULL},S_BON1,0,0},   // S_BON1O // Tails 9-15-99
+    {SPR_FCAN,0,4,{NULL},S_BBAR2,0,0},      // S_BBAR1
+    {SPR_FCAN,1,4,{NULL},S_BBAR3,0,0},      // S_BBAR2
+    {SPR_FCAN,2,4,{NULL},S_BBAR4,0,0},      // S_BBAR3 Tails 10-31-99
+    {SPR_FCAN,3,4,{NULL},S_BBAR5,0,0},      // S_BBAR4 Tails 10-31-99
+    {SPR_FCAN,4,4,{NULL},S_BBAR6,0,0},      // S_BBAR5 Tails 10-31-99
+    {SPR_FCAN,5,4,{NULL},S_BBAR7,0,0},      // S_BBAR6 Tails 10-31-99
+    {SPR_FCAN,6,4,{NULL},S_BBAR1,0,0},      // S_BBAR7 Tails 10-31-99
+    {SPR_BON1,0,1,{A_RingChase},S_BON1A,0,0},  // S_BON1 // Tails 9-15-99
+    {SPR_BON1,1,1,{A_RingChase},S_BON1B,0,0},  // S_BON1A // Tails 9-15-99
+    {SPR_BON1,2,1,{A_RingChase},S_BON1C,0,0},  // S_BON1B // Tails 9-15-99
+    {SPR_BON1,3,1,{A_RingChase},S_BON1D,0,0},  // S_BON1C // Tails 9-15-99
+    {SPR_BON1,4,1,{A_RingChase},S_BON1E,0,0},  // S_BON1D // Tails 9-15-99
+    {SPR_BON1,5,1,{A_RingChase},S_BON1F,0,0},   // S_BON1E // Tails 9-15-99
+    {SPR_BON1,6,1,{A_RingChase},S_BON1G,0,0},   // S_BON1F // Tails 9-15-99
+    {SPR_BON1,7,1,{A_RingChase},S_BON1H,0,0},   // S_BON1G // Tails 9-15-99
+    {SPR_BON1,8,1,{A_RingChase},S_BON1I,0,0},   // S_BON1H // Tails 9-15-99
+    {SPR_BON1,9,1,{A_RingChase},S_BON1J,0,0},   // S_BON1I // Tails 9-15-99
+    {SPR_BON1,10,1,{A_RingChase},S_BON1K,0,0},   // S_BON1J // Tails 9-15-99
+    {SPR_BON1,11,1,{A_RingChase},S_BON1L,0,0},   // S_BON1K // Tails 9-15-99
+    {SPR_BON1,12,1,{A_RingChase},S_BON1M,0,0},   // S_BON1L // Tails 9-15-99
+    {SPR_BON1,13,1,{A_RingChase},S_BON1N,0,0},   // S_BON1M // Tails 9-15-99
+    {SPR_BON1,14,1,{A_RingChase},S_BON1O,0,0},   // S_BON1N // Tails 9-15-99
+    {SPR_BON1,15,1,{A_RingChase},S_BON1P,0,0},   // S_BON1O // Tails 9-15-99
+    {SPR_BON1,16,1,{A_RingChase},S_BON1Q,0,0},   // S_BON1P // Tails 10-29-99
+    {SPR_BON1,17,1,{A_RingChase},S_BON1R,0,0},   // S_BON1Q // Tails 10-29-99
+    {SPR_BON1,18,1,{A_RingChase},S_BON1S,0,0},   // S_BON1R // Tails 10-29-99
+    {SPR_BON1,19,1,{A_RingChase},S_BON1T,0,0},   // S_BON1S // Tails 10-29-99
+    {SPR_BON1,20,1,{A_RingChase},S_BON1U,0,0},   // S_BON1T // Tails 10-29-99
+    {SPR_BON1,21,1,{A_RingChase},S_BON1V,0,0},   // S_BON1U // Tails 10-29-99
+    {SPR_BON1,22,1,{A_RingChase},S_BON1W,0,0},   // S_BON1V // Tails 10-29-99
+    {SPR_BON1,23,1,{A_RingChase},S_BON1,0,0},   // S_BON1W // Tails 10-29-99
     {SPR_BON2,0,6,{NULL},S_BON2A,0,0},  // S_BON2
     {SPR_BON2,1,6,{NULL},S_BON2B,0,0},  // S_BON2A
     {SPR_BON2,2,6,{NULL},S_BON2C,0,0},  // S_BON2B
@@ -933,30 +964,52 @@ state_t states[NUMSTATES] = {
     {SPR_YSKU,32769,10,{NULL},S_YSKULL,0,0},    // S_YSKULL2
     {SPR_STIM,0,1,{NULL},S_STIM1,0,0},  // S_STIM // Tails 9-30-99 aka ringbox
     {SPR_STIM,1,2,{NULL},S_STIM,0,0},  // S_STIM1 // Tails 9-30-99 aka ringbox1
-    {SPR_STIM,2,2,{NULL},S_STIM3,0,0}, // Tails 9-30-99 aka ringbox2
-    {SPR_STIM,3,2,{NULL},S_STIM4,0,0}, // Tails 9-30-99 aka ringbox3
+    {SPR_STIM,2,2,{A_Fall},S_STIM3,0,0}, // Tails 9-30-99 aka ringbox2
+    {SPR_STIM,3,2,{A_Scream},S_STIM4,0,0}, // Tails 9-30-99 aka ringbox3
     {SPR_STIM,4,2,{NULL},S_STIM5,0,0}, // Tails 9-30-99 aka ringbox4
     {SPR_STIM,5,2,{NULL},S_STIM6,0,0}, // Tails 9-30-99 aka ringbox5
-    {SPR_STIM,6,64,{NULL},S_STIM7,0,0}, // Tails 9-30-99 aka ringbox6
-    {SPR_STIM,7,-1,{NULL},S_NULL,0,0}, // Tails 9-30-99 aka ringbox7
+    {SPR_STIM,6,16,{NULL},S_STIM7,0,0}, // Tails 9-30-99 aka ringbox6
+    {SPR_STIM,6,48,{A_RingBox},S_STIM8,0,0}, // Tails 9-30-99 aka ringbox7
+    {SPR_STIM,7,-1,{NULL},S_NULL,0,0}, // Tails 9-30-99 aka ringbox8
     {SPR_MEDI,0,1,{NULL},S_MEDI1,0,0},  // S_MEDI // Tails 9-30-99 aka sringbox
     {SPR_MEDI,1,2,{NULL},S_MEDI,0,0},  // S_MEDI1 // Tails 9-30-99 aka sringbox1
-    {SPR_MEDI,2,2,{NULL},S_MEDI3,0,0}, // Tails 9-30-99 aka sringbox2
-    {SPR_MEDI,3,2,{NULL},S_MEDI4,0,0}, // Tails 9-30-99 aka sringbox3
+    {SPR_MEDI,2,2,{A_Fall},S_MEDI3,0,0}, // Tails 9-30-99 aka sringbox2
+    {SPR_MEDI,3,2,{A_Scream},S_MEDI4,0,0}, // Tails 9-30-99 aka sringbox3
     {SPR_MEDI,4,2,{NULL},S_MEDI5,0,0}, // Tails 9-30-99 aka sringbox4
     {SPR_MEDI,5,2,{NULL},S_MEDI6,0,0}, // Tails 9-30-99 aka sringbox5
-    {SPR_MEDI,6,64,{NULL},S_MEDI7,0,0}, // Tails 9-30-99 aka sringbox6
-    {SPR_MEDI,7,-1,{NULL},S_NULL,0,0}, // Tails 9-30-99 aka sringbox7
-    {SPR_SOUL,32768,6,{NULL},S_SOUL2,0,0},      // S_SOUL
-    {SPR_SOUL,32769,6,{NULL},S_SOUL3,0,0},      // S_SOUL2
-    {SPR_SOUL,32770,6,{NULL},S_SOUL4,0,0},      // S_SOUL3
-    {SPR_SOUL,32771,6,{NULL},S_SOUL5,0,0},      // S_SOUL4
-    {SPR_SOUL,32770,6,{NULL},S_SOUL6,0,0},      // S_SOUL5
-    {SPR_SOUL,32769,6,{NULL},S_SOUL,0,0},       // S_SOUL6
-    {SPR_PINV,32768,6,{NULL},S_PINV2,0,0},      // S_PINV
-    {SPR_PINV,32769,6,{NULL},S_PINV3,0,0},      // S_PINV2
-    {SPR_PINV,32770,6,{NULL},S_PINV4,0,0},      // S_PINV3
-    {SPR_PINV,32771,6,{NULL},S_PINV,0,0},       // S_PINV4
+    {SPR_MEDI,6,16,{NULL},S_MEDI7,0,0}, // Tails 9-30-99 aka sringbox6
+    {SPR_MEDI,6,48,{A_SuperRingBox},S_MEDI8,0,0}, // Tails 9-30-99 aka sringbox7
+    {SPR_MEDI,7,-1,{NULL},S_NULL,0,0}, // Tails 9-30-99 aka sringbox8
+    {SPR_EMMY,0,2,{NULL},S_EMMY2,0,0}, // S_EMMY1 // emmy start tails
+    {SPR_EMMY,1,2,{NULL},S_EMMY3,0,0}, // S_EMMY2 // emmy
+    {SPR_EMMY,2,2,{NULL},S_EMMY4,0,0}, // S_EMMY3 // emmy
+    {SPR_EMMY,3,2,{NULL},S_EMMY5,0,0}, // S_EMMY4 // emmy
+    {SPR_EMMY,4,2,{NULL},S_EMMY6,0,0}, // S_EMMY5 // emmy
+    {SPR_EMMY,5,2,{NULL},S_EMMY7,0,0}, // S_EMMY6 // emmy
+    {SPR_EMMY,6,2,{NULL},S_EMMY8,0,0}, // S_EMMY7 // emmy
+    {SPR_EMMY,7,2,{NULL},S_EMMY9,0,0}, // S_EMMY8 // emmy
+    {SPR_EMMY,8,2,{NULL},S_EMMY10,0,0}, // S_EMMY9 // emmy
+    {SPR_EMMY,9,2,{NULL},S_EMMY11,0,0}, // S_EMMY10 // emmy
+    {SPR_EMMY,10,2,{NULL},S_EMMY12,0,0}, // S_EMMY11 // emmy
+    {SPR_EMMY,11,2,{NULL},S_EMMY13,0,0}, // S_EMMY12 // emmy
+    {SPR_EMMY,12,2,{NULL},S_EMMY14,0,0}, // S_EMMY13 // emmy
+    {SPR_EMMY,13,2,{NULL},S_EMMY15,0,0}, // S_EMMY14 // emmy
+    {SPR_EMMY,14,2,{NULL},S_EMMY16,0,0}, // S_EMMY15 // emmy
+    {SPR_EMMY,15,2,{NULL},S_EMMY17,0,0}, // S_EMMY16 // emmy
+    {SPR_EMMY,16,2,{NULL},S_EMMY18,0,0}, // S_EMMY17 // emmy
+    {SPR_EMMY,17,2,{NULL},S_EMMY19,0,0}, // S_EMMY18 // emmy
+    {SPR_EMMY,18,2,{NULL},S_EMMY20,0,0}, // S_EMMY19 // emmy
+    {SPR_EMMY,19,2,{NULL},S_EMMY21,0,0}, // S_EMMY20 // emmy
+    {SPR_EMMY,20,2,{NULL},S_EMMY1,0,0}, // S_EMMY21 // emmy end tails
+    {SPR_PINV,0,1,{NULL},S_PINV2,0,0},      // S_PINV // start invincibility box tails
+    {SPR_PINV,1,2,{NULL},S_PINV,0,0},      // S_PINV2
+    {SPR_PINV,2,2,{A_Fall},S_PINV4,0,0},      // S_PINV3
+    {SPR_PINV,3,2,{A_Scream},S_PINV5,0,0},       // S_PINV4
+    {SPR_PINV,4,2,{NULL},S_PINV6,0,0},       // S_PINV5
+    {SPR_PINV,5,2,{NULL},S_PINV7,0,0},       // S_PINV6
+    {SPR_PINV,6,16,{NULL},S_PINV8,0,0},       // S_PINV7
+    {SPR_PINV,6,48,{A_Invincibility},S_PINV9,0,0},       // S_PINV8
+    {SPR_PINV,7,-1,{NULL},S_NULL,0,0},       // S_PINV9 // end invincibility box tails
     {SPR_PSTR,32768,-1,{NULL},S_NULL,0,0},      // S_PSTR
     {SPR_PINS,32768,6,{NULL},S_PINS2,0,0},      // S_PINS
     {SPR_PINS,32769,6,{NULL},S_PINS3,0,0},      // S_PINS2
@@ -993,12 +1046,13 @@ state_t states[NUMSTATES] = {
     {SPR_SGN2,0,-1,{NULL},S_NULL,0,0},  // S_SHOT2
     {SPR_GRTV,0,1,{NULL},S_GRTV1,0,0},      // S_COLU // Tails 9-30-99 aka greenshield
     {SPR_GRTV,1,2,{NULL},S_GRTV,0,0},      // S_COLU1 // Tails 9-30-99 aka greenshield1
-    {SPR_GRTV,2,2,{NULL},S_GRTV3,0,0}, // Tails 9-30-99 aka greenshield2
-    {SPR_GRTV,3,2,{NULL},S_GRTV4,0,0}, // Tails 9-30-99 aka greenshield3
+    {SPR_GRTV,2,2,{A_Fall},S_GRTV3,0,0}, // Tails 9-30-99 aka greenshield2
+    {SPR_GRTV,3,2,{A_Scream},S_GRTV4,0,0}, // Tails 9-30-99 aka greenshield3
     {SPR_GRTV,4,2,{NULL},S_GRTV5,0,0}, // Tails 9-30-99 aka greenshield4
     {SPR_GRTV,5,2,{NULL},S_GRTV6,0,0}, // Tails 9-30-99 aka greenshield5
-    {SPR_GRTV,6,64,{NULL},S_GRTV7,0,0}, // Tails 9-30-99 aka greenshield6
-    {SPR_GRTV,7,-1,{NULL},S_NULL,0,0}, // Tails 9-30-99 aka greenshield7
+    {SPR_GRTV,6,16,{NULL},S_GRTV7,0,0}, // Tails 9-30-99 aka greenshield6
+    {SPR_GRTV,6,48,{A_GreenShield},S_GRTV8,0,0}, // Tails 9-30-99 aka greenshield7
+    {SPR_GRTV,7,-1,{NULL},S_NULL,0,0}, // Tails 9-30-99 aka greenshield8
     {SPR_SMT2,0,-1,{NULL},S_NULL,0,0},  // S_STALAG
     {SPR_GOR1,0,10,{NULL},S_BLOODYTWITCH2,0,0}, // S_BLOODYTWITCH
     {SPR_GOR1,1,15,{NULL},S_BLOODYTWITCH3,0,0}, // S_BLOODYTWITCH2
@@ -1007,18 +1061,26 @@ state_t states[NUMSTATES] = {
     {SPR_PLAY,13,-1,{NULL},S_NULL,0,0}, // S_DEADTORSO
     {SPR_PLAY,18,-1,{NULL},S_NULL,0,0}, // S_DEADBOTTOM
     {SPR_POL2,0,-1,{NULL},S_NULL,0,0},  // S_HEADSONSTICK
+    {SPR_POL2,1,1,{A_Pain},S_HEADSONSTICK3,0,0},  // S_HEADSONSTICK2
+    {SPR_POL2,2,1,{NULL},S_HEADSONSTICK4,0,0},  // S_HEADSONSTICK3
+    {SPR_POL2,3,1,{NULL},S_HEADSONSTICK5,0,0},  // S_HEADSONSTICK4
+    {SPR_POL2,4,1,{NULL},S_HEADSONSTICK6,0,0},  // S_HEADSONSTICK5
+    {SPR_POL2,5,1,{NULL},S_HEADSONSTICK7,0,0},  // S_HEADSONSTICK6
+    {SPR_POL2,6,1,{NULL},S_HEADSONSTICK8,0,0},  // S_HEADSONSTICK7
+    {SPR_POL2,7,1,{NULL},S_HEADSONSTICK,0,0},  // S_HEADSONSTICK8
     {SPR_POL5,0,-1,{NULL},S_NULL,0,0},  // S_GIBS
     {SPR_POL4,0,-1,{NULL},S_NULL,0,0},  // S_HEADONASTICK
     {SPR_POL3,32768,6,{NULL},S_HEADCANDLES2,0,0},       // S_HEADCANDLES
     {SPR_POL3,32769,6,{NULL},S_HEADCANDLES,0,0},        // S_HEADCANDLES2
     {SPR_SHTV,0,1,{NULL},S_SHTV1,0,0},  // S_DEADSTICK // Tails 9-30-99 aka shoebox
     {SPR_SHTV,1,2,{NULL},S_SHTV,0,0},  // Tails 9-30-99 aka shoebox1
-    {SPR_SHTV,2,2,{NULL},S_SHTV3,0,0}, // Tails 9-30-99 aka shoebox2
-    {SPR_SHTV,3,2,{NULL},S_SHTV4,0,0}, // Tails 9-30-99 aka shoebox3
+    {SPR_SHTV,2,2,{A_Fall},S_SHTV3,0,0}, // Tails 9-30-99 aka shoebox2
+    {SPR_SHTV,3,2,{A_Scream},S_SHTV4,0,0}, // Tails 9-30-99 aka shoebox3
     {SPR_SHTV,4,2,{NULL},S_SHTV5,0,0}, // Tails 9-30-99 aka shoebox4
     {SPR_SHTV,5,2,{NULL},S_SHTV6,0,0}, // Tails 9-30-99 aka shoebox5
-    {SPR_SHTV,6,64,{NULL},S_SHTV7,0,0}, // Tails 9-30-99 aka shoebox6
-    {SPR_SHTV,7,-1,{NULL},S_NULL,0,0}, // Tails 9-30-99 aka shoebox7
+    {SPR_SHTV,6,16,{NULL},S_SHTV7,0,0}, // Tails 9-30-99 aka shoebox6
+    {SPR_SHTV,6,48,{A_SuperSneakers},S_SHTV8,0,0}, // Tails 9-30-99 aka shoebox7
+    {SPR_SHTV,7,-1,{NULL},S_NULL,0,0}, // Tails 9-30-99 aka shoebox8
     {SPR_POL6,0,6,{NULL},S_LIVESTICK2,0,0},     // S_LIVESTICK
     {SPR_POL6,1,8,{NULL},S_LIVESTICK,0,0},      // S_LIVESTICK2
     {SPR_GOR2,0,-1,{NULL},S_NULL,0,0},  // S_MEAT2
@@ -1028,28 +1090,35 @@ state_t states[NUMSTATES] = {
     {SPR_SMIT,0,-1,{NULL},S_NULL,0,0},  // S_STALAGTITE
     {SPR_COL1,0,-1,{NULL},S_NULL,0,0},  // S_TALLGRNCOL
     {SPR_COL2,0,-1,{NULL},S_NULL,0,0},  // S_SHRTGRNCOL
-    {SPR_COL3,0,-1,{NULL},S_NULL,0,0},  // S_TALLREDCOL
-    {SPR_COL4,0,-1,{NULL},S_NULL,0,0},  // S_SHRTREDCOL
-    {SPR_CAND,0,-1,{NULL},S_NULL,0,0},      // S_CANDLESTIK
+    {SPR_COL3,0,1,{NULL},S_TALLREDCOL2,0,0},  // S_TALLREDCOL  // It's da fan! Tails 12-05-99
+    {SPR_COL3,1,1,{NULL},S_TALLREDCOL3,0,0},  // S_TALLREDCOL2  // It's da fan! Tails 12-05-99
+    {SPR_COL3,2,1,{NULL},S_TALLREDCOL4,0,0},  // S_TALLREDCOL3  // It's da fan! Tails 12-05-99
+    {SPR_COL3,3,1,{NULL},S_TALLREDCOL5,0,0},  // S_TALLREDCOL4  // It's da fan! Tails 12-05-99
+    {SPR_COL3,4,1,{NULL},S_TALLREDCOL,0,0},  // S_TALLREDCOL5  // It's da fan! Tails 12-05-99
+    {SPR_BUBL,0,8,{A_BubbleSpawn},S_BUBBLES2,0,0},  // S_BUBBLES1 Tails 03-07-2000 Bubble source
+    {SPR_BUBL,1,8,{NULL},S_BUBBLES1,0,0},  // S_BUBBLES2 Tails 03-07-2000 Bubble source
+    {SPR_CAND,32768,-1,{NULL},S_NULL,0,0},      // S_CANDLESTIK
     {SPR_BLTV,0,1,{NULL},S_BLTV1,0,0},      // S_CANDELABRA Tails 9-30-99 aka blueshield
     {SPR_BLTV,1,2,{NULL},S_BLTV,0,0}, // S_CANDELABRA1 Tails 9-30-99 aka blueshield1
-    {SPR_BLTV,2,2,{NULL},S_BLTV3,0,0}, // S_CANDELABRA2 Tails 9-30-99 aka blueshield2
-    {SPR_BLTV,3,2,{NULL},S_BLTV4,0,0}, // S_CANDELABRA3 Tails 9-30-99 aka blueshield3
+    {SPR_BLTV,2,2,{A_Fall},S_BLTV3,0,0}, // S_CANDELABRA2 Tails 9-30-99 aka blueshield2
+    {SPR_BLTV,3,2,{A_Scream},S_BLTV4,0,0}, // S_CANDELABRA3 Tails 9-30-99 aka blueshield3
     {SPR_BLTV,4,2,{NULL},S_BLTV5,0,0}, // S_CANDELABRA4 Tails 9-30-99 aka blueshield4
     {SPR_BLTV,5,2,{NULL},S_BLTV6,0,0}, // S_CANDELABRA5 Tails 9-30-99 aka blueshield5
-    {SPR_BLTV,6,64,{NULL},S_BLTV7,0,0}, // S_CANDELABRA6 Tails 9-30-99 aka blueshield6
-    {SPR_BLTV,7,-1,{NULL},S_NULL,0,0}, // S_CANDELABRA7 Tails 9-30-99 aka blueshield7
-    {SPR_COL6,0,-1,{A_Look},S_NULL,0,0},  // S_SKULLCOL
+    {SPR_BLTV,6,16,{NULL},S_BLTV7,0,0}, // S_CANDELABRA6 Prevented crash: Stealth 12-26-99
+    {SPR_BLTV,6,48,{A_BlueShield},S_BLTV8,0,0}, // S_CANDELABRA7 Prevented crash: Stealth 12-26-99
+    {SPR_BLTV,7,-1,{NULL},S_NULL,0,0}, // S_CANDELABRA8 Tails 9-30-99 aka blueshield7
+    {SPR_COL6,0,-1,{NULL},S_NULL,0,0},  // S_SKULLCOL
     {SPR_TRE1,0,-1,{NULL},S_NULL,0,0},  // S_TORCHTREE
     {SPR_TRE2,0,-1,{NULL},S_NULL,0,0},  // S_BIGTREE
     {SPR_YLTV,0,1,{NULL},S_YLTV1,0,0},  // S_TECHPILLAR // Tails 9-30-99 aka yellowshield
     {SPR_YLTV,1,2,{NULL},S_YLTV,0,0},  // S_TECHPILLAR1 // Tails 9-30-99 aka yellowshield1
-    {SPR_YLTV,2,2,{NULL},S_YLTV3,0,0}, // Tails 9-30-99 aka yellowshield2
-    {SPR_YLTV,3,2,{NULL},S_YLTV4,0,0}, // Tails 9-30-99 aka yellowshield3
+    {SPR_YLTV,2,2,{A_Fall},S_YLTV3,0,0}, // Tails 9-30-99 aka yellowshield2
+    {SPR_YLTV,3,2,{A_Scream},S_YLTV4,0,0}, // Tails 9-30-99 aka yellowshield3
     {SPR_YLTV,4,2,{NULL},S_YLTV5,0,0}, // Tails 9-30-99 aka yellowshield4
     {SPR_YLTV,5,2,{NULL},S_YLTV6,0,0}, // Tails 9-30-99 aka yellowshield5
-    {SPR_YLTV,6,64,{NULL},S_YLTV7,0,0}, // Tails 9-30-99 aka yellowshield6
-    {SPR_YLTV,7,-1,{NULL},S_NULL,0,0}, // Tails 9-30-99 aka yellowshield7
+    {SPR_YLTV,6,16,{NULL},S_YLTV7,0,0}, // Tails 9-30-99 aka yellowshield6
+    {SPR_YLTV,6,48,{A_YellowShield},S_YLTV8,0,0}, // Tails 9-30-99 aka yellowshield7
+    {SPR_YLTV,7,-1,{NULL},S_NULL,0,0}, // Tails 9-30-99 aka yellowshield8
     {SPR_CEYE,32768,6,{NULL},S_EVILEYE2,0,0},   // S_EVILEYE
     {SPR_CEYE,32769,6,{NULL},S_EVILEYE3,0,0},   // S_EVILEYE2
     {SPR_CEYE,32770,6,{NULL},S_EVILEYE4,0,0},   // S_EVILEYE3
@@ -1090,6 +1159,13 @@ state_t states[NUMSTATES] = {
     {SPR_HDB5,0,-1,{NULL},S_NULL,0,0},  // S_HANGTLOOKUP
     {SPR_HDB6,0,-1,{NULL},S_NULL,0,0},  // S_HANGTNOBRAIN
     {SPR_POB1,0,-1,{NULL},S_NULL,0,0},  // S_COLONGIBS
+    {SPR_POB1,1,1,{A_Pain},S_COLONGIBS3,0,0},  // S_COLONGIBS2 // Tails 11-07-99
+    {SPR_POB1,2,1,{NULL},S_COLONGIBS4,0,0},  // S_COLONGIBS3 // Tails 11-07-99
+    {SPR_POB1,3,1,{NULL},S_COLONGIBS5,0,0},  // S_COLONGIBS4 // Tails 11-07-99
+    {SPR_POB1,4,1,{NULL},S_COLONGIBS6,0,0},  // S_COLONGIBS5 // Tails 11-07-99
+    {SPR_POB1,5,1,{NULL},S_COLONGIBS7,0,0},  // S_COLONGIBS6 // Tails 11-07-99
+    {SPR_POB1,6,1,{NULL},S_COLONGIBS8,0,0},  // S_COLONGIBS7 // Tails 11-07-99
+    {SPR_POB1,7,1,{NULL},S_COLONGIBS,0,0},  // S_COLONGIBS8 // Tails 11-07-99
     {SPR_POB2,0,-1,{NULL},S_NULL,0,0},  // S_SMALLPOOL
     {SPR_BRS1,0,-1,{NULL},S_NULL,0,0},          // S_BRAINSTEM
     {SPR_TLMP,32768,4,{NULL},S_TECHLAMP2,0,0},  // S_TECHLAMP
@@ -1123,8 +1199,311 @@ state_t states[NUMSTATES] = {
 
     // Squirrel freed! Tails 10-20-99
     {SPR_SQRL,0,4,{NULL},S_SQRL2,0,0}, // S_SQRL1
-    {SPR_SQRL,0,4,{A_Chase},S_SQRL3,0,0}, // S_SQRL2
-    {SPR_SQRL,1,4,{A_Chase},S_SQRL2,0,0}, // S_SQRL3
+    {SPR_SQRL,0,64,{NULL},S_SQRL3,0,0}, // S_SQRL2
+    {SPR_SQRL,1,2,{A_BunnyHop},S_SQRL4,0,0}, // S_SQRL3
+    {SPR_SQRL,1,2,{A_Chase},S_SQRL5,0,0}, // S_SQRL4
+    {SPR_SQRL,1,2,{A_Chase},S_SQRL6,0,0}, // S_SQRL5
+    {SPR_SQRL,1,2,{A_Chase},S_SQRL7,0,0}, // S_SQRL6
+    {SPR_SQRL,1,2,{A_Chase},S_SQRL8,0,0}, // S_SQRL7
+    {SPR_SQRL,1,2,{A_Chase},S_SQRL9,0,0}, // S_SQRL8
+    {SPR_SQRL,1,2,{A_Chase},S_SQRL10,0,0}, // S_SQRL9
+    {SPR_SQRL,1,2,{A_Chase},S_SQRL2,0,0}, // S_SQRL10
+
+    // Thok! mobj Tails 12-05-99
+    {SPR_THOK,0,8,{NULL},S_NULL,0,0}, // S_THOK1
+
+    {SPR_BORB,0,1,{A_BlueLook},S_BORB2,0,0}, // S_BORB1 // Tails 12-29-99 shield
+    {SPR_BORB,1,1,{A_BlueLook},S_BORB3,0,0}, // S_BORB1 // Tails 12-29-99 shield
+    {SPR_BORB,2,1,{A_BlueLook},S_BORB4,0,0}, // S_BORB1 // Tails 12-29-99 shield
+    {SPR_BORB,3,1,{A_BlueLook},S_BORB5,0,0}, // S_BORB1 // Tails 12-29-99 shield
+    {SPR_BORB,4,1,{A_BlueLook},S_BORB6,0,0}, // S_BORB1 // Tails 12-29-99 shield
+    {SPR_BORB,5,1,{A_BlueLook},S_BORB7,0,0}, // S_BORB1 // Tails 12-29-99 shield
+    {SPR_BORB,6,1,{A_BlueLook},S_BORB8,0,0}, // S_BORB1 // Tails 12-29-99 shield
+    {SPR_BORB,7,1,{A_BlueLook},S_BORB1,0,0}, // S_BORB1 // Tails 12-29-99 shield
+
+    {SPR_YORB,0,1,{A_YellowLook},S_YORB2,0,0}, // S_YORB1 // Tails 12-29-99 shield
+    {SPR_YORB,1,1,{A_YellowLook},S_YORB3,0,0}, // S_YORB1 // Tails 12-29-99 shield
+    {SPR_YORB,2,1,{A_YellowLook},S_YORB4,0,0}, // S_YORB1 // Tails 12-29-99 shield
+    {SPR_YORB,3,1,{A_YellowLook},S_YORB5,0,0}, // S_YORB1 // Tails 12-29-99 shield
+    {SPR_YORB,4,1,{A_YellowLook},S_YORB6,0,0}, // S_YORB1 // Tails 12-29-99 shield
+    {SPR_YORB,5,1,{A_YellowLook},S_YORB7,0,0}, // S_YORB1 // Tails 12-29-99 shield
+    {SPR_YORB,6,1,{A_YellowLook},S_YORB8,0,0}, // S_YORB1 // Tails 12-29-99 shield
+    {SPR_YORB,7,1,{A_YellowLook},S_YORB1,0,0}, // S_YORB1 // Tails 12-29-99 shield
+
+    {SPR_GORB,0,1,{A_GreenLook},S_GORB2,0,0}, // S_GORB1 // Tails 12-29-99 shield
+    {SPR_GORB,1,1,{A_GreenLook},S_GORB3,0,0}, // S_GORB2 // Tails 06-28-2000 shield
+    {SPR_GORB,2,1,{A_GreenLook},S_GORB4,0,0}, // S_GORB3 // Tails 06-28-2000 shield
+    {SPR_GORB,3,1,{A_GreenLook},S_GORB5,0,0}, // S_GORB4 // Tails 06-28-2000 shield
+    {SPR_GORB,4,1,{A_GreenLook},S_GORB6,0,0}, // S_GORB5 // Tails 06-28-2000 shield
+    {SPR_GORB,5,1,{A_GreenLook},S_GORB7,0,0}, // S_GORB6 // Tails 06-28-2000 shield
+    {SPR_GORB,6,1,{A_GreenLook},S_GORB8,0,0}, // S_GORB7 // Tails 06-28-2000 shield
+    {SPR_GORB,7,1,{A_GreenLook},S_GORB1,0,0}, // S_GORB8 // Tails 06-28-2000 shield
+
+    {SPR_KORB,0,1,{A_BlackLook},S_KORB2,0,0}, // S_KORB1 // Tails 12-29-99 shield
+    {SPR_KORB,1,1,{A_BlackLook},S_KORB3,0,0}, // S_KORB1 // Tails 12-29-99 shield
+    {SPR_KORB,2,1,{A_BlackLook},S_KORB4,0,0}, // S_KORB1 // Tails 12-29-99 shield
+    {SPR_KORB,3,1,{A_BlackLook},S_KORB5,0,0}, // S_KORB1 // Tails 12-29-99 shield
+    {SPR_KORB,4,1,{A_BlackLook},S_KORB6,0,0}, // S_KORB1 // Tails 12-29-99 shield
+    {SPR_KORB,5,1,{A_BlackLook},S_KORB7,0,0}, // S_KORB1 // Tails 12-29-99 shield
+    {SPR_KORB,6,1,{A_BlackLook},S_KORB8,0,0}, // S_KORB1 // Tails 12-29-99 shield
+    {SPR_KORB,7,1,{A_BlackLook},S_KORB1,0,0}, // S_KORB1 // Tails 12-29-99 shield
+
+    {SPR_SPRK,0,1,{NULL},S_SPRK2,0,0}, // S_SPRK1 // spark
+    {SPR_SPRK,1,1,{NULL},S_SPRK3,0,0}, // S_SPRK2 // spark
+    {SPR_SPRK,2,1,{NULL},S_SPRK4,0,0}, // S_SPRK3 // spark
+    {SPR_SPRK,3,1,{NULL},S_SPRK5,0,0}, // S_SPRK4 // spark
+    {SPR_SPRK,0,1,{NULL},S_SPRK6,0,0}, // S_SPRK5 // spark
+    {SPR_SPRK,1,1,{NULL},S_SPRK7,0,0}, // S_SPRK6 // spark
+    {SPR_SPRK,2,1,{NULL},S_SPRK8,0,0}, // S_SPRK7 // spark
+    {SPR_SPRK,3,1,{NULL},S_SPRK9,0,0}, // S_SPRK8 // spark
+    {SPR_SPRK,0,1,{NULL},S_SPRK10,0,0}, // S_SPRK9 // spark
+    {SPR_SPRK,1,1,{NULL},S_SPRK11,0,0}, // S_SPRK10 // spark
+    {SPR_SPRK,2,1,{NULL},S_SPRK12,0,0}, // S_SPRK11 // spark
+    {SPR_SPRK,3,1,{NULL},S_SPRK13,0,0}, // S_SPRK12 // spark
+    {SPR_SPRK,0,1,{NULL},S_SPRK14,0,0}, // S_SPRK13 // spark
+    {SPR_SPRK,1,1,{NULL},S_SPRK15,0,0}, // S_SPRK14 // spark
+    {SPR_SPRK,2,1,{NULL},S_SPRK16,0,0}, // S_SPRK15 // spark
+    {SPR_SPRK,3,1,{NULL},S_NULL,0,0}, // S_SPRK16 // spark
+
+// start invincibility sparkles tails
+    {SPR_IVSP,0,1,{NULL},S_IVSP2,0,0}, // S_IVSP1 // invincibility sparkles tails
+    {SPR_IVSP,1,1,{NULL},S_IVSP3,0,0}, // S_IVSP2 // invincibility sparkles tails
+    {SPR_IVSP,2,1,{NULL},S_IVSP4,0,0}, // S_IVSP3 // invincibility sparkles tails
+    {SPR_IVSP,3,1,{NULL},S_IVSP5,0,0}, // S_IVSP4 // invincibility sparkles tails
+    {SPR_IVSP,4,1,{NULL},S_IVSP6,0,0}, // S_IVSP5 // invincibility sparkles tails
+    {SPR_IVSP,5,1,{NULL},S_IVSP7,0,0}, // S_IVSP6 // invincibility sparkles tails
+    {SPR_IVSP,6,1,{NULL},S_IVSP8,0,0}, // S_IVSP7 // invincibility sparkles tails
+    {SPR_IVSP,7,1,{NULL},S_IVSP9,0,0}, // S_IVSP8 // invincibility sparkles tails
+    {SPR_IVSP,8,1,{NULL},S_IVSP10,0,0}, // S_IVSP9 // invincibility sparkles tails
+    {SPR_IVSP,9,1,{NULL},S_IVSP11,0,0}, // S_IVSP10 // invincibility sparkles tails
+    {SPR_IVSP,10,1,{NULL},S_IVSP12,0,0}, // S_IVSP11 // invincibility sparkles tails
+    {SPR_IVSP,11,1,{NULL},S_IVSP13,0,0}, // S_IVSP12 // invincibility sparkles tails
+    {SPR_IVSP,12,1,{NULL},S_IVSP14,0,0}, // S_IVSP13 // invincibility sparkles tails
+    {SPR_IVSP,13,1,{NULL},S_IVSP15,0,0}, // S_IVSP14 // invincibility sparkles tails
+    {SPR_IVSP,14,1,{NULL},S_IVSP16,0,0}, // S_IVSP15 // invincibility sparkles tails
+    {SPR_IVSP,15,1,{NULL},S_IVSP17,0,0}, // S_IVSP16 // invincibility sparkles tails
+    {SPR_IVSP,16,1,{NULL},S_IVSP18,0,0}, // S_IVSP17 // invincibility sparkles tails
+    {SPR_IVSP,17,1,{NULL},S_IVSP19,0,0}, // S_IVSP18 // invincibility sparkles tails
+    {SPR_IVSP,18,1,{NULL},S_IVSP20,0,0}, // S_IVSP19 // invincibility sparkles tails
+    {SPR_IVSP,19,1,{NULL},S_IVSP21,0,0}, // S_IVSP20 // invincibility sparkles tails
+    {SPR_IVSP,20,1,{NULL},S_IVSP22,0,0}, // S_IVSP21 // invincibility sparkles tails
+    {SPR_IVSP,21,1,{NULL},S_IVSP23,0,0}, // S_IVSP22 // invincibility sparkles tails
+    {SPR_IVSP,22,1,{NULL},S_IVSP24,0,0}, // S_IVSP23 // invincibility sparkles tails
+    {SPR_IVSP,23,1,{NULL},S_IVSP25,0,0}, // S_IVSP24 // invincibility sparkles tails
+    {SPR_IVSP,24,1,{NULL},S_IVSP26,0,0}, // S_IVSP25 // invincibility sparkles tails
+    {SPR_IVSP,25,1,{NULL},S_IVSP27,0,0}, // S_IVSP26 // invincibility sparkles tails
+    {SPR_IVSP,26,1,{NULL},S_IVSP28,0,0}, // S_IVSP27 // invincibility sparkles tails
+    {SPR_IVSP,27,1,{NULL},S_IVSP29,0,0}, // S_IVSP28 // invincibility sparkles tails
+    {SPR_IVSP,28,1,{NULL},S_IVSQ1,0,0}, // S_IVSP29 // invincibility sparkles tails
+
+    {SPR_IVSQ,0,1,{NULL},S_IVSQ2,0,0}, // S_IVSQ1 // invincibility sparkles finish tails
+    {SPR_IVSQ,1,1,{NULL},S_IVSQ3,0,0}, // S_IVSQ2 // invincibility sparkles finish tails
+    {SPR_IVSQ,2,1,{NULL},S_NULL,0,0}, // S_IVSQ3 // invincibility sparkles finish tails
+
+// start following invincibility sparkles tails
+    {SPR_IVSR,0,1,{NULL},S_IVSR2,0,0}, // S_IVSR1 // invincibility sparkles tails
+    {SPR_IVSR,1,1,{NULL},S_IVSR3,0,0}, // S_IVSR2 // invincibility sparkles tails
+    {SPR_IVSR,2,1,{NULL},S_IVSR4,0,0}, // S_IVSR3 // invincibility sparkles tails
+    {SPR_IVSR,3,1,{NULL},S_IVSR5,0,0}, // S_IVSR4 // invincibility sparkles tails
+    {SPR_IVSR,4,1,{NULL},S_IVSR6,0,0}, // S_IVSR5 // invincibility sparkles tails
+    {SPR_IVSR,5,1,{NULL},S_IVSR7,0,0}, // S_IVSR6 // invincibility sparkles tails
+    {SPR_IVSR,6,1,{NULL},S_IVSR8,0,0}, // S_IVSR7 // invincibility sparkles tails
+    {SPR_IVSR,7,1,{NULL},S_IVSR9,0,0}, // S_IVSR8 // invincibility sparkles tails
+    {SPR_IVSR,8,1,{NULL},S_IVSR10,0,0}, // S_IVSR9 // invincibility sparkles tails
+    {SPR_IVSR,9,1,{NULL},S_IVSR11,0,0}, // S_IVSR10 // invincibility sparkles tails
+    {SPR_IVSR,10,1,{NULL},S_IVSR12,0,0}, // S_IVSR11 // invincibility sparkles tails
+    {SPR_IVSR,11,1,{NULL},S_IVSR13,0,0}, // S_IVSR12 // invincibility sparkles tails
+    {SPR_IVSR,12,1,{NULL},S_IVSR14,0,0}, // S_IVSR13 // invincibility sparkles tails
+    {SPR_IVSR,13,1,{NULL},S_IVSR15,0,0}, // S_IVSR14 // invincibility sparkles tails
+    {SPR_IVSR,14,1,{NULL},S_IVSR16,0,0}, // S_IVSR15 // invincibility sparkles tails
+    {SPR_IVSR,15,1,{NULL},S_IVSR17,0,0}, // S_IVSR16 // invincibility sparkles tails
+    {SPR_IVSR,16,1,{NULL},S_IVSR18,0,0}, // S_IVSR17 // invincibility sparkles tails
+    {SPR_IVSR,17,1,{NULL},S_IVSR19,0,0}, // S_IVSR18 // invincibility sparkles tails
+    {SPR_IVSR,18,1,{NULL},S_IVSR20,0,0}, // S_IVSR19 // invincibility sparkles tails
+    {SPR_IVSR,19,1,{NULL},S_IVSR21,0,0}, // S_IVSR20 // invincibility sparkles tails
+    {SPR_IVSR,20,1,{NULL},S_IVSR22,0,0}, // S_IVSR21 // invincibility sparkles tails
+    {SPR_IVSR,21,1,{NULL},S_IVSR23,0,0}, // S_IVSR22 // invincibility sparkles tails
+    {SPR_IVSR,22,1,{NULL},S_IVSR24,0,0}, // S_IVSR23 // invincibility sparkles tails
+    {SPR_IVSR,23,1,{NULL},S_IVSR25,0,0}, // S_IVSR24 // invincibility sparkles tails
+    {SPR_IVSR,24,1,{NULL},S_IVSR26,0,0}, // S_IVSR25 // invincibility sparkles tails
+    {SPR_IVSR,25,1,{NULL},S_IVSR27,0,0}, // S_IVSR26 // invincibility sparkles tails
+    {SPR_IVSR,26,1,{NULL},S_IVSR28,0,0}, // S_IVSR27 // invincibility sparkles tails
+    {SPR_IVSR,27,1,{NULL},S_IVSR29,0,0}, // S_IVSR28 // invincibility sparkles tails
+    {SPR_IVSR,28,1,{NULL},S_IVSS1,0,0}, // S_IVSR29 // invincibility sparkles tails
+
+    {SPR_IVSS,0,1,{NULL},S_IVSS2,0,0}, // S_IVSS1 // invincibility sparkles finish tails
+    {SPR_IVSS,1,1,{NULL},S_IVSS3,0,0}, // S_IVSS2 // invincibility sparkles finish tails
+    {SPR_IVSS,2,1,{NULL},S_IVSR1,0,0}, // S_IVSS3 // invincibility sparkles finish tails
+// end all invincibility sparkles tails
+
+    {SPR_DISS,0,1,{NULL},S_NULL,0,0}, // S_DISS // dissipate item object tails
+
+// start bubbles Tails 03-07-2000
+    {SPR_BUBP,0,16,{A_BubbleRise},S_SMALLBUBBLE1,0,0}, // S_SMALLBUBBLE // dissipate item object tails
+    {SPR_BUBP,0,16,{A_BubbleRise},S_SMALLBUBBLE,0,0}, // S_SMALLBUBBLE1 // dissipate item object tails
+    {SPR_BUBO,0,16,{A_BubbleRise},S_MEDIUMBUBBLE1,0,0}, // S_MEDIUMBUBBLE // dissipate item object tails
+    {SPR_BUBO,0,16,{A_BubbleRise},S_MEDIUMBUBBLE,0,0}, // S_MEDIUMBUBBLE1 // dissipate item object tails
+    {SPR_BUBN,0,16,{A_BubbleRise},S_EXTRALARGEBUBBLE,0,0}, // S_LARGEBUBBLE // dissipate item object tails
+    {SPR_BUBM,0,16,{A_BubbleRise},S_EXTRALARGEBUBBLE1,0,0}, // S_EXTRALARGEBUBBLE // dissipate item object tails
+    {SPR_BUBM,0,16,{A_BubbleRise},S_EXTRALARGEBUBBLE,0,0}, // S_EXTRALARGEBUBBLE1 // dissipate item object tails
+// end bubbles Tails 03-07-2000
+
+// start drowning timers Tails 03-07-2000
+    {SPR_CNTA,0,16,{NULL},S_DISS,0,0}, // S_ZERO1 // dissipate item object tails
+    {SPR_CNTB,0,16,{NULL},S_DISS,0,0}, // S_ONE1 // dissipate item object tails
+    {SPR_CNTC,0,16,{NULL},S_DISS,0,0}, // S_TWO1 // dissipate item object tails
+    {SPR_CNTD,0,16,{NULL},S_DISS,0,0}, // S_THREE1 // dissipate item object tails
+    {SPR_CNTE,0,16,{NULL},S_DISS,0,0}, // S_FOUR1 // dissipate item object tails
+    {SPR_CNTF,0,16,{NULL},S_DISS,0,0}, // S_FIVE1 // dissipate item object tails
+// end drowning timers Tails 03-07-2000
+
+// start Extra Large Bubble goes POP! Tails 03-08-2000
+    {SPR_POPP,0,16,{NULL},S_DISS,0,0}, // S_POP1 // dissipate item object tails
+// end Extra Large Bubble goes POP! Tails 03-08-2000
+
+// start 1up Box Tails 03-12-2000
+    {SPR_PRUP,0,1,{NULL},S_PRUP2,0,0},      // S_PRUP1 Tails 03-12-2000
+    {SPR_PRUP,1,2,{NULL},S_PRUP1,0,0}, // S_PRUP2 Tails 03-12-2000
+    {SPR_PRUP,2,2,{A_Fall},S_PRUP4,0,0}, // S_PRUP3 Tails 03-12-2000
+    {SPR_PRUP,3,2,{A_Scream},S_PRUP5,0,0}, // S_PRUP4 Tails 03-12-2000
+    {SPR_PRUP,4,2,{NULL},S_PRUP6,0,0}, // S_PRUP5 Tails 03-12-2000
+    {SPR_PRUP,5,2,{NULL},S_PRUP7,0,0}, // S_PRUP6 Tails 03-12-2000
+    {SPR_PRUP,6,16,{NULL},S_PRUP8,0,0}, // S_PRUP7 Tails 03-12-2000
+    {SPR_PRUP,6,48,{A_ExtraLife},S_PRUP9,0,0}, // S_PRUP8 Tails 03-12-2000
+    {SPR_PRUP,7,-1,{NULL},S_NULL,0,0}, // S_PRUP9 Tails 03-12-2000
+// end 1up Box Tails 03-12-2000
+
+// start Black shield Box Tails 04-08-2000
+    {SPR_BKTV,0,1,{NULL},S_BKTV2,0,0},      // S_BKTV1
+    {SPR_BKTV,1,2,{NULL},S_BKTV1,0,0}, // S_BKTV2
+    {SPR_BKTV,2,2,{A_Fall},S_BKTV4,0,0}, // S_BKTV3
+    {SPR_BKTV,3,2,{A_Scream},S_BKTV5,0,0}, // S_BKTV4
+    {SPR_BKTV,4,2,{NULL},S_BKTV6,0,0}, // S_BKTV5
+    {SPR_BKTV,5,2,{NULL},S_BKTV7,0,0}, // S_BKTV6
+    {SPR_BKTV,6,16,{NULL},S_BKTV8,0,0}, // S_BKTV7
+    {SPR_BKTV,6,48,{A_BlackShield},S_BKTV9,0,0}, // S_BKTV8
+    {SPR_BKTV,7,-1,{NULL},S_NULL,0,0}, // S_BKTV9
+// end 1up Box Tails 03-12-2000
+
+// start score logos Tails 04-16-2000
+    {SPR_SCRA,0,2,{NULL},S_SCRA2,0,0},      // S_SCRA
+    {SPR_SCRA,0,30,{A_ScoreRise},S_DISS,0,0},      // S_SCRA2
+    {SPR_SCRB,0,2,{NULL},S_SCRB2,0,0},      // S_SCRB
+    {SPR_SCRB,0,30,{A_ScoreRise},S_DISS,0,0},      // S_SCRB2
+    {SPR_SCRC,0,2,{NULL},S_SCRC2,0,0},      // S_SCRC
+    {SPR_SCRC,0,30,{A_ScoreRise},S_DISS,0,0},      // S_SCRC2
+    {SPR_SCRD,0,2,{NULL},S_SCRD2,0,0},      // S_SCRD
+    {SPR_SCRD,0,30,{A_ScoreRise},S_DISS,0,0},      // S_SCRD2
+// end score logos Tails 04-16-2000
+
+// start super sonic spark Tails 04-18-2000
+    {SPR_SSPK,0,2,{NULL},S_SSPK2,0,0},      // S_SSPK1
+    {SPR_SSPK,1,2,{NULL},S_SSPK3,0,0},      // S_SSPK2
+    {SPR_SSPK,2,2,{NULL},S_SSPK4,0,0},      // S_SSPK3
+    {SPR_SSPK,1,2,{NULL},S_SSPK5,0,0},      // S_SSPK4
+    {SPR_SSPK,0,2,{NULL},S_DISS,0,0},      // S_SSPK5
+// end super sonic spark Tails 04-18-2000
+
+// start grass debris Tails 05-14-2000
+    {SPR_GRAS,0,2,{NULL},S_GRASS2,0,0},      // S_GRASS1
+    {SPR_GRAS,1,2,{NULL},S_GRASS3,0,0},      // S_GRASS2
+    {SPR_GRAS,2,2,{NULL},S_GRASS4,0,0},      // S_GRASS3
+    {SPR_GRAS,3,2,{NULL},S_GRASS5,0,0},      // S_GRASS4
+    {SPR_GRAS,4,2,{NULL},S_GRASS6,0,0},      // S_GRASS5
+    {SPR_GRAS,5,2,{NULL},S_GRASS7,0,0},      // S_GRASS6
+    {SPR_GRAS,6,2,{NULL},S_DISS,0,0},      // S_GRASS7
+// end grass debris Tails 05-14-2000
+
+// start yellow diagonal spring Tails 05-17-2000
+    {SPR_YSPR,0,-1,{NULL},S_NULL,0,0},  // S_YDIAG1
+    {SPR_YSPR,1,1,{A_Pain},S_YDIAG3,0,0},  // S_YDIAG2 // Tails 05-17-2000
+    {SPR_YSPR,2,1,{NULL},S_YDIAG4,0,0},  // S_YDIAG3 // Tails 05-17-2000
+    {SPR_YSPR,3,1,{NULL},S_YDIAG5,0,0},  // S_YDIAG4 // Tails 05-17-2000
+    {SPR_YSPR,4,1,{NULL},S_YDIAG6,0,0},  // S_YDIAG5 // Tails 05-17-2000
+    {SPR_YSPR,3,1,{NULL},S_YDIAG7,0,0},  // S_YDIAG6 // Tails 05-17-2000
+    {SPR_YSPR,2,1,{NULL},S_YDIAG8,0,0},  // S_YDIAG7 // Tails 05-17-2000
+    {SPR_YSPR,1,1,{NULL},S_YDIAG1,0,0},  // S_YDIAG8 // Tails 05-17-2000
+// end yellow diagonal spring Tails 05-17-2000
+
+// start ambient water sounds Tails 06-10-2000
+    {SPR_WTRA,0,1,{A_AWaterA},S_AWATERA2,0,0},  // S_AWATERA1 // Tails 06-10-2000
+    {SPR_WTRA,0,34,{NULL},S_AWATERA1,0,0},  // S_AWATERA2 // Tails 06-10-2000
+
+    {SPR_WTRB,0,1,{A_AWaterB},S_AWATERB2,0,0},  // S_AWATERB1 // Tails 06-10-2000
+    {SPR_WTRB,0,34,{NULL},S_AWATERB1,0,0},  // S_AWATERB2 // Tails 06-10-2000
+
+    {SPR_WTRC,0,1,{A_AWaterC},S_AWATERC2,0,0},  // S_AWATERC1 // Tails 06-10-2000
+    {SPR_WTRC,0,34,{NULL},S_AWATERC1,0,0},  // S_AWATERC2 // Tails 06-10-2000
+
+    {SPR_WTRD,0,1,{A_AWaterD},S_AWATERD2,0,0},  // S_AWATERD1 // Tails 06-10-2000
+    {SPR_WTRD,0,34,{NULL},S_AWATERD1,0,0},  // S_AWATERD2 // Tails 06-10-2000
+
+    {SPR_WTRE,0,1,{A_AWaterE},S_AWATERE2,0,0},  // S_AWATERE1 // Tails 06-10-2000
+    {SPR_WTRE,0,34,{NULL},S_AWATERE1,0,0},  // S_AWATERE2 // Tails 06-10-2000
+
+    {SPR_WTRF,0,1,{A_AWaterF},S_AWATERF2,0,0},  // S_AWATERF1 // Tails 06-10-2000
+    {SPR_WTRF,0,34,{NULL},S_AWATERF1,0,0},  // S_AWATERF2 // Tails 06-10-2000
+
+    {SPR_WTRG,0,1,{A_AWaterG},S_AWATERG2,0,0},  // S_AWATERG1 // Tails 06-10-2000
+    {SPR_WTRG,0,34,{NULL},S_AWATERG1,0,0},  // S_AWATERG2 // Tails 06-10-2000
+
+    {SPR_WTRH,0,1,{A_AWaterH},S_AWATERH2,0,0},  // S_AWATERH1 // Tails 06-10-2000
+    {SPR_WTRH,0,34,{NULL},S_AWATERH1,0,0},  // S_AWATERH2 // Tails 06-10-2000
+// end ambient water sounds Tails 06-10-2000
+
+// start Skim objects Tails 06-13-2000
+    {SPR_SKIM,0,1,{NULL},S_SKIM2,0,0},  // S_SKIM1 // Tails 06-13-2000
+    {SPR_SKIM,0,1,{A_Chase},S_SKIM1,0,0},  // S_SKIM2 // Tails 06-13-2000
+    {SPR_SKIM,1,1,{NULL},S_SKIM4,0,0},  // S_SKIM3 // Tails 06-13-2000
+    {SPR_SKIM,2,1,{NULL},S_SKIM5,0,0},  // S_SKIM4 // Tails 06-13-2000
+    {SPR_SKIM,3,1,{NULL},S_SKIM6,0,0},  // S_SKIM5 // Tails 06-13-2000
+    {SPR_SKIM,4,1,{NULL},S_SKIM7,0,0},  // S_SKIM6 // Tails 06-13-2000
+    {SPR_SKIM,5,1,{NULL},S_SKIM8,0,0},  // S_SKIM7 // Tails 06-13-2000
+    {SPR_SKIM,6,1,{NULL},S_SKIM9,0,0},  // S_SKIM8 // Tails 06-13-2000
+    {SPR_SKIM,7,1,{NULL},S_SKIM10,0,0},  // S_SKIM9 // Tails 06-13-2000
+    {SPR_SKIM,8,1,{NULL},S_SKIM11,0,0},  // S_SKIM10 // Tails 06-13-2000
+    {SPR_SKIM,9,1,{NULL},S_SKIM12,0,0},  // S_SKIM11 // Tails 06-13-2000
+    {SPR_SKIM,10,1,{NULL},S_SKIM13,0,0},  // S_SKIM12 // Tails 06-13-2000
+    {SPR_SKIM,11,1,{NULL},S_SKIM14,0,0},  // S_SKIM13 // Tails 06-13-2000
+    {SPR_SKIM,12,1,{NULL},S_SKIM15,0,0},  // S_SKIM14 // Tails 06-13-2000
+    {SPR_SKIM,13,1,{NULL},S_SKIM16,0,0},  // S_SKIM15 // Tails 06-13-2000
+    {SPR_SKIM,14,1,{NULL},S_SKIM17,0,0},  // S_SKIM16 // Tails 06-13-2000
+    {SPR_SKIM,14,1,{A_DropMine},S_SKIM18,0,0},  // S_SKIM17 // Tails 06-13-2000
+    {SPR_SKIM,13,1,{NULL},S_SKIM19,0,0},  // S_SKIM18 // Tails 06-13-2000
+    {SPR_SKIM,12,1,{NULL},S_SKIM20,0,0},  // S_SKIM19 // Tails 06-13-2000
+    {SPR_SKIM,11,1,{NULL},S_SKIM21,0,0},  // S_SKIM20 // Tails 06-13-2000
+    {SPR_SKIM,10,1,{NULL},S_SKIM22,0,0},  // S_SKIM21 // Tails 06-13-2000
+    {SPR_SKIM,9,1,{NULL},S_SKIM23,0,0},  // S_SKIM22 // Tails 06-13-2000
+    {SPR_SKIM,8,1,{NULL},S_SKIM24,0,0},  // S_SKIM23 // Tails 06-13-2000
+    {SPR_SKIM,7,1,{NULL},S_SKIM25,0,0},  // S_SKIM24 // Tails 06-13-2000
+    {SPR_SKIM,6,1,{NULL},S_SKIM26,0,0},  // S_SKIM25 // Tails 06-13-2000
+    {SPR_SKIM,5,1,{NULL},S_SKIM27,0,0},  // S_SKIM26 // Tails 06-13-2000
+    {SPR_SKIM,4,1,{NULL},S_SKIM28,0,0},  // S_SKIM27 // Tails 06-13-2000
+    {SPR_SKIM,3,1,{NULL},S_SKIM29,0,0},  // S_SKIM28 // Tails 06-13-2000
+    {SPR_SKIM,2,1,{NULL},S_SKIM30,0,0},  // S_SKIM29 // Tails 06-13-2000
+    {SPR_SKIM,1,1,{NULL},S_SKIM1,0,0},  // S_SKIM30 // Tails 06-13-2000
+    {SPR_SKIM,15,1,{A_Fall},S_SKIM_BOOM2,0,0},  // S_SKIM_BOOM1 // Tails 06-13-2000
+    {SPR_SKIM,16,5,{A_Scream},S_SKIM_BOOM3,0,0},  // S_SKIM_BOOM2 // Tails 06-13-2000
+    {SPR_SKIM,17,5,{NULL},S_SKIM_BOOM4,0,0},  // S_SKIM_BOOM3 // Tails 06-13-2000
+    {SPR_SKIM,18,5,{NULL},S_DISS,0,0},  // S_SKIM_BOOM4 // Tails 06-13-2000
+
+    {SPR_MINE,0,-1,{NULL},S_NULL,0,0},  // S_MINE1 // Tails 06-13-2000
+    {SPR_MINE,1,1,{A_Fall},S_MINE_BOOM2,0,0},  // S_MINE_BOOM1 // Tails 06-13-2000
+    {SPR_MINE,2,3,{A_Scream},S_MINE_BOOM3,0,0},  // S_MINE_BOOM2 // Tails 06-13-2000
+    {SPR_MINE,3,3,{A_Explode},S_MINE_BOOM4,0,0},  // S_MINE_BOOM3 // Tails 06-13-2000
+    {SPR_MINE,4,3,{NULL},S_DISS,0,0},  // S_MINE_BOOM4 // Tails 06-13-2000
+// end Skim objects Tails 06-13-2000
+// start GFZ Fish Tails 07-03-2000
+    {SPR_FISH,1,1,{NULL},S_FISH2,0,0},  // S_FISH1 // Tails 07-03-2000
+    {SPR_FISH,1,1,{A_FishJump},S_FISH1,0,0},  // S_FISH2 // Tails 07-03-2000
+    {SPR_FISH,0,1,{NULL},S_FISH4,0,0},  // S_FISH3 // Tails 07-03-2000
+    {SPR_FISH,0,1,{A_FishJump},S_FISH3,0,0},  // S_FISH4 // Tails 07-03-2000
+    {SPR_FISH,2,1,{A_Fall},S_FISH_DIE2,0,0},  // S_FISH_DIE1 // Tails 07-03-2000
+    {SPR_FISH,3,5,{A_Scream},S_FISH_DIE3,0,0},  // S_FISH_DIE2 // Tails 07-03-2000
+    {SPR_FISH,4,5,{NULL},S_FISH_DIE4,0,0},  // S_FISH_DIE3 // Tails 07-03-2000
+    {SPR_FISH,5,5,{NULL},S_DISS,0,0},  // S_FISH_DIE4 // Tails 07-03-2000
+// end GFZ Fish Tails 07-03-2000
+    {SPR_GARG,0,-1,{NULL},S_NULL,0,0},  // S_GARGOYLE // Deep Sea Gargoyle Tails 07-29-2000
 };
 
 mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
@@ -1141,9 +1520,10 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
         255,            // painchance
         sfx_plpain,             // painsound
         S_NULL,         // meleestate
-        S_PLAY_ATK1,            // missilestate
+        S_PLAY_ATK1,            // missilestate // Tails 12-03-99
         S_PLAY_DIE1,            // deathstate
-        S_NULL,           // xdeathstate Tails 10-02-99
+//        S_NULL,           // xdeathstate Tails 10-02-99
+        S_PLAY_DIE1,           // xdeathstate Tails 10-02-99
         sfx_pldeth,             // deathsound
         0,              // speed
         16*FRACUNIT,            // radius
@@ -1163,22 +1543,22 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
         0,             // seesound // Tails 9-15-99
         32,              // reactiontime -- changed to 32 by Tails : 9-13-99
         0,             // attacksound // Tails 9-15-99
-        S_POSS_PAIN,            // painstate
+        S_NULL,            // painstate
         200,            // painchance
         0,             // painsound // Tails 9-15-99
         0,              // meleestate
-        S_POSS_ATK1,            // missilestate
+        S_NULL,            // missilestate
         S_POSS_DIE1,            // deathstate
         S_NULL,           // xdeathstate Tails 10-25-99
-        0,             // deathsound // Tails 9-15-99
-        4,              // speed -- changed to 4 by Tails : 9-13-99
+        sfx_podth1,             // deathsound // Tails 9-15-99
+        3,              // speed -- changed to 4 by Tails : 9-13-99
         24*FRACUNIT,            // radius // Tails 9-15-99
         32*FRACUNIT,            // height // Tails 9-15-99
         100,            // mass
         0,              // damage
         0,             // activesound // Tails 9-15-99
         MF_SOLID|MF_SHOOTABLE|MF_COUNTKILL,             // flags
-        S_POSS_RAISE1           // raisestate
+        S_NULL           // raisestate
     },
 
     {           // MT_SHOTGUY
@@ -1189,22 +1569,22 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
         0,             // seesound // Tails 9-15-99
         32,              // reactiontime -- changed to 32 by Tails : 9-13-99
         0,              // attacksound // Tails 9-15-99
-        S_SPOS_PAIN,            // painstate
+        S_NULL,            // painstate
         170,            // painchance
         0,             // painsound // Tails 9-15-99
         0,              // meleestate
-        S_SPOS_ATK1,            // missilestate
+        S_NULL,            // missilestate
         S_SPOS_DIE1,            // deathstate
         S_NULL,           // xdeathstate Tails 10-25-99
-        0,             // deathsound // Tails 9-15-99
-        8,              // speed
+        sfx_podth1,             // deathsound // Tails 9-15-99
+        3,              // speed
         24*FRACUNIT,            // radius // Tails 9-15-99
         32*FRACUNIT,            // height // Tails 9-15-99
         100,            // mass
         0,              // damage
         0,             // activesound // Tails 9-15-99
         MF_SOLID|MF_SHOOTABLE|MF_COUNTKILL,             // flags
-        S_SPOS_RAISE1           // raisestate
+        S_NULL           // raisestate
     },
 
     {           // MT_VILE
@@ -1415,12 +1795,12 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
         S_CPOS_RAISE1           // raisestate
     },
 
-    {           // MT_TROOP
+    {           // MT_TROOP  //TANKBOT
         3001,           // doomednum
         S_TROO_STND,            // spawnstate
         1,             // spawnhealth -- changed to 1 by Tails : 9-13-99
         S_TROO_RUN1,            // seestate
-        sfx_bgact,             // seesound
+        sfx_bgsit1,             // seesound
         8,              // reactiontime
         0,              // attacksound
         S_TROO_PAIN,            // painstate
@@ -1433,11 +1813,11 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
         sfx_bgdth1,             // deathsound
         20,              // speed // Tails 9-15-99
         28*FRACUNIT,            // radius
-        28*FRACUNIT,            // height
+        16*FRACUNIT,            // height
         100,            // mass
         0,              // damage
         sfx_bgact,              // activesound
-        MF_NOCLIP|MF_COUNTKILL|MF_FLOAT|MF_NOGRAVITY,             // flags
+        MF_SOLID|MF_SHOOTABLE|MF_COUNTKILL|MF_FLOAT|MF_NOGRAVITY,             // flags
         S_TROO_RAISE1           // raisestate
     },
 
@@ -1468,7 +1848,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
     },
 
     {           // MT_SHADOWS
-        58,             // doomednum
+        -1,             // doomednum
         S_SARG_STND,            // spawnstate
         150,            // spawnhealth
         S_SARG_RUN1,            // seestate
@@ -1498,17 +1878,17 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
         S_HEAD_STND,            // spawnstate
         1,            // spawnhealth
         S_HEAD_RUN1,            // seestate
-        sfx_cacsit,             // seesound
-        2,              // reactiontime
+        sfx_None,             // seesound
+        8,              // reactiontime
         0,              // attacksound
         S_HEAD_PAIN,            // painstate
         128,            // painchance
         sfx_None,             // painsound
-        S_HEAD_ATK1,              // meleestate
-        S_NULL,            // missilestate
+        0,              // meleestate
+        S_HEAD_ATK1,            // missilestate
         S_HEAD_DIE1,            // deathstate
         S_NULL,         // xdeathstate
-        sfx_cacsit,             // deathsound
+        sfx_bgdth1,             // deathsound
         8,              // speed
         31*FRACUNIT,            // radius
         56*FRACUNIT,            // height
@@ -1516,7 +1896,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
         0,              // damage
         sfx_dmact,              // activesound
         MF_SOLID|MF_SHOOTABLE|MF_FLOAT|MF_NOGRAVITY|MF_COUNTKILL,               // flags
-        S_HEAD_RAISE1           // raisestate
+        S_NULL           // raisestate
     },
 
     {           // MT_BRUISER
@@ -1652,7 +2032,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
     {           // MT_BABY
         68,             // doomednum
         S_BSPI_STND,            // spawnstate
-        2,            // spawnhealth -- changed to 2 by Tails : 9-13-99
+        1,            // spawnhealth -- changed to 2 by Tails : 9-13-99
         S_BSPI_SIGHT,           // seestate
         0,             // seesound // Tails 9-15-99
         8,              // reactiontime
@@ -1672,32 +2052,32 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
         0,              // damage
         0,             // activesound // Tails 9-15-99
         MF_SOLID|MF_SHOOTABLE|MF_COUNTKILL,             // flags
-        S_BSPI_RAISE1           // raisestate
+        S_NULL           // raisestate // Tails 03-08-2000
     },
 
     {           // MT_CYBORG
         16,             // doomednum
-        S_CYBER_STND,           // spawnstate
-        4000,           // spawnhealth
-        S_CYBER_RUN1,           // seestate
-        sfx_cybsit,             // seesound
+        S_EGGMOBILE_STND,           // spawnstate // Tails 11-30-99
+        8,           // spawnhealth
+        S_EGGMOBILE_RUN1,           // seestate // Tails 11-30-99
+        0,             // seesound
         8,              // reactiontime
         0,              // attacksound
-        S_CYBER_PAIN,           // painstate
+        S_EGGMOBILE_PAIN,           // painstate // Tails 11-30-99
         20,             // painchance
         sfx_dmpain,             // painsound
         0,              // meleestate
-        S_CYBER_ATK1,           // missilestate
-        S_CYBER_DIE1,           // deathstate
+        S_EGGMOBILE_ATK1,           // missilestate // Tails 11-30-99
+        S_EGGMOBILE_DIE1,           // deathstate // Tails 11-30-99
         S_NULL,         // xdeathstate
         sfx_cybdth,             // deathsound
         16,             // speed
-        40*FRACUNIT,            // radius
-        110*FRACUNIT,           // height
+        48*FRACUNIT,            // radius
+        48*FRACUNIT,           // height
         1000,           // mass
         0,              // damage
-        sfx_dmact,              // activesound
-        MF_SOLID|MF_SHOOTABLE|MF_COUNTKILL,             // flags
+        0,              // activesound
+        MF_SOLID|MF_SHOOTABLE|MF_COUNTKILL|MF_FLOAT|MF_NOGRAVITY,             // flags // Tails 11-30-99
         S_NULL          // raisestate
     },
 
@@ -1717,7 +2097,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
         S_PAIN_DIE1,            // deathstate
         S_NULL,         // xdeathstate
         sfx_pedth,              // deathsound
-        64,              // speed
+        16,              // speed
         46*FRACUNIT,            // radius Tails 10-25-99
         46*FRACUNIT,            // height Tails 10-25-99
         800,            // mass
@@ -2248,7 +2628,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
     },
 
     {           // MT_MISC0
-        2018,           // doomednum
+        -1,           // doomednum
         S_ARM1,         // spawnstate
         1000,           // spawnhealth
         S_NULL,         // seestate
@@ -2274,7 +2654,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
     },
 
     {           // MT_MISC1
-        2019,           // doomednum
+        -1,           // doomednum
         S_ARM2,         // spawnstate
         1000,           // spawnhealth
         S_NULL,         // seestate
@@ -2315,18 +2695,18 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
         S_NULL,         // deathstate
         S_NULL,         // xdeathstate
         sfx_None,               // deathsound
-        0,              // speed
+        30*FRACUNIT,              // speed
         16*FRACUNIT,            // radius //Tails 9-15-99
         24*FRACUNIT,            // height //Tails 9-15-99
         100,            // mass
         0,              // damage
         sfx_None,               // activesound
-        MF_SPECIAL|MF_COUNTITEM|MF_NOGRAVITY,                // flags //Tails 9-15-99
+        MF_SPECIAL|MF_COUNTITEM|MF_NOGRAVITY|MF_FLOAT|MF_DROPOFF,                // flags //Tails 9-15-99
         S_NULL          // raisestate
     },
 
     {           // MT_MISC3
-        2015,           // doomednum
+        -1,           // doomednum
         S_BON2,         // spawnstate
         1000,           // spawnhealth
         S_NULL,         // seestate
@@ -2522,14 +2902,14 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
         S_NULL,         // missilestate
         S_STIM2,         // deathstate Tails 9-30-99
         S_NULL,         // xdeathstate
-        sfx_None,               // deathsound
+        sfx_podth1,               // deathsound
         0,              // speed
         16*FRACUNIT,            // radius Tails 9-30-99
         32*FRACUNIT,            // height Tails 9-30-99
         100,            // mass
         0,              // damage
         sfx_None,               // activesound
-        MF_SOLID|MF_SHOOTABLE|MF_COUNTITEM,   // flags  Tails 9-30-99
+        MF_SOLID|MF_SHOOTABLE,   // flags  Tails 9-30-99
         S_NULL          // raisestate
     },
 
@@ -2548,20 +2928,20 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
         S_NULL,         // missilestate
         S_MEDI2,         // deathstate Tails 9-30-99
         S_NULL,         // xdeathstate
-        sfx_None,               // deathsound
+        sfx_podth1,               // deathsound
         0,              // speed
         16*FRACUNIT,            // radius Tails 9-30-99
         32*FRACUNIT,            // height Tails 9-30-99
         100,            // mass
         0,              // damage
         sfx_None,               // activesound
-        MF_SOLID|MF_SHOOTABLE|MF_COUNTITEM,   // flags  Tails 9-30-99
+        MF_SOLID|MF_SHOOTABLE,   // flags  Tails 9-30-99
         S_NULL          // raisestate
     },
 
-    {           // MT_MISC12
+    {           // MT_EMMY
         2013,           // doomednum
-        S_SOUL,         // spawnstate
+        S_EMMY1,         // spawnstate
         1000,           // spawnhealth
         S_NULL,         // seestate
         sfx_None,               // seesound
@@ -2576,43 +2956,43 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
         S_NULL,         // xdeathstate
         sfx_None,               // deathsound
         0,              // speed
-        20*FRACUNIT,            // radius
-        16*FRACUNIT,            // height
+        24*FRACUNIT,            // radius
+        24*FRACUNIT,            // height
         100,            // mass
         0,              // damage
         sfx_None,               // activesound
-        MF_SPECIAL|MF_COUNTITEM,                // flags
+        MF_SPECIAL|MF_COUNTITEM|MF_FLOAT|MF_NOGRAVITY,                // flags
         S_NULL          // raisestate
     },
 
     {           // MT_INV
         2022,           // doomednum
         S_PINV,         // spawnstate
-        1000,           // spawnhealth
+        1,           // spawnhealth
         S_NULL,         // seestate
         sfx_None,               // seesound
         8,              // reactiontime
         sfx_None,               // attacksound
-        S_NULL,         // painstate
+        S_PINV,         // painstate
         0,              // painchance
         sfx_None,               // painsound
         S_NULL,         // meleestate
         S_NULL,         // missilestate
-        S_NULL,         // deathstate
+        S_PINV3,         // deathstate
         S_NULL,         // xdeathstate
-        sfx_None,               // deathsound
+        sfx_podth1,               // deathsound
         0,              // speed
-        20*FRACUNIT,            // radius
-        16*FRACUNIT,            // height
+        16*FRACUNIT,            // radius
+        32*FRACUNIT,            // height
         100,            // mass
         0,              // damage
         sfx_None,               // activesound
-        MF_SPECIAL|MF_COUNTITEM,                // flags
+        MF_SOLID|MF_SHOOTABLE,                // flags
         S_NULL          // raisestate
     },
 
     {           // MT_MISC13
-        2023,           // doomednum
+        -1,           // doomednum
         S_PSTR,         // spawnstate
         1000,           // spawnhealth
         S_NULL,         // seestate
@@ -2638,7 +3018,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
     },
 
     {           // MT_INS
-        2024,           // doomednum
+        -1,           // doomednum
         S_PINS,         // spawnstate
         1000,           // spawnhealth
         S_NULL,         // seestate
@@ -2664,7 +3044,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
     },
 
     {           // MT_MISC14
-        2025,           // doomednum
+        -1,           // doomednum
         S_SUIT,         // spawnstate
         1000,           // spawnhealth
         S_NULL,         // seestate
@@ -2690,7 +3070,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
     },
 
     {           // MT_MISC15
-        2026,           // doomednum
+        -1,           // doomednum
         S_PMAP,         // spawnstate
         1000,           // spawnhealth
         S_NULL,         // seestate
@@ -2716,7 +3096,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
     },
 
     {           // MT_MISC16
-        2045,           // doomednum
+        -1,           // doomednum
         S_PVIS,         // spawnstate
         1000,           // spawnhealth
         S_NULL,         // seestate
@@ -2742,7 +3122,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
     },
 
     {           // MT_MEGA
-        83,             // doomednum
+        -1,             // doomednum
         S_MEGA,         // spawnstate
         1000,           // spawnhealth
         S_NULL,         // seestate
@@ -3250,14 +3630,14 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
         S_NULL,         // missilestate
         S_GRTV2,         // deathstate // Tails 9-30-99
         S_NULL,         // xdeathstate
-        sfx_None,               // deathsound
+        sfx_podth1,               // deathsound
         0,              // speed
         16*FRACUNIT,            // radius
         32*FRACUNIT,            // height // Tails 9-30-99
         100,            // mass
         0,              // damage
         sfx_None,               // activesound
-        MF_SOLID|MF_SHOOTABLE|MF_COUNTITEM,   // flags  Tails 9-30-99
+        MF_SOLID|MF_SHOOTABLE,   // flags  Tails 9-30-99
         S_NULL          // raisestate
     },
 
@@ -3313,7 +3693,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
         S_NULL          // raisestate
     },
 
-    {           // MT_MISC34
+    {           // MT_MISC34 // The Fan Tails 12-03-99
         32,             // doomednum
         S_TALLREDCOL,           // spawnstate
         1000,           // spawnhealth
@@ -3330,18 +3710,19 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
         S_NULL,         // xdeathstate
         sfx_None,               // deathsound
         0,              // speed
-        16*FRACUNIT,            // radius
-        52*FRACUNIT,            // height
+        32*FRACUNIT,            // radius // Tails 12-03-99
+        1*FRACUNIT,            // height // Tails 12-03-99
         100,            // mass
         0,              // damage
         sfx_None,               // activesound
-        MF_SOLID,               // flags
+        MF_SOLID,               // flags // Tails 12-03-99
         S_NULL          // raisestate
     },
 
-    {           // MT_MISC35
+// start Bubble Source Tails 03-07-2000
+    {           // MT_BUBBLES        
         33,             // doomednum
-        S_SHRTREDCOL,           // spawnstate
+        S_BUBBLES1,           // spawnstate
         1000,           // spawnhealth
         S_NULL,         // seestate
         sfx_None,               // seesound
@@ -3356,38 +3737,39 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
         S_NULL,         // xdeathstate
         sfx_None,               // deathsound
         0,              // speed
-        16*FRACUNIT,            // radius
-        40*FRACUNIT,            // height
+        8*FRACUNIT,            // radius
+        8*FRACUNIT,            // height
         100,            // mass
         0,              // damage
         sfx_None,               // activesound
-        MF_SOLID,               // flags
+        MF_NOCLIP,               // flags
         S_NULL          // raisestate
     },
+// end Bubble source Tails 03-07-2000
 
     {           // MT_MISC36
         37,             // doomednum
         S_SKULLCOL,             // spawnstate
         1000,           // spawnhealth
-        S_SKULLCOL,         // seestate
-        sfx_bgact,               // seesound
+        S_NULL,         // seestate
+        sfx_None,               // seesound
         8,              // reactiontime
         sfx_None,               // attacksound
         S_NULL,         // painstate
         0,              // painchance
         sfx_None,               // painsound
         S_NULL,         // meleestate
-        S_SKULLCOL,         // missilestate
+        S_NULL,         // missilestate
         S_NULL,         // deathstate
         S_NULL,         // xdeathstate
         sfx_None,               // deathsound
         0,              // speed
         64*FRACUNIT,            // radius
         1*FRACUNIT,            // height
-        1000,            // mass // Tails 9-15-99
+        10000000,            // mass // Tails 9-15-99
         0,              // damage
-        sfx_bgact,               // activesound
-        MF_NOCLIP|MF_FLOAT|MF_NOGRAVITY|MF_NOSECTOR,               // flags // Tails 9-15-99
+        sfx_None,               // activesound
+        MF_SOLID|MF_FLOAT|MF_NOGRAVITY|MF_NOSECTOR,               // flags // Tails 9-15-99
         S_NULL          // raisestate
     },
 
@@ -3418,7 +3800,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
     },
 
     {           // MT_MISC38
-        41,             // doomednum
+        0,             // doomednum
         S_EVILEYE,              // spawnstate
         1000,           // spawnhealth
         S_NULL,         // seestate
@@ -3600,7 +3982,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
     },
 
     {           // MT_MISC45
-        56,             // doomednum
+        -1,             // doomednum
         S_GTORCHSHRT,           // spawnstate
         1000,           // spawnhealth
         S_NULL,         // seestate
@@ -3673,7 +4055,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
         100,            // mass
         0,              // damage
         sfx_None,               // activesound
-        MF_SOLID,               // flags Tails 10-24-99
+        MF_NOCLIP,               // flags Tails 10-24-99
         S_NULL          // raisestate
     },
 
@@ -3692,14 +4074,14 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
         S_NULL,         // missilestate
         S_YLTV2,         // deathstate // Tails 9-30-99
         S_NULL,         // xdeathstate
-        sfx_None,               // deathsound
+        sfx_podth1,               // deathsound
         0,              // speed
         16*FRACUNIT,            // radius
         32*FRACUNIT,            // height // Tails 9-30-99
         100,            // mass
         0,              // damage
         sfx_None,               // activesound
-        MF_SOLID|MF_SHOOTABLE|MF_COUNTITEM,   // flags  Tails 9-30-99
+        MF_SOLID|MF_SHOOTABLE,   // flags  Tails 9-30-99
         S_NULL          // raisestate
     },
 
@@ -3744,14 +4126,14 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
         S_NULL,         // missilestate
         S_BLTV2,         // deathstate Tails 9-30-99
         S_NULL,         // xdeathstate
-        sfx_None,               // deathsound
+        sfx_podth1,               // deathsound
         0,              // speed
         16*FRACUNIT,            // radius
         32*FRACUNIT,            // height Tails 9-30-99
         100,            // mass
         0,              // damage
         sfx_None,               // activesound
-        MF_SOLID|MF_SHOOTABLE|MF_COUNTITEM,   // flags  Tails 9-30-99
+        MF_SOLID|MF_SHOOTABLE,   // flags  Tails 9-30-99
         S_NULL          // raisestate
     },
 
@@ -4043,7 +4425,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 
     {           // MT_MISC62
         15,             // doomednum
-        S_PLAY_DIE7,            // spawnstate
+        S_PLAY_DIE3,            // spawnstate
         1000,           // spawnhealth
         S_NULL,         // seestate
         sfx_None,               // seesound
@@ -4069,7 +4451,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 
     {           // MT_MISC63
         18,             // doomednum
-        S_POSS_DIE5,            // spawnstate
+        S_POSS_DIE4,            // spawnstate
         1000,           // spawnhealth
         S_NULL,         // seestate
         sfx_None,               // seesound
@@ -4173,7 +4555,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 
     {           // MT_MISC67
         19,             // doomednum
-        S_SPOS_DIE5,            // spawnstate
+        S_SPOS_DIE3,            // spawnstate
         1000,           // spawnhealth
         S_NULL,         // seestate
         sfx_None,               // seesound
@@ -4199,7 +4581,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 
     {           // MT_MISC68
         10,             // doomednum
-        S_PLAY_DIE10,           // spawnstate Tails 10-02-99
+        S_PLAY_DIE3,           // spawnstate Tails 10-02-99
         1000,           // spawnhealth
         S_NULL,         // seestate
         sfx_None,               // seesound
@@ -4225,7 +4607,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 
     {           // MT_MISC69
         12,             // doomednum
-        S_PLAY_DIE10,           // spawnstate Tails 10-02-99
+        S_PLAY_DIE3,           // spawnstate Tails 10-02-99
         1000,           // spawnhealth
         S_NULL,         // seestate
         sfx_None,               // seesound
@@ -4259,15 +4641,15 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
         sfx_None,               // attacksound
         S_NULL,         // painstate
         0,              // painchance
-        sfx_None,               // painsound
+        sfx_oof,               // painsound
         S_NULL,         // meleestate
         S_NULL,         // missilestate
         S_NULL,         // deathstate
         S_NULL,         // xdeathstate
         sfx_None,               // deathsound
         0,              // speed
-        16*FRACUNIT,            // radius
-        64*FRACUNIT,            // height
+        20*FRACUNIT,            // radius
+        16*FRACUNIT,            // height
         100,            // mass
         0,              // damage
         sfx_None,               // activesound
@@ -4302,7 +4684,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
     },
 
     {           // MT_MISC72
-        27,             // doomednum
+        -1,             // doomednum
         S_HEADONASTICK,         // spawnstate
         1000,           // spawnhealth
         S_NULL,         // seestate
@@ -4368,14 +4750,14 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
         S_NULL,         // missilestate
         S_SHTV2,         // deathstate // Tails 9-30-99
         S_NULL,         // xdeathstate
-        sfx_None,               // deathsound
+        sfx_podth1,               // deathsound
         0,              // speed
         16*FRACUNIT,            // radius
         32*FRACUNIT,            // height // Tails 9-30-99
         100,            // mass
         0,              // damage
         sfx_None,               // activesound
-        MF_SOLID|MF_SHOOTABLE|MF_COUNTITEM,   // flags  Tails 9-30-99
+        MF_SOLID|MF_SHOOTABLE,   // flags  Tails 9-30-99
         S_NULL          // raisestate
     },
 
@@ -4423,11 +4805,11 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
         sfx_None,               // deathsound
         0,              // speed
         32*FRACUNIT,            // radius
-        48*FRACUNIT,            // height
+        96*FRACUNIT,            // height
         100,            // mass
         0,              // damage
         sfx_None,               // activesound
-        MF_SOLID,               // flags Tails 10-24-99
+        MF_NOCLIP,               // flags Tails 10-24-99
         S_NULL          // raisestate
     },
 
@@ -4453,7 +4835,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
         100,            // mass
         0,              // damage
         sfx_None,               // activesound
-        MF_SOLID,               // flags
+        MF_NOCLIP,               // flags
         S_NULL          // raisestate
     },
 
@@ -4623,7 +5005,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
         sfx_None,               // attacksound
         S_NULL,         // painstate
         0,              // painchance
-        sfx_None,               // painsound
+        sfx_oof,               // painsound
         S_NULL,         // meleestate
         S_NULL,         // missilestate
         S_NULL,         // deathstate
@@ -4635,7 +5017,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
         100,            // mass
         0,              // damage
         sfx_None,               // activesound
-        MF_NOBLOCKMAP,          // flags
+        MF_SOLID,          // flags
         S_NULL          // raisestate
     },
 
@@ -4666,7 +5048,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
     },
 
     {           // MT_MISC86
-        81,                     // doomednum
+        -1,                     // doomednum
         S_BRAINSTEM,            // spawnstate
         1000,                   // spawnhealth
         S_NULL,                 // seestate
@@ -4818,7 +5200,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
         100,            // mass
         0,              // damage
         sfx_None,               // activesound
-        MF_SPECIAL|MF_COUNTITEM,                // flags //Tails 9-15-99
+        MF_SPECIAL|MF_NOCLIPTHING|MF_DROPOFF,          // flags //Tails 9-15-99
         S_NULL          // raisestate
     },
 
@@ -4872,8 +5254,1161 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
         16,            // mass
         0,              // damage
         sfx_None,               // activesound
-        MF_NOCLIPTHING,                // flags //Tails 10-20-99
+        MF_NOCLIPTHING|MF_FLOAT,                // flags //Tails 10-20-99
         S_NULL          // raisestate
-    }
+    },
 
+// Tails Thok! mobj 12-05-99
+    {           // MT_THOK
+        -1,           // doomednum
+        S_THOK1,         // spawnstate
+        1000,           // spawnhealth
+        S_NULL,         // seestate
+        sfx_None,               // seesound
+        8,              // reactiontime
+        sfx_None,               // attacksound
+        S_NULL,         // painstate
+        0,              // painchance
+        sfx_None,               // painsound
+        S_NULL,         // meleestate
+        S_NULL,         // missilestate
+        S_NULL,         // deathstate
+        S_NULL,         // xdeathstate
+        sfx_None,               // deathsound
+        8,              // speed
+        64*FRACUNIT,            // radius //Tails 12-05-99
+        64*FRACUNIT,            // height //Tails 12-05-99
+        16,            // mass
+        0,              // damage
+        sfx_None,               // activesound
+        MF_NOCLIP|MF_NOGRAVITY|MF_FLOAT,                // flags //Tails 12-05-99
+        S_NULL          // raisestate
+    },
+
+// Tails start shields
+    {           // MT_BLUEORB
+        -1,           // doomednum
+        S_BORB1,         // spawnstate
+        1000,           // spawnhealth
+        S_NULL,         // seestate
+        sfx_None,               // seesound
+        0,              // reactiontime
+        sfx_None,               // attacksound
+        S_NULL,         // painstate
+        0,              // painchance
+        sfx_None,               // painsound
+        S_NULL,         // meleestate
+        S_NULL,         // missilestate
+        S_NULL,         // deathstate
+        S_NULL,         // xdeathstate
+        sfx_None,               // deathsound
+        0,              // speed
+        64*FRACUNIT,            // radius //Tails 12-05-99
+        64*FRACUNIT,            // height //Tails 12-05-99
+        16,            // mass
+        0,              // damage
+        sfx_None,               // activesound
+        MF_NOCLIP | MF_FLOAT | MF_NOGRAVITY,                // flags //Tails 12-05-99
+        S_NULL          // raisestate
+    },
+
+
+    {           // MT_YELLOWORB
+        -1,           // doomednum
+        S_YORB1,         // spawnstate
+        1000,           // spawnhealth
+        S_NULL,         // seestate
+        sfx_None,               // seesound
+        8,              // reactiontime
+        sfx_None,               // attacksound
+        S_NULL,         // painstate
+        0,              // painchance
+        sfx_None,               // painsound
+        S_NULL,         // meleestate
+        S_NULL,         // missilestate
+        S_NULL,         // deathstate
+        S_NULL,         // xdeathstate
+        sfx_None,               // deathsound
+        8,              // speed
+        64*FRACUNIT,            // radius //Tails 12-05-99
+        64*FRACUNIT,            // height //Tails 12-05-99
+        16,            // mass
+        0,              // damage
+        sfx_None,               // activesound
+        MF_NOCLIP | MF_FLOAT | MF_NOGRAVITY,                // flags //Tails 12-05-99
+        S_NULL          // raisestate
+    },
+
+
+    {           // MT_GREENORB
+        -1,           // doomednum
+        S_GORB1,         // spawnstate
+        1000,           // spawnhealth
+        S_NULL,         // seestate
+        sfx_None,               // seesound
+        8,              // reactiontime
+        sfx_None,               // attacksound
+        S_NULL,         // painstate
+        0,              // painchance
+        sfx_None,               // painsound
+        S_NULL,         // meleestate
+        S_NULL,         // missilestate
+        S_NULL,         // deathstate
+        S_NULL,         // xdeathstate
+        sfx_None,               // deathsound
+        8,              // speed
+        64*FRACUNIT,            // radius //Tails 12-05-99
+        64*FRACUNIT,            // height //Tails 12-05-99
+        16,            // mass
+        0,              // damage
+        sfx_None,               // activesound
+        MF_NOCLIP | MF_FLOAT | MF_NOGRAVITY,                // flags //Tails 12-05-99
+        S_NULL          // raisestate
+    },
+
+
+    {           // MT_BLACKORB
+        -1,           // doomednum
+        S_KORB1,         // spawnstate
+        1000,           // spawnhealth
+        S_NULL,         // seestate
+        sfx_None,               // seesound
+        8,              // reactiontime
+        sfx_None,               // attacksound
+        S_NULL,         // painstate
+        0,              // painchance
+        sfx_None,               // painsound
+        S_NULL,         // meleestate
+        S_NULL,         // missilestate
+        S_NULL,         // deathstate
+        S_NULL,         // xdeathstate
+        sfx_None,               // deathsound
+        8,              // speed
+        64*FRACUNIT,            // radius //Tails 12-05-99
+        64*FRACUNIT,            // height //Tails 12-05-99
+        16,            // mass
+        0,              // damage
+        sfx_None,               // activesound
+        MF_NOCLIP | MF_FLOAT | MF_NOGRAVITY,                // flags //Tails 12-05-99
+        S_NULL          // raisestate
+    },
+// Tails end shields
+
+// spark
+    {           // MT_SPARK
+        -1,           // doomednum
+        S_SPRK1,         // spawnstate
+        1000,           // spawnhealth
+        S_NULL,         // seestate
+        sfx_None,               // seesound
+        8,              // reactiontime
+        sfx_None,               // attacksound
+        S_NULL,         // painstate
+        0,              // painchance
+        sfx_None,               // painsound
+        S_NULL,         // meleestate
+        S_NULL,         // missilestate
+        S_NULL,         // deathstate
+        S_NULL,         // xdeathstate
+        sfx_None,               // deathsound
+        8,              // speed
+        32*FRACUNIT,            // radius //Tails 12-05-99
+        32*FRACUNIT,            // height //Tails 12-05-99
+        16,            // mass
+        0,              // damage
+        sfx_None,               // activesound
+        MF_NOCLIP|MF_FLOAT|MF_NOGRAVITY,                // flags //Tails 12-05-99
+        S_NULL          // raisestate
+    },
+
+// start invincibility sparkles tails
+
+    {           // MT_IVSP
+        -1,           // doomednum
+        S_IVSP1,         // spawnstate
+        1000,           // spawnhealth
+        S_NULL,         // seestate
+        sfx_None,               // seesound
+        8,              // reactiontime
+        sfx_None,               // attacksound
+        S_NULL,         // painstate
+        0,              // painchance
+        sfx_None,               // painsound
+        S_NULL,         // meleestate
+        S_NULL,         // missilestate
+        S_NULL,         // deathstate
+        S_NULL,         // xdeathstate
+        sfx_None,               // deathsound
+        8,              // speed
+        64*FRACUNIT,            // radius //Tails 12-05-99
+        64*FRACUNIT,            // height //Tails 12-05-99
+        16,            // mass
+        0,              // damage
+        sfx_None,               // activesound
+        MF_NOCLIP|MF_FLOAT|MF_NOGRAVITY,                // flags //Tails 12-05-99
+        S_NULL          // raisestate
+    },
+
+    {           // MT_IVSQ
+        -1,           // doomednum
+        S_IVSQ1,         // spawnstate
+        1000,           // spawnhealth
+        S_NULL,         // seestate
+        sfx_None,               // seesound
+        8,              // reactiontime
+        sfx_None,               // attacksound
+        S_NULL,         // painstate
+        0,              // painchance
+        sfx_None,               // painsound
+        S_NULL,         // meleestate
+        S_NULL,         // missilestate
+        S_NULL,         // deathstate
+        S_NULL,         // xdeathstate
+        sfx_None,               // deathsound
+        8,              // speed
+        64*FRACUNIT,            // radius //Tails 12-05-99
+        64*FRACUNIT,            // height //Tails 12-05-99
+        16,            // mass
+        0,              // damage
+        sfx_None,               // activesound
+        MF_NOCLIP|MF_FLOAT|MF_NOGRAVITY,                // flags //Tails 12-05-99
+        S_NULL          // raisestate
+    },
+
+    {           // MT_IVSR
+        -1,           // doomednum
+        S_IVSR1,         // spawnstate
+        1000,           // spawnhealth
+        S_NULL,         // seestate
+        sfx_None,               // seesound
+        8,              // reactiontime
+        sfx_None,               // attacksound
+        S_NULL,         // painstate
+        0,              // painchance
+        sfx_None,               // painsound
+        S_NULL,         // meleestate
+        S_NULL,         // missilestate
+        S_NULL,         // deathstate
+        S_NULL,         // xdeathstate
+        sfx_None,               // deathsound
+        8,              // speed
+        64*FRACUNIT,            // radius //Tails 12-05-99
+        64*FRACUNIT,            // height //Tails 12-05-99
+        16,            // mass
+        0,              // damage
+        sfx_None,               // activesound
+        MF_NOCLIP|MF_FLOAT|MF_NOGRAVITY,                // flags //Tails 12-05-99
+        S_NULL          // raisestate
+    },
+
+    {           // MT_IVSS
+        -1,           // doomednum
+        S_IVSS1,         // spawnstate
+        1000,           // spawnhealth
+        S_NULL,         // seestate
+        sfx_None,               // seesound
+        8,              // reactiontime
+        sfx_None,               // attacksound
+        S_NULL,         // painstate
+        0,              // painchance
+        sfx_None,               // painsound
+        S_NULL,         // meleestate
+        S_NULL,         // missilestate
+        S_NULL,         // deathstate
+        S_NULL,         // xdeathstate
+        sfx_None,               // deathsound
+        8,              // speed
+        64*FRACUNIT,            // radius //Tails 12-05-99
+        64*FRACUNIT,            // height //Tails 12-05-99
+        16,            // mass
+        0,              // damage
+        sfx_None,               // activesound
+        MF_NOCLIP|MF_FLOAT|MF_NOGRAVITY,                // flags //Tails 12-05-99
+        S_NULL          // raisestate
+    },
+
+// End invincibility sparkles tails
+
+// start dissipating object tails 
+    {           // MT_DISS
+        -1,           // doomednum
+        S_DISS,         // spawnstate
+        1000,           // spawnhealth
+        S_NULL,         // seestate
+        sfx_None,               // seesound
+        8,              // reactiontime
+        sfx_None,               // attacksound
+        S_NULL,         // painstate
+        0,              // painchance
+        sfx_None,               // painsound
+        S_NULL,         // meleestate
+        S_NULL,         // missilestate
+        S_NULL,         // deathstate
+        S_NULL,         // xdeathstate
+        sfx_None,               // deathsound
+        8,              // speed
+        1*FRACUNIT,            // radius //Tails 12-05-99
+        1*FRACUNIT,            // height //Tails 12-05-99
+        16,            // mass
+        0,              // damage
+        sfx_None,               // activesound
+        MF_NOCLIP|MF_FLOAT|MF_NOGRAVITY,                // flags //Tails 12-05-99
+        S_NULL          // raisestate
+    },
+// end dissipating object tails
+
+// start bubbles Tails 03-07-2000
+    {           // MT_SMALLBUBBLE
+        -1,           // doomednum
+        S_SMALLBUBBLE,         // spawnstate
+        1000,           // spawnhealth
+        S_NULL,         // seestate
+        sfx_None,               // seesound
+        8,              // reactiontime
+        sfx_None,               // attacksound
+        S_NULL,         // painstate
+        0,              // painchance
+        sfx_None,               // painsound
+        S_NULL,         // meleestate
+        S_NULL,         // missilestate
+        S_NULL,         // deathstate
+        S_NULL,         // xdeathstate
+        sfx_None,               // deathsound
+        8,              // speed
+        4*FRACUNIT,            // radius //Tails 12-05-99
+        4*FRACUNIT,            // height //Tails 12-05-99
+        16,            // mass
+        0,              // damage
+        sfx_None,               // activesound
+        MF_NOCLIP|MF_FLOAT|MF_NOGRAVITY,                // flags //Tails 12-05-99
+        S_NULL          // raisestate
+    },
+
+    {           // MT_MEDIUMBUBBLE
+        -1,           // doomednum
+        S_MEDIUMBUBBLE,         // spawnstate
+        1000,           // spawnhealth
+        S_NULL,         // seestate
+        sfx_None,               // seesound
+        8,              // reactiontime
+        sfx_None,               // attacksound
+        S_NULL,         // painstate
+        0,              // painchance
+        sfx_None,               // painsound
+        S_NULL,         // meleestate
+        S_NULL,         // missilestate
+        S_NULL,         // deathstate
+        S_NULL,         // xdeathstate
+        sfx_None,               // deathsound
+        8,              // speed
+        8*FRACUNIT,            // radius //Tails 12-05-99
+        8*FRACUNIT,            // height //Tails 12-05-99
+        16,            // mass
+        0,              // damage
+        sfx_None,               // activesound
+        MF_NOCLIP|MF_FLOAT|MF_NOGRAVITY,                // flags //Tails 12-05-99
+        S_NULL          // raisestate
+    },
+
+    {           // MT_LARGEBUBBLE
+        -1,           // doomednum
+        S_LARGEBUBBLE,         // spawnstate
+        1000,           // spawnhealth
+        S_NULL,         // seestate
+        sfx_None,               // seesound
+        8,              // reactiontime
+        sfx_None,               // attacksound
+        S_NULL,         // painstate
+        0,              // painchance
+        sfx_None,               // painsound
+        S_NULL,         // meleestate
+        S_NULL,         // missilestate
+        S_NULL,         // deathstate
+        S_NULL,         // xdeathstate
+        sfx_None,               // deathsound
+        8,              // speed
+        16*FRACUNIT,            // radius //Tails 12-05-99
+        16*FRACUNIT,            // height //Tails 12-05-99
+        16,            // mass
+        0,              // damage
+        sfx_None,               // activesound
+        MF_SPECIAL|MF_FLOAT|MF_NOGRAVITY,                // flags //Tails 12-05-99
+        S_NULL          // raisestate
+    },
+
+    {           // MT_EXTRALARGEBUBBLE
+        -1,           // doomednum
+        S_EXTRALARGEBUBBLE,         // spawnstate
+        1000,           // spawnhealth
+        S_NULL,         // seestate
+        sfx_None,               // seesound
+        8,              // reactiontime
+        sfx_None,               // attacksound
+        S_NULL,         // painstate
+        0,              // painchance
+        sfx_None,               // painsound
+        S_NULL,         // meleestate
+        S_NULL,         // missilestate
+        S_NULL,         // deathstate
+        S_NULL,         // xdeathstate
+        sfx_None,               // deathsound
+        8,              // speed
+        16*FRACUNIT,            // radius //Tails 12-05-99
+        16*FRACUNIT,            // height //Tails 12-05-99
+        16,            // mass
+        0,              // damage
+        sfx_None,               // activesound
+        MF_SPECIAL|MF_FLOAT|MF_NOGRAVITY,                // flags //Tails 12-05-99
+        S_NULL          // raisestate
+    },
+
+// end bubbles Tails 03-07-2000
+
+// start drown counters Tails 03-07-2000
+
+    {           // MT_ZERO
+        -1,           // doomednum
+        S_ZERO1,         // spawnstate
+        1000,           // spawnhealth
+        S_NULL,         // seestate
+        sfx_None,               // seesound
+        8,              // reactiontime
+        sfx_None,               // attacksound
+        S_NULL,         // painstate
+        0,              // painchance
+        sfx_None,               // painsound
+        S_NULL,         // meleestate
+        S_NULL,         // missilestate
+        S_NULL,         // deathstate
+        S_NULL,         // xdeathstate
+        sfx_None,               // deathsound
+        8,              // speed
+        8*FRACUNIT,            // radius //Tails 12-05-99
+        8*FRACUNIT,            // height //Tails 12-05-99
+        16,            // mass
+        0,              // damage
+        sfx_None,               // activesound
+        MF_NOCLIP|MF_FLOAT|MF_NOGRAVITY,                // flags //Tails 12-05-99
+        S_NULL          // raisestate
+    },
+
+    {           // MT_ONE
+        -1,           // doomednum
+        S_ONE1,         // spawnstate
+        1000,           // spawnhealth
+        S_NULL,         // seestate
+        sfx_None,               // seesound
+        8,              // reactiontime
+        sfx_None,               // attacksound
+        S_NULL,         // painstate
+        0,              // painchance
+        sfx_None,               // painsound
+        S_NULL,         // meleestate
+        S_NULL,         // missilestate
+        S_NULL,         // deathstate
+        S_NULL,         // xdeathstate
+        sfx_None,               // deathsound
+        8,              // speed
+        8*FRACUNIT,            // radius //Tails 12-05-99
+        8*FRACUNIT,            // height //Tails 12-05-99
+        16,            // mass
+        0,              // damage
+        sfx_None,               // activesound
+        MF_NOCLIP|MF_FLOAT|MF_NOGRAVITY,                // flags //Tails 12-05-99
+        S_NULL          // raisestate
+    },
+
+    {           // MT_TWO
+        -1,           // doomednum
+        S_TWO1,         // spawnstate
+        1000,           // spawnhealth
+        S_NULL,         // seestate
+        sfx_None,               // seesound
+        8,              // reactiontime
+        sfx_None,               // attacksound
+        S_NULL,         // painstate
+        0,              // painchance
+        sfx_None,               // painsound
+        S_NULL,         // meleestate
+        S_NULL,         // missilestate
+        S_NULL,         // deathstate
+        S_NULL,         // xdeathstate
+        sfx_None,               // deathsound
+        8,              // speed
+        8*FRACUNIT,            // radius //Tails 12-05-99
+        8*FRACUNIT,            // height //Tails 12-05-99
+        16,            // mass
+        0,              // damage
+        sfx_None,               // activesound
+        MF_NOCLIP|MF_FLOAT|MF_NOGRAVITY,                // flags //Tails 12-05-99
+        S_NULL          // raisestate
+    },
+
+    {           // MT_THREE
+        -1,           // doomednum
+        S_THREE1,         // spawnstate
+        1000,           // spawnhealth
+        S_NULL,         // seestate
+        sfx_None,               // seesound
+        8,              // reactiontime
+        sfx_None,               // attacksound
+        S_NULL,         // painstate
+        0,              // painchance
+        sfx_None,               // painsound
+        S_NULL,         // meleestate
+        S_NULL,         // missilestate
+        S_NULL,         // deathstate
+        S_NULL,         // xdeathstate
+        sfx_None,               // deathsound
+        8,              // speed
+        8*FRACUNIT,            // radius //Tails 12-05-99
+        8*FRACUNIT,            // height //Tails 12-05-99
+        16,            // mass
+        0,              // damage
+        sfx_None,               // activesound
+        MF_NOCLIP|MF_FLOAT|MF_NOGRAVITY,                // flags //Tails 12-05-99
+        S_NULL          // raisestate
+    },
+
+    {           // MT_FOUR
+        -1,           // doomednum
+        S_FOUR1,         // spawnstate
+        1000,           // spawnhealth
+        S_NULL,         // seestate
+        sfx_None,               // seesound
+        8,              // reactiontime
+        sfx_None,               // attacksound
+        S_NULL,         // painstate
+        0,              // painchance
+        sfx_None,               // painsound
+        S_NULL,         // meleestate
+        S_NULL,         // missilestate
+        S_NULL,         // deathstate
+        S_NULL,         // xdeathstate
+        sfx_None,               // deathsound
+        8,              // speed
+        8*FRACUNIT,            // radius //Tails 12-05-99
+        8*FRACUNIT,            // height //Tails 12-05-99
+        16,            // mass
+        0,              // damage
+        sfx_None,               // activesound
+        MF_NOCLIP|MF_FLOAT|MF_NOGRAVITY,                // flags //Tails 12-05-99
+        S_NULL          // raisestate
+    },
+
+    {           // MT_FIVE
+        -1,           // doomednum
+        S_FIVE1,         // spawnstate
+        1000,           // spawnhealth
+        S_NULL,         // seestate
+        sfx_None,               // seesound
+        8,              // reactiontime
+        sfx_None,               // attacksound
+        S_NULL,         // painstate
+        0,              // painchance
+        sfx_None,               // painsound
+        S_NULL,         // meleestate
+        S_NULL,         // missilestate
+        S_NULL,         // deathstate
+        S_NULL,         // xdeathstate
+        sfx_None,               // deathsound
+        8,              // speed
+        8*FRACUNIT,            // radius //Tails 12-05-99
+        8*FRACUNIT,            // height //Tails 12-05-99
+        16,            // mass
+        0,              // damage
+        sfx_None,               // activesound
+        MF_NOCLIP|MF_FLOAT|MF_NOGRAVITY,                // flags //Tails 12-05-99
+        S_NULL          // raisestate
+    },
+// end drown counters Tails 03-07-2000
+
+// start Extra Large Bubble goes POP! Tails 03-08-2000
+    {           // MT_FIVE
+        -1,           // doomednum
+        S_POP1,         // spawnstate
+        1000,           // spawnhealth
+        S_NULL,         // seestate
+        sfx_None,               // seesound
+        8,              // reactiontime
+        sfx_None,               // attacksound
+        S_NULL,         // painstate
+        0,              // painchance
+        sfx_None,               // painsound
+        S_NULL,         // meleestate
+        S_NULL,         // missilestate
+        S_NULL,         // deathstate
+        S_NULL,         // xdeathstate
+        sfx_None,               // deathsound
+        8,              // speed
+        16*FRACUNIT,            // radius //Tails 12-05-99
+        16*FRACUNIT,            // height //Tails 12-05-99
+        16,            // mass
+        0,              // damage
+        sfx_None,               // activesound
+        MF_NOCLIP|MF_FLOAT|MF_NOGRAVITY,                // flags //Tails 12-05-99
+        S_NULL          // raisestate
+    },
+// end Extra Large Bubble goes POP! Tails 03-08-2000
+
+// start 1up Box Tails 03-12-2000
+    {           // MT_PRUP
+        41,             // doomednum
+        S_PRUP1,           // spawnstate Tails 9-30-99
+        1,           // spawnhealth Tails 9-30-99
+        S_NULL,         // seestate
+        sfx_None,               // seesound
+        8,              // reactiontime
+        sfx_None,               // attacksound
+        S_PRUP1,         // painstate Tails 9-30-99
+        0,              // painchance
+        sfx_None,               // painsound
+        S_NULL,         // meleestate
+        S_NULL,         // missilestate
+        S_PRUP3,         // deathstate Tails 9-30-99
+        S_NULL,         // xdeathstate
+        sfx_podth1,               // deathsound
+        0,              // speed
+        16*FRACUNIT,            // radius
+        32*FRACUNIT,            // height Tails 9-30-99
+        100,            // mass
+        0,              // damage
+        sfx_None,               // activesound
+        MF_SOLID|MF_SHOOTABLE,   // flags  Tails 9-30-99
+        S_NULL          // raisestate
+    },
+// end 1up Box Tails 03-12-2000
+
+// start Black shield Box Tails 04-08-2000
+    {           // MT_BKTV
+        2018,             // doomednum
+        S_BKTV1,           // spawnstate Tails 9-30-99
+        1,           // spawnhealth Tails 9-30-99
+        S_NULL,         // seestate
+        sfx_None,               // seesound
+        8,              // reactiontime
+        sfx_None,               // attacksound
+        S_BKTV1,         // painstate Tails 9-30-99
+        0,              // painchance
+        sfx_None,               // painsound
+        S_NULL,         // meleestate
+        S_NULL,         // missilestate
+        S_BKTV3,         // deathstate Tails 9-30-99
+        S_NULL,         // xdeathstate
+        sfx_podth1,               // deathsound
+        0,              // speed
+        16*FRACUNIT,            // radius
+        32*FRACUNIT,            // height Tails 9-30-99
+        100,            // mass
+        0,              // damage
+        sfx_None,               // activesound
+        MF_SOLID|MF_SHOOTABLE,   // flags  Tails 9-30-99
+        S_NULL          // raisestate
+    },
+// end Black shield Box Tails 04-08-2000
+
+// start score logos Tails 04-16-2000
+    {           // MT_SCRA
+        -1,             // doomednum
+        S_SCRA,           // spawnstate Tails 9-30-99
+        1,           // spawnhealth Tails 9-30-99
+        S_NULL,         // seestate
+        sfx_None,               // seesound
+        8,              // reactiontime
+        sfx_None,               // attacksound
+        S_NULL,         // painstate Tails 9-30-99
+        0,              // painchance
+        sfx_None,               // painsound
+        S_NULL,         // meleestate
+        S_NULL,         // missilestate
+        S_NULL,         // deathstate Tails 9-30-99
+        S_NULL,         // xdeathstate
+        sfx_None,               // deathsound
+        0,              // speed
+        8*FRACUNIT,            // radius
+        8*FRACUNIT,            // height Tails 9-30-99
+        100,            // mass
+        0,              // damage
+        sfx_None,               // activesound
+        MF_NOCLIP|MF_FLOAT|MF_NOGRAVITY,   // flags  Tails 9-30-99
+        S_NULL          // raisestate
+    },
+    {           // MT_SCRB
+        -1,             // doomednum
+        S_SCRB,           // spawnstate Tails 9-30-99
+        1,           // spawnhealth Tails 9-30-99
+        S_NULL,         // seestate
+        sfx_None,               // seesound
+        8,              // reactiontime
+        sfx_None,               // attacksound
+        S_NULL,         // painstate Tails 9-30-99
+        0,              // painchance
+        sfx_None,               // painsound
+        S_NULL,         // meleestate
+        S_NULL,         // missilestate
+        S_NULL,         // deathstate Tails 9-30-99
+        S_NULL,         // xdeathstate
+        sfx_None,               // deathsound
+        0,              // speed
+        8*FRACUNIT,            // radius
+        8*FRACUNIT,            // height Tails 9-30-99
+        100,            // mass
+        0,              // damage
+        sfx_None,               // activesound
+        MF_NOCLIP|MF_FLOAT|MF_NOGRAVITY,   // flags  Tails 9-30-99
+        S_NULL          // raisestate
+    },
+    {           // MT_SCRC
+        -1,             // doomednum
+        S_SCRC,           // spawnstate Tails 9-30-99
+        1,           // spawnhealth Tails 9-30-99
+        S_NULL,         // seestate
+        sfx_None,               // seesound
+        8,              // reactiontime
+        sfx_None,               // attacksound
+        S_NULL,         // painstate Tails 9-30-99
+        0,              // painchance
+        sfx_None,               // painsound
+        S_NULL,         // meleestate
+        S_NULL,         // missilestate
+        S_NULL,         // deathstate Tails 9-30-99
+        S_NULL,         // xdeathstate
+        sfx_None,               // deathsound
+        0,              // speed
+        8*FRACUNIT,            // radius
+        8*FRACUNIT,            // height Tails 9-30-99
+        100,            // mass
+        0,              // damage
+        sfx_None,               // activesound
+        MF_NOCLIP|MF_FLOAT|MF_NOGRAVITY,   // flags  Tails 9-30-99
+        S_NULL          // raisestate
+    },
+    {           // MT_SCRD
+        -1,             // doomednum
+        S_SCRD,           // spawnstate Tails 9-30-99
+        1,           // spawnhealth Tails 9-30-99
+        S_NULL,         // seestate
+        sfx_None,               // seesound
+        8,              // reactiontime
+        sfx_None,               // attacksound
+        S_NULL,         // painstate Tails 9-30-99
+        0,              // painchance
+        sfx_None,               // painsound
+        S_NULL,         // meleestate
+        S_NULL,         // missilestate
+        S_NULL,         // deathstate Tails 9-30-99
+        S_NULL,         // xdeathstate
+        sfx_None,               // deathsound
+        0,              // speed
+        8*FRACUNIT,            // radius
+        8*FRACUNIT,            // height Tails 9-30-99
+        100,            // mass
+        0,              // damage
+        sfx_None,               // activesound
+        MF_NOCLIP|MF_FLOAT|MF_NOGRAVITY,   // flags  Tails 9-30-99
+        S_NULL          // raisestate
+    },
+// end score logos Tails
+
+// start Super Sonic Spark Tails 04-18-2000
+    {           // MT_SUPERSPARK
+        -1,             // doomednum
+        S_SSPK1,           // spawnstate Tails 9-30-99
+        1,           // spawnhealth Tails 9-30-99
+        S_NULL,         // seestate
+        sfx_None,               // seesound
+        8,              // reactiontime
+        sfx_None,               // attacksound
+        S_NULL,         // painstate Tails 9-30-99
+        0,              // painchance
+        sfx_None,               // painsound
+        S_NULL,         // meleestate
+        S_NULL,         // missilestate
+        S_NULL,         // deathstate Tails 9-30-99
+        S_NULL,         // xdeathstate
+        sfx_None,               // deathsound
+        0,              // speed
+        8*FRACUNIT,            // radius
+        8*FRACUNIT,            // height Tails 9-30-99
+        100,            // mass
+        0,              // damage
+        sfx_None,               // activesound
+        MF_NOCLIP|MF_FLOAT|MF_NOGRAVITY,   // flags  Tails 9-30-99
+        S_NULL          // raisestate
+    },
+// end Super Sonic Spark Tails 04-18-2000
+
+// start grass debris Tails 05-14-2000
+    {           // MT_GRASSDEBRIS
+        -1,             // doomednum
+        S_GRASS1,           // spawnstate Tails 9-30-99
+        1,           // spawnhealth Tails 9-30-99
+        S_NULL,         // seestate
+        sfx_None,               // seesound
+        8,              // reactiontime
+        sfx_None,               // attacksound
+        S_NULL,         // painstate Tails 9-30-99
+        0,              // painchance
+        sfx_None,               // painsound
+        S_NULL,         // meleestate
+        S_NULL,         // missilestate
+        S_NULL,         // deathstate Tails 9-30-99
+        S_NULL,         // xdeathstate
+        sfx_None,               // deathsound
+        0,              // speed
+        8*FRACUNIT,            // radius
+        8*FRACUNIT,            // height Tails 9-30-99
+        100,            // mass
+        0,              // damage
+        sfx_None,               // activesound
+        MF_NOCLIP,   // flags  Tails 9-30-99
+        S_NULL          // raisestate
+    },
+// end grass debris Tails 05-14-2000
+
+// start yellow diagonal spring Tails 05-17-2000
+    {           // MT_YELLOWDIAG
+        2015,             // doomednum
+        S_YDIAG1,           // spawnstate Tails 9-30-99
+        1,           // spawnhealth Tails 9-30-99
+        S_NULL,         // seestate
+        sfx_None,               // seesound
+        8,              // reactiontime
+        sfx_None,               // attacksound
+        S_NULL,         // painstate Tails 9-30-99
+        0,              // painchance
+        sfx_oof,               // painsound
+        S_NULL,         // meleestate
+        S_NULL,         // missilestate
+        S_NULL,         // deathstate Tails 9-30-99
+        S_NULL,         // xdeathstate
+        sfx_None,               // deathsound
+        0,              // speed
+        16*FRACUNIT,            // radius
+        16*FRACUNIT,            // height Tails 9-30-99
+        100,            // mass
+        0,              // damage
+        sfx_None,               // activesound
+        MF_SOLID,   // flags  Tails 9-30-99
+        S_NULL          // raisestate
+    },
+// end yellow diagonal spring Tails 05-17-2000
+
+// start ambient water sounds Tails 06-10-2000
+    {           // MT_AWATERA
+        2026,             // doomednum
+        S_AWATERA1,           // spawnstate Tails 9-30-99
+        1,           // spawnhealth Tails 9-30-99
+        S_NULL,         // seestate
+        sfx_None,               // seesound
+        8,              // reactiontime
+        sfx_None,               // attacksound
+        S_NULL,         // painstate Tails 9-30-99
+        0,              // painchance
+        sfx_None,               // painsound
+        S_NULL,         // meleestate
+        S_NULL,         // missilestate
+        S_NULL,         // deathstate Tails 9-30-99
+        S_NULL,         // xdeathstate
+        sfx_None,               // deathsound
+        0,              // speed
+        16*FRACUNIT,            // radius
+        16*FRACUNIT,            // height Tails 9-30-99
+        100,            // mass
+        0,              // damage
+        sfx_None,               // activesound
+        MF_NOCLIP|MF_FLOAT|MF_NOGRAVITY,   // flags  Tails 9-30-99
+        S_NULL          // raisestate
+    },
+
+    {           // MT_AWATERB
+        2024,             // doomednum
+        S_AWATERB1,           // spawnstate Tails 9-30-99
+        1,           // spawnhealth Tails 9-30-99
+        S_NULL,         // seestate
+        sfx_None,               // seesound
+        8,              // reactiontime
+        sfx_None,               // attacksound
+        S_NULL,         // painstate Tails 9-30-99
+        0,              // painchance
+        sfx_None,               // painsound
+        S_NULL,         // meleestate
+        S_NULL,         // missilestate
+        S_NULL,         // deathstate Tails 9-30-99
+        S_NULL,         // xdeathstate
+        sfx_None,               // deathsound
+        0,              // speed
+        16*FRACUNIT,            // radius
+        16*FRACUNIT,            // height Tails 9-30-99
+        100,            // mass
+        0,              // damage
+        sfx_None,               // activesound
+        MF_NOCLIP|MF_FLOAT|MF_NOGRAVITY,   // flags  Tails 9-30-99
+        S_NULL          // raisestate
+    },
+
+    {           // MT_AWATERC
+        2023,             // doomednum
+        S_AWATERC1,           // spawnstate Tails 9-30-99
+        1,           // spawnhealth Tails 9-30-99
+        S_NULL,         // seestate
+        sfx_None,               // seesound
+        8,              // reactiontime
+        sfx_None,               // attacksound
+        S_NULL,         // painstate Tails 9-30-99
+        0,              // painchance
+        sfx_None,               // painsound
+        S_NULL,         // meleestate
+        S_NULL,         // missilestate
+        S_NULL,         // deathstate Tails 9-30-99
+        S_NULL,         // xdeathstate
+        sfx_None,               // deathsound
+        0,              // speed
+        16*FRACUNIT,            // radius
+        16*FRACUNIT,            // height Tails 9-30-99
+        100,            // mass
+        0,              // damage
+        sfx_None,               // activesound
+        MF_NOCLIP|MF_FLOAT|MF_NOGRAVITY,   // flags  Tails 9-30-99
+        S_NULL          // raisestate
+    },
+
+    {           // MT_AWATERD
+        2045,             // doomednum
+        S_AWATERD1,           // spawnstate Tails 9-30-99
+        1,           // spawnhealth Tails 9-30-99
+        S_NULL,         // seestate
+        sfx_None,               // seesound
+        8,              // reactiontime
+        sfx_None,               // attacksound
+        S_NULL,         // painstate Tails 9-30-99
+        0,              // painchance
+        sfx_None,               // painsound
+        S_NULL,         // meleestate
+        S_NULL,         // missilestate
+        S_NULL,         // deathstate Tails 9-30-99
+        S_NULL,         // xdeathstate
+        sfx_None,               // deathsound
+        0,              // speed
+        16*FRACUNIT,            // radius
+        16*FRACUNIT,            // height Tails 9-30-99
+        100,            // mass
+        0,              // damage
+        sfx_None,               // activesound
+        MF_NOCLIP|MF_FLOAT|MF_NOGRAVITY,   // flags  Tails 9-30-99
+        S_NULL          // raisestate
+    },
+
+    {           // MT_AWATERE
+        83,             // doomednum
+        S_AWATERE1,           // spawnstate Tails 9-30-99
+        1,           // spawnhealth Tails 9-30-99
+        S_NULL,         // seestate
+        sfx_None,               // seesound
+        8,              // reactiontime
+        sfx_None,               // attacksound
+        S_NULL,         // painstate Tails 9-30-99
+        0,              // painchance
+        sfx_None,               // painsound
+        S_NULL,         // meleestate
+        S_NULL,         // missilestate
+        S_NULL,         // deathstate Tails 9-30-99
+        S_NULL,         // xdeathstate
+        sfx_None,               // deathsound
+        0,              // speed
+        16*FRACUNIT,            // radius
+        16*FRACUNIT,            // height Tails 9-30-99
+        100,            // mass
+        0,              // damage
+        sfx_None,               // activesound
+        MF_NOCLIP|MF_FLOAT|MF_NOGRAVITY,   // flags  Tails 9-30-99
+        S_NULL          // raisestate
+    },
+
+    {           // MT_AWATERF
+        2019,             // doomednum
+        S_AWATERF1,           // spawnstate Tails 9-30-99
+        1,           // spawnhealth Tails 9-30-99
+        S_NULL,         // seestate
+        sfx_None,               // seesound
+        8,              // reactiontime
+        sfx_None,               // attacksound
+        S_NULL,         // painstate Tails 9-30-99
+        0,              // painchance
+        sfx_None,               // painsound
+        S_NULL,         // meleestate
+        S_NULL,         // missilestate
+        S_NULL,         // deathstate Tails 9-30-99
+        S_NULL,         // xdeathstate
+        sfx_None,               // deathsound
+        0,              // speed
+        16*FRACUNIT,            // radius
+        16*FRACUNIT,            // height Tails 9-30-99
+        100,            // mass
+        0,              // damage
+        sfx_None,               // activesound
+        MF_NOCLIP|MF_FLOAT|MF_NOGRAVITY,   // flags  Tails 9-30-99
+        S_NULL          // raisestate
+    },
+
+    {           // MT_AWATERG
+        2025,             // doomednum
+        S_AWATERG1,           // spawnstate Tails 9-30-99
+        1,           // spawnhealth Tails 9-30-99
+        S_NULL,         // seestate
+        sfx_None,               // seesound
+        8,              // reactiontime
+        sfx_None,               // attacksound
+        S_NULL,         // painstate Tails 9-30-99
+        0,              // painchance
+        sfx_None,               // painsound
+        S_NULL,         // meleestate
+        S_NULL,         // missilestate
+        S_NULL,         // deathstate Tails 9-30-99
+        S_NULL,         // xdeathstate
+        sfx_None,               // deathsound
+        0,              // speed
+        16*FRACUNIT,            // radius
+        16*FRACUNIT,            // height Tails 9-30-99
+        100,            // mass
+        0,              // damage
+        sfx_None,               // activesound
+        MF_NOCLIP|MF_FLOAT|MF_NOGRAVITY,   // flags  Tails 9-30-99
+        S_NULL          // raisestate
+    },
+
+    {           // MT_AWATERH
+        27,             // doomednum
+        S_AWATERH1,           // spawnstate Tails 9-30-99
+        1,           // spawnhealth Tails 9-30-99
+        S_NULL,         // seestate
+        sfx_None,               // seesound
+        8,              // reactiontime
+        sfx_None,               // attacksound
+        S_NULL,         // painstate Tails 9-30-99
+        0,              // painchance
+        sfx_None,               // painsound
+        S_NULL,         // meleestate
+        S_NULL,         // missilestate
+        S_NULL,         // deathstate Tails 9-30-99
+        S_NULL,         // xdeathstate
+        sfx_None,               // deathsound
+        0,              // speed
+        16*FRACUNIT,            // radius
+        16*FRACUNIT,            // height Tails 9-30-99
+        100,            // mass
+        0,              // damage
+        sfx_None,               // activesound
+        MF_NOCLIP|MF_FLOAT|MF_NOGRAVITY,   // flags  Tails 9-30-99
+        S_NULL          // raisestate
+    },
+// end ambient water sounds Tails 06-10-2000
+
+// start Skim items Tails 06-13-2000
+    {           // MT_SKIM
+        56,             // doomednum
+        S_SKIM1,           // spawnstate Tails 9-30-99
+        1,           // spawnhealth Tails 9-30-99
+        S_NULL,         // seestate
+        sfx_None,               // seesound
+        8,              // reactiontime
+        sfx_None,               // attacksound
+        S_NULL,         // painstate Tails 9-30-99
+        0,              // painchance
+        sfx_None,               // painsound
+        S_SKIM3,         // meleestate
+        S_NULL,         // missilestate
+        S_SKIM_BOOM1,         // deathstate Tails 9-30-99
+        S_NULL,         // xdeathstate
+        sfx_podth1,               // deathsound
+        8,              // speed
+        32*FRACUNIT,            // radius
+        32*FRACUNIT,            // height Tails 9-30-99
+        100,            // mass
+        0,              // damage
+        sfx_None,               // activesound
+        MF_SOLID|MF_FLOAT|MF_NOGRAVITY|MF_SHOOTABLE|MF_COUNTKILL,   // flags  Tails 9-30-99
+        S_NULL          // raisestate
+    },
+
+    {           // MT_MINE
+        -1,             // doomednum
+        S_MINE1,           // spawnstate Tails 9-30-99
+        1,           // spawnhealth Tails 9-30-99
+        S_NULL,         // seestate
+        sfx_None,               // seesound
+        8,              // reactiontime
+        sfx_None,               // attacksound
+        S_NULL,         // painstate Tails 9-30-99
+        0,              // painchance
+        sfx_None,               // painsound
+        S_NULL,         // meleestate
+        S_NULL,         // missilestate
+        S_MINE_BOOM1,         // deathstate Tails 9-30-99
+        S_NULL,         // xdeathstate
+        sfx_cybdth,               // deathsound
+        0,              // speed
+        10*FRACUNIT,            // radius
+        10*FRACUNIT,            // height Tails 9-30-99
+        100,            // mass
+        1,              // damage
+        sfx_None,               // activesound
+        MF_SOLID,   // flags  Tails 9-30-99
+        S_NULL          // raisestate
+    },
+// end Skim items Tails 06-13-2000
+// start GFZ Fish Tails 07-03-2000
+    {           // MT_GFZFISH
+        58,             // doomednum
+        S_FISH2,           // spawnstate Tails 9-30-99
+        1,           // spawnhealth Tails 9-30-99
+        S_NULL,         // seestate
+        sfx_None,               // seesound
+        8,              // reactiontime
+        sfx_None,               // attacksound
+        S_NULL,         // painstate Tails 9-30-99
+        0,              // painchance
+        sfx_None,               // painsound
+        S_NULL,         // meleestate
+        S_NULL,         // missilestate
+        S_FISH_DIE1,         // deathstate Tails 9-30-99
+        S_NULL,         // xdeathstate
+        sfx_podth1,               // deathsound
+        0,              // speed
+        8*FRACUNIT,            // radius
+        28*FRACUNIT,            // height Tails 9-30-99
+        100,            // mass
+        1,              // damage
+        sfx_None,               // activesound
+        MF_SOLID|MF_FLOAT|MF_SHOOTABLE,   // flags  Tails 9-30-99
+        S_NULL          // raisestate
+    },
+// end GFZ Fish Tails 07-03-2000
+// Start Deep Sea Gargoyle Tails 07-29-2000
+    {           // MT_GARGOYLE
+        81,             // doomednum
+        S_GARGOYLE,           // spawnstate Tails 9-30-99
+        1000,           // spawnhealth Tails 9-30-99
+        S_NULL,         // seestate
+        sfx_None,               // seesound
+        8,              // reactiontime
+        sfx_None,               // attacksound
+        S_NULL,         // painstate Tails 9-30-99
+        0,              // painchance
+        sfx_None,               // painsound
+        S_NULL,         // meleestate
+        S_NULL,         // missilestate
+        S_NULL,         // deathstate Tails 9-30-99
+        S_NULL,         // xdeathstate
+        sfx_None,               // deathsound
+        0,              // speed
+        16*FRACUNIT,            // radius
+        40*FRACUNIT,            // height Tails 9-30-99
+        100,            // mass
+        1,              // damage
+        sfx_None,               // activesound
+        MF_SOLID,   // flags  Tails 9-30-99
+        S_NULL          // raisestate
+    },
+// End Deep Sea Gargoyle Tails 07-29-2000
 };

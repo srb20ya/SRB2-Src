@@ -438,7 +438,7 @@ void M_ScreenShot (void)
     I_ReadScreen (linear);
 
     // find a file name to save it to
-    strcpy(lbmname,"DOOM000.pcx");
+    strcpy(lbmname,"SRB2000.pcx"); // Tails 03-14-2000
 
     for (i=0 ; i<=999 ; i++)
     {
