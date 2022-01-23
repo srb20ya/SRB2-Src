@@ -1,0 +1,118 @@
+<html>
+<body>
+<pre>
+<h1>Build Log</h1>
+<h3>
+--------------------Configuration: DoomLegacy - Win32 Release--------------------
+</h3>
+<h3>Command Lines</h3>
+Creating temporary file "C:\WINDOWS\TEMP\RSP21C0.TMP" with contents
+[
+/nologo /ML /W3 /GX /Zi /O2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "__WIN32__" /D "__MSC__" /D "USEASM" /Fp"..\..\objs\Release\DoomLegacy.pch" /YX /Fo"..\..\objs\Release/" /Fd"..\..\objs\Release/" /FD /c 
+"F:\savetest\legacy_130_src\P_map.c"
+]
+Creating command line "cl.exe @C:\WINDOWS\TEMP\RSP21C0.TMP" 
+Creating temporary file "C:\WINDOWS\TEMP\RSP21C1.TMP" with contents
+[
+dxguid.lib dinput.lib dsound.lib ddraw.lib winmm.lib wsock32.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /subsystem:windows /incremental:no /pdb:"..\..\objs\Release/srb2win.pdb" /debug /machine:I386 /out:"E:\srb2demo2\srb2win.exe" 
+\savetest\objs\Release\dx_error.obj
+\savetest\objs\Release\fabdxlib.obj
+\savetest\objs\Release\Mid2strm.obj
+\savetest\objs\Release\win_cd.obj
+\savetest\objs\Release\win_dbg.obj
+\savetest\objs\Release\win_dll.obj
+\savetest\objs\Release\win_main.obj
+\savetest\objs\Release\win_net.obj
+\savetest\objs\Release\win_snd.obj
+\savetest\objs\Release\win_sys.obj
+\savetest\objs\Release\win_vid.obj
+\savetest\objs\Release\hw_bsp.obj
+\savetest\objs\Release\hw_cache.obj
+\savetest\objs\Release\hw_draw.obj
+\savetest\objs\Release\hw_light.obj
+\savetest\objs\Release\hw_main.obj
+\savetest\objs\Release\hw_md2.obj
+\savetest\objs\Release\D_clisrv.obj
+\savetest\objs\Release\D_items.obj
+\savetest\objs\Release\D_main.obj
+\savetest\objs\Release\D_net.obj
+\savetest\objs\Release\D_netcmd.obj
+\savetest\objs\Release\D_netfil.obj
+\savetest\objs\Release\M_argv.obj
+\savetest\objs\Release\M_bbox.obj
+\savetest\objs\Release\M_cheat.obj
+\savetest\objs\Release\M_fixed.obj
+\savetest\objs\Release\M_menu.obj
+\savetest\objs\Release\M_misc.obj
+\savetest\objs\Release\M_random.obj
+\savetest\objs\Release\M_swap.obj
+\savetest\objs\Release\P_ceilng.obj
+\savetest\objs\Release\P_doors.obj
+\savetest\objs\Release\P_enemy.obj
+\savetest\objs\Release\P_fab.obj
+\savetest\objs\Release\P_floor.obj
+\savetest\objs\Release\p_genlin.obj
+\savetest\objs\Release\P_inter.obj
+\savetest\objs\Release\P_lights.obj
+\savetest\objs\Release\P_map.obj
+\savetest\objs\Release\P_maputl.obj
+\savetest\objs\Release\P_mobj.obj
+\savetest\objs\Release\P_plats.obj
+\savetest\objs\Release\P_pspr.obj
+\savetest\objs\Release\P_saveg.obj
+\savetest\objs\Release\P_setup.obj
+\savetest\objs\Release\P_sight.obj
+\savetest\objs\Release\P_spec.obj
+\savetest\objs\Release\P_switch.obj
+\savetest\objs\Release\P_telept.obj
+\savetest\objs\Release\P_tick.obj
+\savetest\objs\Release\P_user.obj
+\savetest\objs\Release\R_bsp.obj
+\savetest\objs\Release\R_data.obj
+\savetest\objs\Release\R_draw.obj
+\savetest\objs\Release\R_main.obj
+\savetest\objs\Release\R_plane.obj
+\savetest\objs\Release\R_segs.obj
+\savetest\objs\Release\R_sky.obj
+\savetest\objs\Release\r_splats.obj
+\savetest\objs\Release\R_things.obj
+\savetest\objs\Release\Am_map.obj
+\savetest\objs\Release\Command.obj
+\savetest\objs\Release\Console.obj
+\savetest\objs\Release\Dehacked.obj
+\savetest\objs\Release\Dstrings.obj
+\savetest\objs\Release\F_finale.obj
+\savetest\objs\Release\F_wipe.obj
+\savetest\objs\Release\G_game.obj
+\savetest\objs\Release\G_input.obj
+\savetest\objs\Release\g_state.obj
+\savetest\objs\Release\Hu_stuff.obj
+\savetest\objs\Release\i_tcp.obj
+\savetest\objs\Release\Info.obj
+\savetest\objs\Release\Qmus2mid.obj
+\savetest\objs\Release\S_sound.obj
+\savetest\objs\Release\Screen.obj
+\savetest\objs\Release\Sounds.obj
+\savetest\objs\Release\St_lib.obj
+\savetest\objs\Release\St_stuff.obj
+\savetest\objs\Release\Tables.obj
+\savetest\objs\Release\V_video.obj
+\savetest\objs\Release\W_wad.obj
+\savetest\objs\Release\Wi_stuff.obj
+\savetest\objs\Release\Z_zone.obj
+\savetest\objs\Release\DoomLegacy.res
+\savetest\objs\Release\tmap.obj
+]
+Creating command line "link.exe @C:\WINDOWS\TEMP\RSP21C1.TMP"
+<h3>Output Window</h3>
+Compiling...
+P_map.c
+Linking...
+
+
+
+<h3>Results</h3>
+srb2win.exe - 0 error(s), 0 warning(s)
+</pre>
+</body>
+</html>

@@ -1,0 +1,18 @@
+Remember: 
+- Thierry never writes log files (just a very short resume here)
+- The date are in french format (sorry, but it's easier for me like that)
+
+14-04-1999:
+I join the DooM Legacy Team
+
+15-04-1999:
+I start coding on the OpenGL version of DooM Legacy, inspired by faB's glide code.
+
+15-04-1999 -> 15-01-2000
+The OpenGL version runs pretty well, despite this damn crappy code
+- Add some new features like coronas, dynamic lighting, static lighting
+- Fix some common bug between hardware/software version
+- Implement in hardware mode all the missing features present in sofware mode, except splat and legacy water.
+- Do a lot of join with Boris' code
+- Now, I'm actually working on md2 models, mirrors and T&L
+- TODO: improve the static/dynamic lighting code, support skin colors, complete this log file,...

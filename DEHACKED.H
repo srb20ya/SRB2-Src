@@ -1,1 +1,0 @@
-void LoadDehackedFile(char *filename);

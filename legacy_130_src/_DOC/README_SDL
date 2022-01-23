@@ -1,0 +1,12 @@
+SDL : sound support
+
+To make this work, you have to use make with the following
+parameters:
+
+make LINUX=1 HAVE_MIXER=1
+
+Without HAVE_MIXER, music is not handled directly by SDL;
+I suppose the result is no music at all (did not test it yet).
+You will also need SDL-1.1.2 minimum, SDL_Mixer, and timidity patches.
+
+Enjoy !

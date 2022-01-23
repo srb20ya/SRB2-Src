@@ -1,1 +1,0 @@
-gcc -g -mpentium -O6 -ffast-math -fomit-frame-pointer -DPC_DOS -DUSEASM   -Wall  -c p_user.c -o OBJS/p_user.o

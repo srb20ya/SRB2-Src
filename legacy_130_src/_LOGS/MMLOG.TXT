@@ -1,0 +1,45 @@
+*** if not otherwise noted, this log refers to the Linux version ***
+
+-- April 08 2000
+  * added mouse move, fullscreen under X in Linux, fixed some bugs
+
+-- April 12 2000
+  * Added full menu driven mouse support
+  * Updated OpenGL renderlib with GetRenderer() to identify Voodoo boards
+  * Added support for identification of Voodoo boards in the X-subsystem
+  * Video Modes menu now displays warning if no lores modes are available
+  * Linux now compiles with 'make LINUX=1'
+  * French keyboard layout with command 'french'
+  * the FAQ has been updated
+
+-- April 22 2000
+  * amplified the sound volume of the sound server by 4
+  * implemented immediate switching for fullscreen upon change of cv_fullscreen
+  * modified the makefile to specify the version on the commandline
+
+-- April 25 2000
+  * added support for automatic search of the wadfile directory
+
+-- April 28 2000
+  * fixed the problem that the musserver does not load all instruments
+  * musserver now accepts volume 0..31 (used to be 0..15, which was strange)
+  * amplified soundserver even more to be in line with the musserver
+  * fixed CD music not playing on some drives, it uses now CDROMPLAYMSF instead of CDROMPLAYTRKIND
+
+-- April 30 2000
+  * removed 2 files from the soundserver which were unnecessary
+  * modified musserver so that correct iwad is used
+  * removed unnecessary printouts in musserver and soundserver
+
+-- May 07 2000
+  * removed unnecessary #ifdefs
+  * fixed the makefile again
+  * decreased verbosity level for musserver
+  * added an option for windowed Voodoo display - just define WINVOODOO
+
+-- May 12 2000
+  * winvoodoo is now a commandline switch
+  * if MESA_GLX_FX is set by the user, it is not overwritten by legacy any more
+  * No vidmode extensions are used for remote displays
+  * new cvar jigglecdvolume to handle abnormal drives
+  * fixed a bug with the dynamic loading of the OpenGL lib
