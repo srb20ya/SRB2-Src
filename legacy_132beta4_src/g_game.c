@@ -279,7 +279,7 @@ boolean delayoverride;
 
 // start emeralds Tails 04-08-2000
 unsigned short emeralds;
-int token; // Number of tokens collected in a level Tails 08-11-2001
+int token;
 int tokenlist; // List of tokens collected Tails 12-18-2003
 byte tokenbits; // Used for setting token bits Tails 12-18-2003
 int	sstimer; // Time allotted in the special stage Tails 08-11-2001

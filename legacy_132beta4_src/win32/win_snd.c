@@ -1641,7 +1641,7 @@ boolean I_StartFMODSong (char* musicname, int looping)
 	}
 
 	// Create the filename we need
-	sprintf(filename, "o_%s", musicname);
+	sprintf(filename, "m_%s", musicname);
 	
 	lumpnum = W_CheckNumForName(filename);
 

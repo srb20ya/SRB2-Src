@@ -7248,6 +7248,31 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 		MF_SPECIAL,
         S_NULL          // raisestate
     },
+    {           // MT_SLOPETHINGY
+        8888,             // doomednum
+        S_NULL,           // spawnstate Tails 9-30-99
+        1,           // spawnhealth Tails 9-30-99
+        S_NULL,         // seestate
+        sfx_None,               // seesound
+        8,              // reactiontime
+        sfx_None,               // attacksound
+        S_NULL,         // painstate Tails 9-30-99
+        0,              // painchance
+        sfx_None,               // painsound
+        S_NULL,         // meleestate
+        S_NULL,         // missilestate
+        S_NULL,         // deathstate Tails 9-30-99
+        S_NULL,         // xdeathstate
+        sfx_None,               // deathsound
+        0,              // speed
+        8*FRACUNIT,            // radius
+        16*FRACUNIT,            // height Tails 9-30-99
+        100,            // mass
+        20,              // damage
+        sfx_None,               // activesound
+		MF_NOSECTOR|MF_NOBLOCKMAP,
+        S_NULL          // raisestate
+    },
 };
 
 //43

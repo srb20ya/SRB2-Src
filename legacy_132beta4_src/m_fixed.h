@@ -65,12 +65,12 @@ typedef int fixed_t;
 inline fixed_t TMulScale16 (fixed_t a, fixed_t b, fixed_t c, fixed_t d, fixed_t e, fixed_t f) \
 { \
 	return (fixed_t)((((__int64) a * (__int64) b) + ((__int64) c * (__int64) d) \
-			+ ((__int64) e* (__int64) f)) >> 16); \
+			+ ((__int64) e* (__int64) f)) >> FRACBITS); \
 }
 
 inline fixed_t DMulScale16 (fixed_t a, fixed_t b, fixed_t c, fixed_t d) \
 { \
-	return (fixed_t)((((__int64) a * (__int64) b) + ((__int64) c * (__int64) d)) >> 16); \
+	return (fixed_t)((((__int64) a * (__int64) b) + ((__int64) c * (__int64) d)) >> FRACBITS); \
 }
 
 //

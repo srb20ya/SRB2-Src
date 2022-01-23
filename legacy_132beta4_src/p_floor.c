@@ -650,6 +650,12 @@ void T_BounceCheese(elevator_t* elevator)
 	  elevator->ceilingwasheight =  elevator->actionsector->floorheight + abs(elevator->sector->ceilingheight - elevator->sector->floorheight);
       elevator->floorwasheight = elevator->actionsector->floorheight;
   }
+  else if(waterheight+halfheight > elevator->actionsector->ceilingheight)
+  {
+	  elevator->sector->ceilingheight = elevator->actionsector->ceilingheight;
+	  elevator->sector->floorheight = elevator->sector->ceilingheight - (halfheight*2);
+	  return;
+  }
   else
   {
 	  elevator->ceilingwasheight =  waterheight + halfheight;
@@ -2101,7 +2107,7 @@ int EV_BounceSector
 
     // create and initialize new elevator thinker
 
-  if(sec->teamstartsec == 1) // One at a time, ma'am.
+  if(sec->crumblestate == 1) // One at a time, ma'am.
 	  return 0;
 
     elevator = Z_Malloc (sizeof(*elevator), PU_LEVSPEC, 0);
@@ -2116,7 +2122,7 @@ int EV_BounceSector
 	elevator->distance = FRACUNIT;
 	elevator->low = 1;
 
-	elevator->sector->teamstartsec = 1; // Currently bobbing.
+	elevator->sector->crumblestate = 1; // Currently bobbing.
 
 	return 1;
 }

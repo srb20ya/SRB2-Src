@@ -1769,6 +1769,8 @@ typedef enum {
 
 	MT_REDXVI, // He's BACK!
 
+	MT_SLOPETHINGY, // experimental slope thingy
+
     NUMMOBJTYPES
 
 } mobjtype_t;

@@ -114,6 +114,12 @@ boolean PTR_SlideTraverse (intercept_t* in);
 // Index of the special effects (INVUL inverse) map.
 #define INVERSECOLORMAP         32
 
+// experimental slope thingy
+typedef struct {
+	float x;
+	float y;
+	float z;
+} ssnvector_t;
 
 //
 // Movement.
@@ -161,6 +167,26 @@ void P_ThrustEvenIn2D(mobj_t* mo, angle_t angle, fixed_t move)
     mo->momx += FixedMul(move, finecosine[angle]);
 	mo->momy += FixedMul(move, finesine[angle]);
 }
+
+// Experimental slope thingy
+float VectorMagnitude(ssnvector_t *a_normal) 
+{ 
+  return (float)sqrt( (a_normal->x * a_normal->x) + (a_normal->y * a_normal->y) + (a_normal->z * a_normal->z) ); 
+} 
+
+void VectorNormalize(ssnvector_t *a_normal, ssnvector_t *a_o) 
+{ 
+  float magnitude = VectorMagnitude(a_normal); 
+  a_o->x=a_normal->x / magnitude; 
+  a_o->y=a_normal->y / magnitude; 
+  a_o->z=a_normal->z / magnitude; 
+} 
+void VectorCross(ssnvector_t* a_1, ssnvector_t* a_2, ssnvector_t* a_o) 
+{ 
+    a_o->x = ((a_1->y * a_2->z) - (a_1->z * a_2->y)); 
+    a_o->y = ((a_1->z * a_2->x) - (a_1->x * a_2->z)); 
+    a_o->z = ((a_1->x * a_2->y) - (a_1->y * a_2->x));                                    
+} 
 
 void P_VectorInstaThrust(fixed_t xa, fixed_t xb, fixed_t xc,
 					fixed_t ya, fixed_t yb, fixed_t yc,
@@ -729,6 +755,8 @@ void P_NightserizePlayer(player_t* player, int time, boolean nextmare)
 
 	if(player->drillmeter < 40*20)
 		player->drillmeter = 40*20;
+
+	P_TransferToAxis(player, 1);
 }
 
 // Useful when you want to kill everything the player is doing.
@@ -1519,6 +1547,8 @@ void P_MovePlayer (player_t* player)
 
 	if(countdowntimeup)
 		return;
+
+	grade = 65535;
 
 	if(cv_splitscreen.value && player == &players[secondarydisplayplayer])
 		thiscam = &camera2;
@@ -4325,11 +4355,93 @@ void P_MovePlayer (player_t* player)
 				else
 				{
 					//P_VectorInstaThrust(1*FRACUNIT, 2*FRACUNIT, 3*FRACUNIT, 4*FRACUNIT, 5*FRACUNIT, 6*FRACUNIT, FRACUNIT, FRACUNIT, FRACUNIT, 9.75*FRACUNIT, player->mo);
-							
-					player->mo->momz = 9.75*FRACUNIT; // Ramp Test Tails
+					ssnvector_t vector1;
+					ssnvector_t vector2;
+					ssnvector_t vector3;
 
-					if(P_InQuicksand(player->mo))
-						player->mo->momz /= 2;
+					// Don't be fooled! These are really points!
+					ssnvector_t point1;
+					ssnvector_t point2;
+					ssnvector_t point3;
+
+					boolean slope = false;
+
+					point1.x = -42;
+
+					// Experimental slope thingy
+					{
+						thinker_t* th;
+						mobj_t* mo2;
+
+						for (th = thinkercap.next ; th != &thinkercap ; th=th->next)
+						{
+							if (th->function.acp1 != (actionf_p1)P_MobjThinker)
+								continue;
+
+							mo2 = (mobj_t *)th;
+
+							if(mo2->type != MT_SLOPETHINGY)
+								continue;
+
+							if(mo2->subsector->sector->tag != player->mo->subsector->sector->tag)
+								continue;
+
+							if(mo2->spawnpoint->options == 15)
+							{
+								point1.x = mo2->x>>FRACBITS;
+								point1.y = mo2->z>>FRACBITS;
+								point1.z = mo2->y>>FRACBITS;
+							}
+							else if(mo2->spawnpoint->options == 23)
+							{
+								point2.x = mo2->x>>FRACBITS;
+								point2.y = mo2->z>>FRACBITS;
+								point2.z = mo2->y>>FRACBITS;
+							}
+							else if(mo2->spawnpoint->options == 31)
+							{
+								point3.x = mo2->x>>FRACBITS;
+								point3.y = mo2->z>>FRACBITS;
+								point3.z = mo2->y>>FRACBITS;
+								slope = true;
+								break;
+							}
+						}
+					}
+
+					if(!slope)
+					{
+						player->mo->momz = 9.75*FRACUNIT;
+
+						if(P_InQuicksand(player->mo))
+							player->mo->momz /= 2;
+
+						CONS_Printf("No Slope...\n");
+					}
+					else
+					{
+						CONS_Printf("On a slope!\n");
+
+						vector1.x = point1.x-point2.x;
+						vector1.y = point1.y-point2.y;
+						vector1.z = point1.z-point2.z;
+
+						vector2.x = point3.x-point2.x;
+						vector2.y = point3.y-point2.y;
+						vector2.z = point3.z-point3.z;
+
+						VectorNormalize(&vector1, &vector1);
+						VectorNormalize(&vector2, &vector2);
+						VectorCross(&vector1, &vector2, &vector3);
+
+						player->mo->momx += vector3.x*9.75*FRACUNIT;
+						player->mo->momy += vector3.z*9.75*FRACUNIT;
+						player->mo->momz += vector3.y*9.75*FRACUNIT;
+
+						CONS_Printf("Vector X is %f\n", vector3.x);
+						CONS_Printf("Vector Y is %f\n", vector3.y);
+						CONS_Printf("Vector Z is %f\n", vector3.z);
+					}
 				}
 
 				player->jumping = 1;

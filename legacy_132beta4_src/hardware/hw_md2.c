@@ -712,7 +712,7 @@ void HWR_DrawMD2( gr_vissprite_t* spr )
                 }
 
                 filename[i] = '\0';
-                md2->texture = md2_loadTexture( filename );
+                md2->texture = md2_loadTexture( "tails.pcx");//filename );
                 md2_printModelInfo (md2->model);
             }
             else

@@ -3838,6 +3838,7 @@ if(mobj->flags & MF_AMBIENT)
 				P_SetMobjState(mobj, S_DISS);
 				flagmo->flags = mobj->flags; // Graue 12-31-2003
 				flagmo->flags2 = mobj->flags2;
+				flagmo->flags |= MF_PUSHABLE;
 				break;
 			case MT_BLUEFLAG:
 			case MT_REDFLAG:
