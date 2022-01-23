@@ -1,0 +1,36 @@
+<html>
+<body>
+<pre>
+<h1>Build Log</h1>
+<h3>
+--------------------Configuration: r_opengl - Win32 Release--------------------
+</h3>
+<h3>Command Lines</h3>
+Creating temporary file "C:\DOCUME~1\ADMINI~1\LOCALS~1\Temp\RSP17A.tmp" with contents
+[
+/nologo /G5 /MT /W3 /GX /Zi /O2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "__WIN32__" /D "__MSC__" /Fp"..\..\..\objs\Release/r_opengl.pch" /YX /Fo"..\..\..\objs\Release/" /Fd"..\..\..\objs\Release/" /FD /c 
+"C:\NewSRB2src\legacy_132beta4_src\hardware\r_opengl\ogl_win.c"
+"C:\NewSRB2src\legacy_132beta4_src\hardware\r_opengl\r_opengl.c"
+]
+Creating command line "cl.exe @C:\DOCUME~1\ADMINI~1\LOCALS~1\Temp\RSP17A.tmp" 
+Creating temporary file "C:\DOCUME~1\ADMINI~1\LOCALS~1\Temp\RSP17B.tmp" with contents
+[
+opengl32.lib glu32.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib fmodvc.lib /nologo /dll /incremental:no /pdb:"..\..\..\objs\Release/r_opengl.pdb" /machine:I386 /out:"c:\srb2demo2\r_opengl.dll" /implib:"..\..\..\objs\Release/r_opengl.lib" 
+\NewSRB2src\objs\Release\ogl_win.obj
+\NewSRB2src\objs\Release\r_opengl.obj
+]
+Creating command line "link.exe @C:\DOCUME~1\ADMINI~1\LOCALS~1\Temp\RSP17B.tmp"
+<h3>Output Window</h3>
+Compiling...
+ogl_win.c
+r_opengl.c
+Linking...
+   Creating library ..\..\..\objs\Release/r_opengl.lib and object ..\..\..\objs\Release/r_opengl.exp
+
+
+
+<h3>Results</h3>
+r_opengl.dll - 0 error(s), 0 warning(s)
+</pre>
+</body>
+</html>

@@ -1,3 +1,0 @@
-#include "I_os2.h"
-
-ICON  ID_MAINWND "I_pm.ico"

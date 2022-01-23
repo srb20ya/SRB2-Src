@@ -1,0 +1,37 @@
+12-14-2003:
+	-changed something in P_CreateBlockMap(): for (i=0; i<(unsigned)numvertexes; i++) // No, make the other one unsigned! Graue 12-14-2003
+
+12-16-2003:
+	-fixed score adding in CTF; in normal score, flag capture didn't add player points; pointlimit wasn't checked in either scoring mode
+	-made P_CheckFragLimit() just check both teams in CTF mode, probably faster
+
+12-17-2003:
+	-flag capture isn't supposed to add player points (NOW they tell me!)
+
+12-18-2003:
+	-added animated textures SFALL1-SFALL4 and BFALL1-BFALL4
+	-removed them again for the time being
+
+12-19-2003:
+	-preliminary work on multiple linedef executor trigger types
+
+12-20-2003:
+	-added linetype 97, linedef executor trigger once per floor hit
+	-minor fix for custom exits on FOFs, linetype 71 is searched from FOF control sector now
+	-removed electrical damage (18) and CTF bases (983-984) from the list of sector types that activate without floor touch in P_PlayerInSpecialSector
+	-took out redundant check for linetype 321 in speed pad handling (P_ProcessSpecialSector, sector types 976-977)
+	-took out redundant, broken, and commented-out code for linedef executor specials 101 and 102 in P_ProcessLineSpecial
+	-workaround for bad bug in EV_DoElevator? for elevateContinuous, elevator->low was in an if statement but never got set to anything
+	-fixed bug with skipline and custom exits in P_SpawnSpecials
+	-made new sector type 974 for linedef executor, doesn't require touching floor
+
+12-21-2003:
+	-added linedef executor commands 108-111, raise/lower floor/ceiling by line
+
+12-22-2003:
+	-comment out player cmomz and rmomz, currently not being used
+	-added compensation for player speeds and accels in circuit mode
+	-fixed die-with-9-rings bug in circuit mode
+	-made extra life music not play in circuit mode for 100 or 200 rings
+	-added various notes and removed some redundancies throughout the code, mostly relating to player respawning and dying
+	-optimised some nightsmode state checking in P_MovePlayer
