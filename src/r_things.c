@@ -107,7 +107,7 @@ static void R_InstallSpriteLump(int lumppat,     // graphics patch
 	int r;
 
 	if(frame >= 64 || rotation > 8)
-		I_Error("R_InstallSpriteLump: Bad frame characters in lump %i", lumpid);
+		I_Error("R_InstallSpriteLump: Bad frame characters in lump %s", W_CheckNameForNum(lumpid));
 
 	if((int)frame > maxframe)
 		maxframe = frame;
@@ -446,6 +446,7 @@ static vissprite_t* R_NewVisSprite(void)
 	if(vissprite_p == &vissprites[MAXVISSPRITES])
 		return &overflowsprite;
 
+	memset(vissprite_p,0x00,sizeof(vissprite_t));
 	vissprite_p++;
 	return vissprite_p-1;
 }
@@ -459,8 +460,8 @@ static vissprite_t* R_NewVisSprite(void)
 short* mfloorclip;
 short* mceilingclip;
 
-fixed_t spryscale, sprtopscreen, sprbotscreen;
-fixed_t windowtop, windowbottom;
+fixed_t spryscale = 0, sprtopscreen = 0, sprbotscreen = 0;
+fixed_t windowtop = 0, windowbottom = 0;
 
 void R_DrawMaskedColumn(column_t* column)
 {
@@ -551,7 +552,7 @@ static void R_DrawVisSprite(vissprite_t* vis, int x1, int x2)
 
 
     //Fab:R_InitSprites now sets a wad lump number
-	 x1 = x2 = 0;
+	 x1 = x2 = 0; // Logan: WHAT? we pass x1 and x2 for cliping, and we don't use them?
     patch = W_CacheLumpNum(vis->patch, PU_CACHE);
 
     dc_colormap = vis->colormap;
@@ -949,17 +950,17 @@ static void R_ProjectSprite(mobj_t* thing)
     vis->scale = yscale;           //<<detailshift;
     vis->gx = thing->x;
     vis->gy = thing->y;
-	if(thing->flags & MF_HIRES)
-		vis->gz = gzt - spriteheight[lump]/2;
-	else
-		vis->gz = gzt - spriteheight[lump];
+    if(thing->flags & MF_HIRES)
+       vis->gz = gzt - spriteheight[lump]/2;
+    else
+       vis->gz = gzt - spriteheight[lump];
     vis->gzt = gzt;
     vis->thingheight = thing->height;
-        vis->pz = thing->z;
-        vis->pzt = vis->pz + vis->thingheight;
+    vis->pz = thing->z;
+    vis->pzt = vis->pz + vis->thingheight;
     vis->texturemid = vis->gzt - viewz;
 
-	vis->mobj = thing; // Easy access! Tails 06-07-2002
+    vis->mobj = thing; // Easy access! Tails 06-07-2002
 
     vis->x1 = x1 < 0 ? 0 : x1;
     vis->x2 = x2 >= viewwidth ? viewwidth-1 : x2;
@@ -977,7 +978,7 @@ static void R_ProjectSprite(mobj_t* thing)
 
     if(flip)
     {
-		vis->startfrac = spritewidth[lump]-1;
+        vis->startfrac = spritewidth[lump]-1;
         vis->xiscale = -iscale;
     }
     else
@@ -1030,7 +1031,7 @@ static void R_ProjectSprite(mobj_t* thing)
         }
     }
 
-	vis->precip = false;
+    vis->precip = false;
 
     if(thing->subsector->sector->numlights)
       R_SplitSprite(vis, thing);
@@ -1342,13 +1343,12 @@ void R_SortVisSprites(void)
 //
 // R_CreateDrawNodes
 // Creates and sorts a list of drawnodes for the scene being rendered.
-static void R_CreateDrawNodes();
 static drawnode_t* R_CreateDrawNode(drawnode_t* link);
 
 static drawnode_t nodebankhead;
 static drawnode_t nodehead;
 
-static void R_CreateDrawNodes()
+static void R_CreateDrawNodes(void)
 {
 	drawnode_t* entry;
 	drawseg_t* ds;
@@ -1359,7 +1359,7 @@ static void R_CreateDrawNodes()
 	visplane_t* plane;
 	int sintersect;
 	fixed_t gzm;
-	fixed_t scale;
+	fixed_t scale = 0;
 
     // Add the 3D floors, thicksides, and masked textures...
     for(ds = ds_p; ds-- > drawsegs;)
@@ -1576,7 +1576,7 @@ static void R_DoneWithNode(drawnode_t* node)
 
 
 
-static void R_ClearDrawNodes()
+static void R_ClearDrawNodes(void)
 {
   drawnode_t* rover;
   drawnode_t* next;
@@ -1607,7 +1607,7 @@ void R_InitDrawNodes(void)
 //Fab:26-04-98:
 // NOTE : uses con_clipviewtop, so that when console is on,
 //        don't draw the part of sprites hidden under the console
-void R_DrawSprite(vissprite_t* spr)
+static void R_DrawSprite(vissprite_t* spr)
 {
     drawseg_t*          ds;
     short               clipbot[MAXVIDWIDTH];
@@ -1619,6 +1619,8 @@ void R_DrawSprite(vissprite_t* spr)
     fixed_t             lowscale;
     int                 silhouette;
 
+    memset(clipbot,0x00,sizeof(clipbot));
+    memset(cliptop,0x00,sizeof(cliptop));
     for (x = spr->x1 ; x<=spr->x2 ; x++)
         clipbot[x] = cliptop[x] = -2;
 
@@ -1946,11 +1948,11 @@ void R_DrawMasked(void)
       {
         next = r2->prev;
 
-		// Tails 08-18-2002
-		if(r2->sprite->precip == true)
-			R_DrawPrecipitationSprite(r2->sprite);
-		else
-			R_DrawSprite(r2->sprite);
+        // Tails 08-18-2002
+        if(r2->sprite->precip == true)
+           R_DrawPrecipitationSprite(r2->sprite);
+        else
+           R_DrawSprite(r2->sprite);
 
         R_DoneWithNode(r2);
         r2 = next;
@@ -2038,7 +2040,7 @@ static void R_DoSkinTranslationInit(void)
 {
 	int i;
 
-	for(i = 0; i <= numskins; i++)
+	for(i = 0; i <= numskins && numskins < MAXSKINS; i++)
 		R_InitSkinTranslationTables(atoi(skins[i].starttranscolor), atoi(skins[i].endtranscolor), i);
 }
 
@@ -2066,48 +2068,7 @@ void SetPlayerSkin(int playernum, const char* skinname)
 		// search in the skin list
 		if(stricmp(skins[i].name, skinname) == 0)
 		{
-			// change the face graphics
-			players[playernum].skin = i;
-			if(players[playernum].mo)
-			{
-				players[playernum].mo->skin = &skins[i];
-				if(atoi(skins[i].highres))
-					players[playernum].mo->flags |= MF_HIRES;
-				else
-					players[playernum].mo->flags &= ~MF_HIRES;
-			}
-
-			players[playernum].charability = atoi(skins[i].ability);
-			players[playernum].charspin = atoi(skins[i].spin);
-
-			players[playernum].normalspeed = atoi(skins[i].normalspeed);
-			players[playernum].thrustfactor = atoi(skins[i].thrustfactor);
-			players[playernum].accelstart = atoi(skins[i].accelstart);
-			players[playernum].acceleration = atoi(skins[i].acceleration);
-
-			// Cheat checks!
-			if(players[playernum].normalspeed > 36)
-				players[playernum].normalspeed = 36;
-			if(players[playernum].thrustfactor > 5)
-				players[playernum].thrustfactor = 5;
-			if(players[playernum].accelstart > 192)
-				players[playernum].accelstart = 192;
-			if(players[playernum].acceleration > 50)
-				players[playernum].acceleration = 50;
-
-			players[playernum].jumpfactor = atoi(skins[i].jumpfactor);
-
-			if(players[playernum].jumpfactor > 100)
-				players[playernum].jumpfactor = 100;
-
-			players[playernum].boxindex = atoi(skins[i].boxindex);
-
-			// Set the proper translation tables
-			players[playernum].starttranscolor = atoi(skins[i].starttranscolor);
-			players[playernum].endtranscolor = atoi(skins[i].endtranscolor);
-
-			players[playernum].prefcolor = atoi(skins[i].prefcolor);
-
+			SetPlayerSkinByNum(playernum, i);
 			return;
 		}
 	}
@@ -2282,8 +2243,8 @@ char* GetPlayerFacePic(int skinnum)
 static int W_CheckForSkinMarkerInPwad(int wadid, int startlump)
 {
 	int i, v1;
-	lumpinfo_t* lump_p;
-
+ 	lumpinfo_t* lump_p;
+ 
 	union
 	{
 		char s[4];
@@ -2365,7 +2326,7 @@ void R_AddSkins(int wadnum)
 			value = strtok(NULL, "\r\n= ");
 
 			if(!value)
-				I_Error("R_AddSkins: syntax error in S_SKIN lump# %d in WAD %s\n", lumpnum&0xFFFF, wadfiles[wadnum]->filename);
+				I_Error("R_AddSkins: syntax error in S_SKIN lump# %d(%s) in WAD %s\n", lumpnum&0xFFFF,W_CheckNameForNum(lumpnum), wadfiles[wadnum]->filename);
 
 			if(!stricmp(token, "name"))
 			{
@@ -2377,6 +2338,20 @@ void R_AddSkins(int wadnum)
 					strncpy(skins[numskins].name, value, SKINNAMESIZE);
 					skins[numskins].name[SKINNAMESIZE] = '\0';
 					strlwr(skins[numskins].name);
+				}
+				// I'm not lazy, so if the name is already used I make the name 'namex'
+				// using the default skin name's number set above
+				else
+				{
+					char *value2 = malloc(strlen(value)+sizeof(numskins)+1);
+					sprintf(value2, "%s%d", value, numskins);
+					if(!R_SkinAvailable(value2))
+					{
+						strncpy(skins[numskins].name, value2, SKINNAMESIZE);
+						skins[numskins].name[SKINNAMESIZE] = '\0';
+						strlwr(skins[numskins].name);
+					}
+					free(value2);
 				}
 			}
 			else if(!stricmp(token, "face"))
@@ -2487,11 +2462,12 @@ void R_AddSkins(int wadnum)
 					}
 				}
 				if(!found)
-					I_Error("R_AddSkins: Unknown keyword '%s' in S_SKIN lump# %d (WAD %s)\n",token,lumpnum&0xFFFF,wadfiles[wadnum]->filename);
+					CONS_Printf("R_AddSkins: Unknown keyword '%s' in S_SKIN lump# %d (WAD %s)\n",token,lumpnum&0xFFFF,wadfiles[wadnum]->filename);
 			}
 next_token:
 			token = strtok(NULL, "\r\n= ");
 		}
+		free(buf2);
 
 		if(boxindexset == false && numskins>0)
 			strcpy(skins[numskins].boxindex, "0");
@@ -2509,7 +2485,7 @@ next_token:
 
 			// skip to end of this skin's frames
 			lastlump = lumpnum;
-			while (*(int*)lumpinfo[lastlump].name == intname)
+			while (W_CheckNameForNumPwad(wadnum,lastlump) && *(int*)lumpinfo[lastlump].name == intname)
 				lastlump++;
 			// allocate (or replace) sprite frames, and set spritedef
 			R_AddSingleSpriteDef(sprname, &skins[numskins].spritedef, wadnum, lumpnum, lastlump);
@@ -2529,6 +2505,12 @@ next_token:
 			// not found so make a new one
 			if(!found)
 				R_AddSingleSpriteDef(sprname, &skins[numskins].spritedef, wadnum, 0, MAXINT);
+
+			intname = *(int*)sprname;
+			lastlump++;
+			lumpinfo = wadfiles[wadnum]->lumpinfo;
+			while (W_CheckNameForNumPwad(wadnum,lastlump) && *(int*)lumpinfo[lastlump].name == intname)
+				lastlump++;
 		}
 
 		R_DoSkinTranslationInit();
@@ -2544,7 +2526,6 @@ next_token:
 		ST_LoadFaceNameGraphics(skins[numskins].nameprefix, numskins);
 
 		numskins++;
-		free(buf2);
 	}
 	return;
 }

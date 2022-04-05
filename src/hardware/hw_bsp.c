@@ -463,10 +463,10 @@ static poly_t* CutOutSubsecPoly (seg_t* lseg, int count, poly_t* poly)
 	{
 		//x,y,dx,dy (like a divline)
 		line_t *line = lseg->linedef;
-		p1.x = (lseg->side?line->v2->x:line->v1->x)*crapmul;
-		p1.y = (lseg->side?line->v2->y:line->v1->y)*crapmul;
-		p2.x = (lseg->side?line->v1->x:line->v2->x)*crapmul;
-		p2.y = (lseg->side?line->v1->y:line->v2->y)*crapmul;
+		p1.x = FIXED_TO_FLOAT(lseg->side?line->v2->x:line->v1->x);
+		p1.y = FIXED_TO_FLOAT(lseg->side?line->v2->y:line->v1->y);
+		p2.x = FIXED_TO_FLOAT(lseg->side?line->v1->x:line->v2->x);
+		p2.y = FIXED_TO_FLOAT(lseg->side?line->v1->y:line->v2->y);
 
 		cutseg.x = p1.x;
 		cutseg.y = p1.y;
@@ -588,10 +588,10 @@ static inline void SearchDivline(node_t* bsp,fdivline_t *divline)
 {
 #if 0 // MAR - If you don't use the same partition line that the BSP uses, the front/back polys won't match the subsectors in the BSP!
 #endif
-	divline->x=bsp->x*crapmul;
-	divline->y=bsp->y*crapmul;
-	divline->dx=bsp->dx*crapmul;
-	divline->dy=bsp->dy*crapmul;
+	divline->x=FIXED_TO_FLOAT(bsp->x);
+	divline->y=FIXED_TO_FLOAT(bsp->y);
+	divline->dx=FIXED_TO_FLOAT(bsp->dx);
+	divline->dy=FIXED_TO_FLOAT(bsp->dy);
 }
 
 //Hurdler: implement a loading status
@@ -809,16 +809,16 @@ static void SearchSegInBSP(int bspnum,polyvertex_t *p,poly_t *poly)
 		return;
 	}
 
-	if((nodes[bspnum].bbox[0][BOXBOTTOM]*crapmul-MAXDIST<=p->y) &&
-	   (nodes[bspnum].bbox[0][BOXTOP   ]*crapmul+MAXDIST>=p->y) &&
-	   (nodes[bspnum].bbox[0][BOXLEFT  ]*crapmul-MAXDIST<=p->x) &&
-	   (nodes[bspnum].bbox[0][BOXRIGHT ]*crapmul+MAXDIST>=p->x) )
+	if((FIXED_TO_FLOAT(nodes[bspnum].bbox[0][BOXBOTTOM])-MAXDIST<=p->y) &&
+	   (FIXED_TO_FLOAT(nodes[bspnum].bbox[0][BOXTOP   ])+MAXDIST>=p->y) &&
+	   (FIXED_TO_FLOAT(nodes[bspnum].bbox[0][BOXLEFT  ])-MAXDIST<=p->x) &&
+	   (FIXED_TO_FLOAT(nodes[bspnum].bbox[0][BOXRIGHT ])+MAXDIST>=p->x) )
 		SearchSegInBSP(nodes[bspnum].children[0],p,poly);
 
-	if((nodes[bspnum].bbox[1][BOXBOTTOM]*crapmul-MAXDIST<=p->y) &&
-	   (nodes[bspnum].bbox[1][BOXTOP   ]*crapmul+MAXDIST>=p->y) &&
-	   (nodes[bspnum].bbox[1][BOXLEFT  ]*crapmul-MAXDIST<=p->x) &&
-	   (nodes[bspnum].bbox[1][BOXRIGHT ]*crapmul+MAXDIST>=p->x) )
+	if((FIXED_TO_FLOAT(nodes[bspnum].bbox[1][BOXBOTTOM])-MAXDIST<=p->y) &&
+	   (FIXED_TO_FLOAT(nodes[bspnum].bbox[1][BOXTOP   ])+MAXDIST>=p->y) &&
+	   (FIXED_TO_FLOAT(nodes[bspnum].bbox[1][BOXLEFT  ])-MAXDIST<=p->x) &&
+	   (FIXED_TO_FLOAT(nodes[bspnum].bbox[1][BOXRIGHT ])+MAXDIST>=p->x) )
 		SearchSegInBSP(nodes[bspnum].children[1],p,poly);
 }
 
@@ -881,8 +881,8 @@ static void AjustSegs(void)
 			nearv1=nearv2=MYMAX;
 			for(j=0;j<p->numpts;j++)
 			{
-				distv1 = p->pts[j].x - ((float)lseg->v1->x)*crapmul; 
-				tmp    = p->pts[j].y - ((float)lseg->v1->y)*crapmul;
+				distv1 = p->pts[j].x - FIXED_TO_FLOAT(lseg->v1->x); 
+				tmp    = p->pts[j].y - FIXED_TO_FLOAT(lseg->v1->y);
 				distv1 = distv1*distv1+tmp*tmp;
 				if( distv1 <= nearv1 )
 				{
@@ -890,8 +890,8 @@ static void AjustSegs(void)
 					nearv1 = distv1;
 				}
 				// the same with v2
-				distv2 = p->pts[j].x - ((float)lseg->v2->x)*crapmul; 
-				tmp    = p->pts[j].y - ((float)lseg->v2->y)*crapmul;
+				distv2 = p->pts[j].x - FIXED_TO_FLOAT(lseg->v2->x); 
+				tmp    = p->pts[j].y - FIXED_TO_FLOAT(lseg->v2->y);
 				distv2 = distv2*distv2+tmp*tmp;
 				if( distv2 <= nearv2 )
 				{
@@ -910,8 +910,8 @@ static void AjustSegs(void)
 
 				// convert fixed vertex to float vertex
 				polyvertex_t *p=HWR_AllocVertex();
-				p->x=lseg->v1->x*crapmul;
-				p->y=lseg->v1->y*crapmul;
+				p->x=FIXED_TO_FLOAT(lseg->v1->x);
+				p->y=FIXED_TO_FLOAT(lseg->v1->y);
 				lseg->v1 = (vertex_t *)p;
 			}
 			if( nearv2<=NEARDIST*NEARDIST )
@@ -919,19 +919,19 @@ static void AjustSegs(void)
 			else
 			{
 				polyvertex_t *p=HWR_AllocVertex();
-				p->x=lseg->v2->x*crapmul;
-				p->y=lseg->v2->y*crapmul;
+				p->x=FIXED_TO_FLOAT(lseg->v2->x);
+				p->y=FIXED_TO_FLOAT(lseg->v2->y);
 				lseg->v2 = (vertex_t *)p;
 			}
 
 			// recompute length 
 			{
 				float x,y;
-				x = (float)(((polyvertex_t *)lseg->v2)->x - ((polyvertex_t *)lseg->v1)->x
-					+ 0.5f*crapmul);
-				y = (float)(((polyvertex_t *)lseg->v2)->y - ((polyvertex_t *)lseg->v1)->y
-					+ 0.5f*crapmul);
-				lseg->length = (float)(sqrt(x*x+y*y)*FRACUNIT);
+				x = ((polyvertex_t *)lseg->v2)->x - ((polyvertex_t *)lseg->v1)->x
+					+ FIXED_TO_FLOAT(FRACUNIT/2);
+				y = ((polyvertex_t *)lseg->v2)->y - ((polyvertex_t *)lseg->v1)->y
+					+ FIXED_TO_FLOAT(FRACUNIT/2);
+				lseg->length = (float)sqrt(x*x+y*y)*FRACUNIT;
 				// BP: debug see this kind of segs
 				//if (nearv2>NEARDIST*NEARDIST || nearv1>NEARDIST*NEARDIST)
 				//    lseg->length=1;
@@ -988,17 +988,17 @@ void HWR_CreatePlanePolygons (int bspnum)
 	rootp  = HWR_AllocPoly (4);
 	rootpv = rootp->pts;
 
-	rootpv->x = (float)rootbbox[BOXLEFT  ] * crapmul;
-	rootpv->y = (float)rootbbox[BOXBOTTOM] * crapmul;  //lr
+	rootpv->x = FIXED_TO_FLOAT(rootbbox[BOXLEFT  ]);
+	rootpv->y = FIXED_TO_FLOAT(rootbbox[BOXBOTTOM]);  //lr
 	rootpv++;
-	rootpv->x = (float)rootbbox[BOXLEFT  ] * crapmul;
-	rootpv->y = (float)rootbbox[BOXTOP   ] * crapmul;  //ur
+	rootpv->x = FIXED_TO_FLOAT(rootbbox[BOXLEFT  ]);
+	rootpv->y = FIXED_TO_FLOAT(rootbbox[BOXTOP   ]);  //ur
 	rootpv++;
-	rootpv->x = (float)rootbbox[BOXRIGHT ] * crapmul;
-	rootpv->y = (float)rootbbox[BOXTOP   ] * crapmul;  //ul
+	rootpv->x = FIXED_TO_FLOAT(rootbbox[BOXRIGHT ]);
+	rootpv->y = FIXED_TO_FLOAT(rootbbox[BOXTOP   ]);  //ul
 	rootpv++;
-	rootpv->x = (float)rootbbox[BOXRIGHT ] * crapmul;
-	rootpv->y = (float)rootbbox[BOXBOTTOM] * crapmul;  //ll
+	rootpv->x = FIXED_TO_FLOAT(rootbbox[BOXRIGHT ]);
+	rootpv->y = FIXED_TO_FLOAT(rootbbox[BOXBOTTOM]);  //ll
 	rootpv++;
 
 	WalkBSPNode (bspnum, rootp, NULL,rootbbox);

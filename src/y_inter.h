@@ -20,3 +20,4 @@ void Y_IntermissionDrawer(void);
 void Y_Ticker(void);
 void Y_StartIntermission(void);
 void Y_EndIntermission(void);
+void Y_EndGame(void);

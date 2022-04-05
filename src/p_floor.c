@@ -194,12 +194,15 @@ void T_MoveFloor(floormove_t* floor)
 
 	if(floor->type == bounceFloor)
 	{
-		if(abs(floor->sector->floorheight - lines[floor->texture].frontsector->floorheight) < abs(floor->sector->floorheight - lines[floor->texture].backsector->floorheight))
-			floor->speed = abs(floor->sector->floorheight - lines[floor->texture].frontsector->floorheight)/25 + FRACUNIT/4;
+		const fixed_t origspeed = FixedDiv(floor->origspeed,(ELEVATORSPEED/2));
+		const fixed_t fs = abs(floor->sector->floorheight - lines[floor->texture].frontsector->floorheight);
+		const fixed_t bs = abs(floor->sector->floorheight - lines[floor->texture].backsector->floorheight);
+		if(fs < bs)
+			floor->speed = FixedDiv(fs,25*FRACUNIT) + FRACUNIT/4;
 		else
-			floor->speed = abs(floor->sector->floorheight - lines[floor->texture].backsector->floorheight)/25 + FRACUNIT/4;
+			floor->speed = FixedDiv(bs,25*FRACUNIT) + FRACUNIT/4;
 
-		floor->speed *= floor->origspeed/(ELEVATORSPEED/2);
+		floor->speed = FixedMul(floor->speed,origspeed);
 	}
 
 	if(res == pastdest)
@@ -228,12 +231,12 @@ void T_MoveFloor(floormove_t* floor)
 					if(floor->floordestheight == lines[floor->texture].frontsector->floorheight)
 					{
 						floor->floordestheight = lines[floor->texture].backsector->floorheight;
-						floor->speed = floor->origspeed = abs(lines[floor->texture].dy)/4; // return trip, use dy
+						floor->speed = floor->origspeed = FixedDiv(abs(lines[floor->texture].dy),4*FRACUNIT); // return trip, use dy
 					}
 					else
 					{
 						floor->floordestheight = lines[floor->texture].frontsector->floorheight;
-						floor->speed = floor->origspeed = abs(lines[floor->texture].dx)/4; // forward again, use dx
+						floor->speed = floor->origspeed = FixedDiv(abs(lines[floor->texture].dx),4*FRACUNIT); // forward again, use dx
 					}
 					floor->direction = (floor->floordestheight < floor->sector->floorheight) ? -1 : 1;
 					floor->sector->floorspeed = floor->speed * floor->direction;
@@ -267,12 +270,12 @@ void T_MoveFloor(floormove_t* floor)
 					if(floor->floordestheight == lines[floor->texture].frontsector->floorheight)
 					{
 						floor->floordestheight = lines[floor->texture].backsector->floorheight;
-						floor->speed = floor->origspeed = abs(lines[floor->texture].dy)/4; // return trip, use dy
+						floor->speed = floor->origspeed = FixedDiv(abs(lines[floor->texture].dy),4*FRACUNIT); // return trip, use dy
 					}
 					else
 					{
 						floor->floordestheight = lines[floor->texture].frontsector->floorheight;
-						floor->speed = floor->origspeed = abs(lines[floor->texture].dx)/4; // forward again, use dx
+						floor->speed = floor->origspeed = FixedDiv(abs(lines[floor->texture].dx),4*FRACUNIT); // forward again, use dx
 					}
 					floor->direction = (floor->floordestheight < floor->sector->floorheight) ? -1 : 1;
 					floor->sector->floorspeed = floor->speed * floor->direction;
@@ -318,17 +321,18 @@ void T_MoveElevator(elevator_t* elevator)
 	{
 		if(elevator->type == elevateContinuous)
 		{
+			const fixed_t origspeed = FixedDiv(elevator->origspeed,(ELEVATORSPEED/2));
+			const fixed_t wh = abs(elevator->sector->floorheight - elevator->floorwasheight);
+			const fixed_t dh = abs(elevator->sector->floorheight - elevator->floordestheight);
 			// Slow down when reaching destination Tails 12-06-2000
-			if(abs(elevator->sector->floorheight - elevator->floorwasheight) < abs(elevator->sector->floorheight - elevator->floordestheight))
-				elevator->speed = abs(elevator->sector->floorheight - elevator->floorwasheight)/25 + FRACUNIT/4;
+			if(wh < dh)
+				elevator->speed = FixedDiv(wh,25*FRACUNIT) + FRACUNIT/4;
 			else
-				elevator->speed = abs(elevator->sector->floorheight - elevator->floordestheight)/25 + FRACUNIT/4;
-
-			if(elevator->origspeed)
-				elevator->speed *= elevator->origspeed/(ELEVATORSPEED/2);
+				elevator->speed = FixedDiv(dh,25*FRACUNIT) + FRACUNIT/4;
 
 			if(elevator->origspeed)
 			{
+				elevator->speed = FixedMul(elevator->speed,origspeed);
 				if(elevator->speed > elevator->origspeed)
 					elevator->speed = (elevator->origspeed);
 				if(elevator->speed < 1)
@@ -368,17 +372,18 @@ void T_MoveElevator(elevator_t* elevator)
 	{
 		if(elevator->type == elevateContinuous)
 		{
+			const fixed_t origspeed = FixedDiv(elevator->origspeed,(ELEVATORSPEED/2));
+			const fixed_t wc = abs(elevator->sector->ceilingheight - elevator->ceilingwasheight);
+			const fixed_t dc = abs(elevator->sector->ceilingheight - elevator->ceilingdestheight);
 			// Slow down when reaching destination Tails 12-06-2000
-			if(abs(elevator->sector->ceilingheight - elevator->ceilingwasheight) < abs(elevator->sector->ceilingheight - elevator->ceilingdestheight))
-				elevator->speed = abs(elevator->sector->ceilingheight - elevator->ceilingwasheight)/25 + FRACUNIT/4;
+			if(wc < dc)
+				elevator->speed = FixedDiv(wc,25*FRACUNIT) + FRACUNIT/4;
 			else
-				elevator->speed = abs(elevator->sector->ceilingheight - elevator->ceilingdestheight)/25 + FRACUNIT/4;
-
-			if(elevator->origspeed)
-				elevator->speed *= elevator->origspeed/(ELEVATORSPEED/2);
+				elevator->speed = FixedDiv(dc,25*FRACUNIT) + FRACUNIT/4;
 
 			if(elevator->origspeed)
 			{
+				elevator->speed = FixedMul(elevator->speed,origspeed);
 				if(elevator->speed > elevator->origspeed)
 					elevator->speed = (elevator->origspeed);
 				if(elevator->speed < 1)
@@ -589,7 +594,6 @@ void T_BounceCheese(elevator_t* elevator)
 {
 	fixed_t halfheight;
 	fixed_t waterheight;
-	boolean nobounce = false;
 
 	if(elevator->sector->crumblestate == 2) // Oops! Crumbler says to remove yourself!
 	{
@@ -604,16 +608,22 @@ void T_BounceCheese(elevator_t* elevator)
 
 	if(waterheight == -42)
 	{
-		nobounce = true;
 		elevator->ceilingwasheight = elevator->actionsector->floorheight +
 			abs(elevator->sector->ceilingheight - elevator->sector->floorheight);
 		elevator->floorwasheight = elevator->actionsector->floorheight;
+		elevator->sector->floorheight = elevator->floorwasheight;
+		elevator->sector->ceilingheight = elevator->ceilingwasheight;
+		elevator->sector->crumblestate = 0;
+		P_RemoveThinker(&elevator->thinker); // remove elevator from actives
+		return;
 	}
 	else if(waterheight > elevator->sector->ceilingheight - halfheight && elevator->sector->ceilingheight >= elevator->actionsector->ceilingheight) // Tails 01-08-2004
 	{
 		elevator->sector->ceilingheight = elevator->actionsector->ceilingheight;
 		elevator->sector->floorheight = elevator->sector->ceilingheight - (halfheight*2);
 		P_RecalcPrecipInSector(elevator->actionsector);
+		elevator->sector->crumblestate = 0;
+		P_RemoveThinker(&elevator->thinker); // remove elevator from actives
 		return;
 	}
 	else if(waterheight < elevator->sector->floorheight + halfheight && elevator->sector->floorheight <= elevator->actionsector->floorheight)
@@ -621,6 +631,8 @@ void T_BounceCheese(elevator_t* elevator)
 		elevator->sector->ceilingheight = elevator->actionsector->floorheight + (halfheight*2);
 		elevator->sector->floorheight = elevator->actionsector->floorheight;
 		P_RecalcPrecipInSector(elevator->actionsector);
+		elevator->sector->crumblestate = 0;
+		P_RemoveThinker(&elevator->thinker); // remove elevator from actives
 		return;
 	}
 	else
@@ -636,12 +648,6 @@ void T_BounceCheese(elevator_t* elevator)
 
 	if(elevator->sector->ceilingheight < elevator->ceilingwasheight && elevator->low == 0) // Down
 	{
-		if(nobounce)
-		{
-			elevator->speed = 0;
-			goto done;
-		}
-
 		if(abs(elevator->speed) < 6*FRACUNIT)
 			elevator->speed -= elevator->speed/3;
 		else
@@ -682,7 +688,6 @@ void T_BounceCheese(elevator_t* elevator)
 		&& elevator->sector->ceilingheight < elevator->ceilingwasheight + FRACUNIT/4
 		&& elevator->sector->ceilingheight > elevator->ceilingwasheight - FRACUNIT/4)
 	{
-done:
 		elevator->sector->floorheight = elevator->floorwasheight;
 		elevator->sector->ceilingheight = elevator->ceilingwasheight;
 		elevator->sector->crumblestate = 0;
@@ -736,7 +741,7 @@ void T_StartCrumble(elevator_t* elevator)
 			return;
 		}
 
-		if(elevator->distance > -224 && (leveltime % (abs(elevator->distance)/8 + 1) == 0))
+		if(elevator->distance > -224 && (leveltime % ((abs(elevator->distance)/8) + 1) == 0))
 		{
 			ffloor_t* rover;
 
@@ -1146,12 +1151,20 @@ void T_FloatSector(elevator_t* elevator)
 				continue;
 
 			if(cheeseheight != *rover->topheight)
-				tofloat = true;
+			{
+				if((elevator->sector->floorheight == elevator->actionsector->floorheight && *rover->topheight < cheeseheight)
+					|| (elevator->sector->ceilingheight == elevator->actionsector->ceilingheight && *rover->topheight > cheeseheight))
+					tofloat = false;
+				else
+					tofloat = true;
+			}
 		}
 	}
 
 	if(tofloat && (!elevator->sector->crumblestate || floatanyway))
+	{
 		EV_BounceSector(elevator->sector, FRACUNIT, elevator->actionsector, false);
+	}
 
 	P_RecalcPrecipInSector(elevator->actionsector);
 }
@@ -1329,9 +1342,9 @@ void T_CameraScanner(elevator_t* elevator)
 		else if(!camerascanned)
 		{
 			if(t_cam_height != -42 && cv_cam_height.value != t_cam_height)
-				CV_Set(&cv_cam_height, va("%f", (float)t_cam_height/FRACUNIT));
+				CV_Set(&cv_cam_height, va("%f", FIXED_TO_FLOAT(t_cam_height)));
 			if(t_cam_dist != -42 && cv_cam_dist.value != t_cam_dist)
-				CV_Set(&cv_cam_dist, va("%f", (float)t_cam_dist/FRACUNIT));
+				CV_Set(&cv_cam_dist, va("%f", FIXED_TO_FLOAT(t_cam_dist)));
 			if(t_cam_rotate != -42 && cv_cam_rotate.value != t_cam_rotate)
 				CV_Set(&cv_cam_rotate, va("%f", (float)t_cam_rotate));
 
@@ -1357,9 +1370,9 @@ void T_CameraScanner(elevator_t* elevator)
 		else if(!camerascanned2)
 		{
 			if(t_cam2_height != -42 && cv_cam2_height.value != t_cam2_height)
-				CV_Set(&cv_cam2_height, va("%f", (float)t_cam2_height/FRACUNIT));
+				CV_Set(&cv_cam2_height, va("%f", FIXED_TO_FLOAT(t_cam2_height)));
 			if(t_cam2_dist != -42 && cv_cam2_dist.value != t_cam2_dist)
-				CV_Set(&cv_cam2_dist, va("%f", (float)t_cam2_dist/FRACUNIT));
+				CV_Set(&cv_cam2_dist, va("%f", FIXED_TO_FLOAT(t_cam2_dist)));
 			if(t_cam2_rotate != -42 && cv_cam2_rotate.value != t_cam2_rotate)
 				CV_Set(&cv_cam2_rotate, va("%f", (float)t_cam2_rotate));
 
@@ -1392,7 +1405,7 @@ int EV_DoFloor(line_t* line, floor_e floortype)
 
 		// new floor thinker
 		rtn = 1;
-		floor = Z_Malloc(sizeof(*floor), PU_LEVSPEC, 0);
+		floor = Z_Malloc(sizeof(*floor), PU_LEVSPEC, NULL);
 		P_AddThinker(&floor->thinker);
 
 		// make sure another floor thinker won't get started over this one
@@ -1457,7 +1470,8 @@ int EV_DoFloor(line_t* line, floor_e floortype)
 			// Linedef executor command, linetype 106.
 			// Line length = speed, front sector floor = destination height.
 			case moveFloorByFrontSector:
-				floor->speed = P_AproxDistance(line->dx, line->dy)/8;
+				floor->speed = P_AproxDistance(line->dx, line->dy);
+				floor->speed = FixedDiv(floor->speed,8*FRACUNIT);
 				floor->floordestheight = line->frontsector->floorheight;
 
 				if(floor->floordestheight >= sec->floorheight)
@@ -1489,7 +1503,7 @@ int EV_DoFloor(line_t* line, floor_e floortype)
 			// dx = speed, dy = amount to lower.
 			case lowerFloorByLine:
 				floor->direction = -1; // down
-				floor->speed = abs(line->dx)/8;
+				floor->speed = FixedDiv(abs(line->dx),8*FRACUNIT);
 				floor->floordestheight = sec->floorheight - abs(line->dy);
 				if(floor->floordestheight > sec->floorheight) // wrapped around
 					I_Error("Can't lower sector %d\n", sec - sectors);
@@ -1499,7 +1513,7 @@ int EV_DoFloor(line_t* line, floor_e floortype)
 			// dx = speed, dy = amount to raise.
 			case raiseFloorByLine:
 				floor->direction = 1; // up
-				floor->speed = abs(line->dx)/8;
+				floor->speed = FixedDiv(abs(line->dx),8*FRACUNIT);
 				floor->floordestheight = sec->floorheight + abs(line->dy);
 				if(floor->floordestheight < sec->floorheight) // wrapped around
 					I_Error("Can't raise sector %d\n", sec - sectors);
@@ -1508,8 +1522,8 @@ int EV_DoFloor(line_t* line, floor_e floortype)
 			// Linetypes 2/3.
 			// Move floor up and down indefinitely like the old elevators.
 			case bounceFloor:
-				floor->speed = P_AproxDistance(line->dx, line->dy)/4; // same speed as elevateContinuous
-				floor->speed /= NEWTICRATERATIO;
+				floor->speed = P_AproxDistance(line->dx, line->dy); // same speed as elevateContinuous
+				floor->speed = FixedDiv(floor->speed,NEWTICRATERATIO*4*FRACUNIT);
 				floor->origspeed = floor->speed; // it gets slowed down at the top and bottom
 				floor->floordestheight = line->frontsector->floorheight;
 
@@ -1526,8 +1540,7 @@ int EV_DoFloor(line_t* line, floor_e floortype)
 			// and the speed is line->dx the first way, line->dy for the
 			// return trip. Good for crushers.
 			case bounceFloorCrush:
-				floor->speed = abs(line->dx)/4;
-				floor->speed /= NEWTICRATERATIO;
+				floor->speed = FixedDiv(abs(line->dx),NEWTICRATERATIO*4*FRACUNIT);
 				floor->origspeed = floor->speed;
 				floor->floordestheight = line->frontsector->floorheight;
 
@@ -1576,7 +1589,7 @@ int EV_DoElevator(line_t* line, elevator_e elevtype, boolean customspeed)
 
 		// create and initialize new elevator thinker
 		rtn = 1;
-		elevator = Z_Malloc(sizeof(*elevator), PU_LEVSPEC, 0);
+		elevator = Z_Malloc(sizeof(*elevator), PU_LEVSPEC, NULL);
 		P_AddThinker(&elevator->thinker);
 		sec->floordata = elevator;
 		sec->ceilingdata = elevator;
@@ -1629,8 +1642,8 @@ int EV_DoElevator(line_t* line, elevator_e elevtype, boolean customspeed)
 			case elevateContinuous:
 				if(customspeed)
 				{
-					elevator->origspeed = P_AproxDistance(line->dx, line->dy)/4;
-					elevator->origspeed /= NEWTICRATERATIO;
+					elevator->origspeed = P_AproxDistance(line->dx, line->dy);
+					elevator->origspeed = FixedDiv(elevator->origspeed,NEWTICRATERATIO*4*FRACUNIT);
 					elevator->speed = elevator->origspeed;
 				}
 				else
@@ -1651,7 +1664,7 @@ int EV_DoElevator(line_t* line, elevator_e elevtype, boolean customspeed)
 				else
 				{
 					elevator->direction = -1;
-					elevator->floordestheight =	P_FindNextLowestFloor(sec,sec->floorheight);
+					elevator->floordestheight = P_FindNextLowestFloor(sec,sec->floorheight);
 					elevator->ceilingdestheight = elevator->floordestheight
 						+ sec->ceilingheight - sec->floorheight;
 				}
@@ -1771,7 +1784,7 @@ int EV_BounceSector(sector_t* sec, fixed_t momz, sector_t* blocksector, boolean 
 	if(sec->crumblestate == 1) // One at a time, ma'am.
 		return 0;
 
-	elevator = Z_Malloc(sizeof(*elevator), PU_LEVSPEC, 0);
+	elevator = Z_Malloc(sizeof(*elevator), PU_LEVSPEC, NULL);
 	P_AddThinker(&elevator->thinker);
 	elevator->thinker.function.acp1 = (actionf_p1)T_BounceCheese;
 	elevator->type = elevateBounce;
@@ -1794,7 +1807,7 @@ int EV_DoContinuousFall(sector_t* sec, fixed_t floordestheight, fixed_t speed)
 	elevator_t* elevator;
 
 	// create and initialize new elevator thinker
-	elevator = Z_Malloc(sizeof(*elevator), PU_LEVSPEC, 0);
+	elevator = Z_Malloc(sizeof(*elevator), PU_LEVSPEC, NULL);
 	P_AddThinker(&elevator->thinker);
 	elevator->thinker.function.acp1 = (actionf_p1)T_ContinuousFalling;
 	elevator->type = elevateDown;
@@ -1821,7 +1834,7 @@ int EV_StartCrumble(sector_t* sec, sector_t* roversector, fixed_t roverheight, b
 		return 0;
 
 	// create and initialize new elevator thinker
-	elevator = Z_Malloc(sizeof(*elevator), PU_LEVSPEC, 0);
+	elevator = Z_Malloc(sizeof(*elevator), PU_LEVSPEC, NULL);
 	P_AddThinker(&elevator->thinker);
 	sec->floordata = elevator;
 	elevator->thinker.function.acp1 = (actionf_p1)T_StartCrumble;
@@ -1868,7 +1881,7 @@ int EV_StartNoReturnCrumble(sector_t*  sec, sector_t* roversector, fixed_t rover
 		return 0;
 
 	// create and initialize new elevator thinker
-	elevator = Z_Malloc(sizeof(*elevator), PU_LEVSPEC, 0);
+	elevator = Z_Malloc(sizeof(*elevator), PU_LEVSPEC, NULL);
 	P_AddThinker(&elevator->thinker);
 	sec->floordata = elevator;
 	elevator->thinker.function.acp1 = (actionf_p1)T_StartCrumble;
@@ -1913,7 +1926,7 @@ int EV_AirBob(sector_t* sec, player_t* player, int amount, boolean reverse)
 		return 0;
 
 	// create and initialize new elevator thinker
-	elevator = Z_Malloc(sizeof(*elevator), PU_LEVSPEC, 0);
+	elevator = Z_Malloc(sizeof(*elevator), PU_LEVSPEC, NULL);
 	P_AddThinker(&elevator->thinker);
 	sec->ceilingdata = elevator;
 
@@ -1965,7 +1978,7 @@ int EV_MarioBlock(sector_t* sec, sector_t* roversector, fixed_t topheight,
 		}
 		// create and initialize new elevator thinker
 
-		elevator = Z_Malloc(sizeof(*elevator), PU_LEVSPEC, 0);
+		elevator = Z_Malloc(sizeof(*elevator), PU_LEVSPEC, NULL);
 		P_AddThinker(&elevator->thinker);
 		sec->floordata = elevator;
 		sec->ceilingdata = elevator;

@@ -69,7 +69,7 @@
 #endif
 #include <ctype.h>
 
-#if (defined(_WIN32) && !defined(_WIN32_WCE)) || defined(__DJGPP__) || defined(_WIN64)
+#if ((defined(_WIN32) && !defined(_WIN32_WCE)) || defined(__DJGPP__) || defined(_WIN64)) && !defined(_XBOX)
 #include <io.h>
 #endif
 
@@ -93,7 +93,11 @@
 #undef INVALID_HANDLE_VALUE
 #ifdef SDLIO
 #define INVALID_HANDLE_VALUE NULL
+#if defined(__APPLE_CC__) || (defined(_XBOX) && defined(_MSC_VER))
+#include <SDL_rwops.h>
+#else
 #include <SDL/SDL_rwops.h>
+#endif
 extern SDL_RWops* logstream;
 #else
 #define INVALID_HANDLE_VALUE -1
@@ -102,7 +106,7 @@ extern int logstream;
 #endif
 
 #define VERSION 109 // Game version
-#define VERSIONSTRING " v1.09"
+#define VERSIONSTRING " v1.09.1 (BETA)"
 
 // some tests, enable or disable it if it run or not
 #define SPLITSCREEN
@@ -136,10 +140,12 @@ extern int logstream;
 #define PUSHACCEL (2*FRACUNIT) // Acceleration for MF2_SLIDEPUSH items.
 
 // Name of local directory for config files and savegames
+#ifndef _arch_dreamcast
 #if (defined(LINUX) && !defined(__CYGWIN__)) && !defined(__MACH__)
 #define DEFAULTDIR ".srb2"
 #else
 #define DEFAULTDIR "srb2"
+#endif
 #endif
 
 #include "g_state.h"

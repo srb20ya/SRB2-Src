@@ -748,7 +748,10 @@ void Y_StartIntermission(void)
 					seconds /= TICRATE;
 
 					if(seconds <= 390)
+					{
 						gottimebonus = true;
+						grade |= 256;
+					}
 				}
 				G_SaveGameData();
 			}
@@ -784,8 +787,16 @@ void Y_StartIntermission(void)
 			{
 				sprintf(data.coop.passed1, "%s GOT", skins[players[consoleplayer].skin].name);
 				data.coop.passedx1 = 62 + (176 - V_LevelNameWidth(data.coop.passed1))/2;
-				strcpy(data.coop.passed2, "THROUGH ACT");
-				data.coop.passedx2 = 62 + (176 - V_LevelNameWidth(data.coop.passed2))/2;
+				if(mapheaderinfo[gamemap-1].actnum)
+				{
+					strcpy(data.coop.passed2, "THROUGH ACT");
+					data.coop.passedx2 = 62 + (176 - V_LevelNameWidth(data.coop.passed2))/2;
+				}
+				else
+				{
+					strcpy(data.coop.passed2, "THROUGH THE ACT");
+					data.coop.passedx2 = 62 + (240 - V_LevelNameWidth(data.coop.passed2))/2;
+				}
 				// The above value is not precalculated because it needs only be computed once
 				// at the start of intermission, and precalculating it would preclude mods
 				// changing the font to one of a slightly different width.
@@ -794,8 +805,16 @@ void Y_StartIntermission(void)
 			{
 				strcpy(data.coop.passed1, skins[players[consoleplayer].skin].name);
 				data.coop.passedx1 = 62 + (176 - V_LevelNameWidth(data.coop.passed1))/2;
-				strcpy(data.coop.passed2, "PASSED ACT");
-				data.coop.passedx2 = 62 + (176 - V_LevelNameWidth(data.coop.passed2))/2;
+				if(mapheaderinfo[gamemap-1].actnum)
+				{
+					strcpy(data.coop.passed2, "PASSED ACT");
+					data.coop.passedx2 = 62 + (176 - V_LevelNameWidth(data.coop.passed2))/2;
+				}
+				else
+				{
+					strcpy(data.coop.passed2, "PASSED THE ACT");
+					data.coop.passedx2 = 62 + (240 - V_LevelNameWidth(data.coop.passed2))/2;
+				}
 			}
 			break;
 		}
@@ -939,7 +958,7 @@ void Y_StartIntermission(void)
 //
 // Awards the time and ring bonuses.
 //
-void Y_AwardCoopBonuses(void)
+static void Y_AwardCoopBonuses(void)
 {
 	int i;
 
@@ -1002,7 +1021,7 @@ void Y_AwardCoopBonuses(void)
 // Y_AwardSpecialStageBonus
 //
 // Gives a ring bonus only.
-void Y_AwardSpecialStageBonus(void)
+static void Y_AwardSpecialStageBonus(void)
 {
 	int i;
 
@@ -1040,7 +1059,7 @@ void Y_AwardSpecialStageBonus(void)
 //
 // Y_CalculateMatchWinners
 //
-void Y_CalculateMatchWinners(void)
+static void Y_CalculateMatchWinners(void)
 {
 	int i, j;
 	boolean completed[MAXPLAYERS];
@@ -1080,7 +1099,7 @@ void Y_CalculateMatchWinners(void)
 //
 // Y_CalculateTimeRaceWinners
 //
-void Y_CalculateTimeRaceWinners(void)
+static void Y_CalculateTimeRaceWinners(void)
 {
 	int i, j;
 	boolean completed[MAXPLAYERS];
@@ -1123,7 +1142,7 @@ void Y_CalculateTimeRaceWinners(void)
 //
 // Y_CalculateRaceWinners
 //
-void Y_CalculateRaceWinners(void)
+static void Y_CalculateRaceWinners(void)
 {
 	int winners[4], numwins[MAXPLAYERS];
 	int i, n, score, time, ring, totalring, itembox, wins;
@@ -1417,9 +1436,44 @@ void Y_EndIntermission(void)
 }
 
 //
+// Y_EndGame
+//
+// Why end the game?
+// Because Y_FollowIntermission and F_EndCutscene would
+// both do this exact same thing *in different ways* otherwise,
+// which made it so that you could only unlock Ultimate mode
+// if you had a cutscene after the final level and crap like that.
+// This function simplifies it so only one place has to be updated
+// when something new is added.
+void Y_EndGame(void)
+{
+	// Only do evaluation and credits in coop games.
+	if(gametype == GT_COOP)
+	{
+		if(nextmap == 1102-1) // end game with credits
+		{
+			if((!modifiedgame
+			|| savemoddata) // <-- ULTIMATE MODE SHOULD BE UNLOCKABLE IN MODS TOO!
+			&& gameskill == sk_nightmare) // Very Hard cleared!
+				veryhardcleared = true;
+			F_StartCredits();
+			return;
+		}
+		if(nextmap == 1101-1) // end game with evaluation
+		{
+			F_StartGameEvaluation();
+			return;
+		}
+	}
+
+	// 1100 or competitive multiplayer, so go back to title screen.
+	D_StartTitle();
+}
+
+//
 // Y_FollowIntermission
 //
-void Y_FollowIntermission(void)
+static void Y_FollowIntermission(void)
 {
 	if(nextmap < 1100-1)
 	{
@@ -1435,23 +1489,7 @@ void Y_FollowIntermission(void)
 		return;
 	}
 
-	// Only do evaluation and credits in coop games.
-	if(gametype == GT_COOP)
-	{
-		if(nextmap == 1102-1) // end game with credits
-		{
-			F_StartCredits();
-			return;
-		}
-		if(nextmap == 1101-1) // end game with evaluation
-		{
-			F_StartGameEvaluation();
-			return;
-		}
-	}
-
-	// 1100 or competitive multiplayer, so go back to title screen.
-	D_StartTitle();
+	Y_EndGame();
 }
 
 #define UNLOAD(x) { if(x) { Z_ChangeTag(x, PU_CACHE); x = NULL; } }
@@ -1459,7 +1497,7 @@ void Y_FollowIntermission(void)
 //
 // Y_UnloadData
 //
-void Y_UnloadData(void)
+static void Y_UnloadData(void)
 {
 	// In hardware mode, don't Z_ChangeTag a pointer returned by W_CachePatchName().
 	// It doesn't work and is unnecessary.

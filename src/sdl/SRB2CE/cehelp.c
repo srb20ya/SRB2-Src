@@ -106,8 +106,8 @@ static inline UINT64 TTtoFT(const time_t wt, FILETIME *ft)
 	temptime *= 10000000; // time_t  : 1 secs since January 1, 1970
 	// 369 years * 365 days * 24 hours * 60 mins * 60 secs * 10
 	//       123 leaps days * 24 hours * 60 mins * 60 secs * 10
-	  temptime += 116444736000000000;
-	CopyMemory(ft,&temptime,sizeof(ULARGE_INTEGER));
+	temptime += 116444736000000000;
+	if(ft) CopyMemory(ft,&temptime,sizeof(ULARGE_INTEGER));
 	return temptime;
 }
 

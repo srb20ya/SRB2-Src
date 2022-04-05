@@ -29,7 +29,7 @@
 #ifdef __GNUC__
 #include <unistd.h> // for access
 #endif
-#if (defined(_WIN32) && !defined(_WIN32_WCE)) || defined(_WIN64)
+#if ((defined(_WIN32) && !defined(_WIN32_WCE)) || defined(_WIN64)) && !defined(_XBOX)
 #include <direct.h>
 #include <malloc.h>
 #endif
@@ -37,15 +37,17 @@
 #include <fcntl.h>
 #endif
 #ifdef SDL
+#if defined(_XBOX) && defined(_MSC_VER)
+#include <SDL_getenv.h>
+#else
 #include <SDL/SDL_getenv.h>
 #endif
-
-#if defined(__OS2__) && !defined(SDL)
-#include "I_os2.h"
 #endif
 
 #if !defined(UNDER_CE)
 #include <time.h>
+#elif defined(_XBOX)
+#define NO_TIME
 #endif
 
 #include "doomdef.h"
@@ -76,6 +78,10 @@
 #include "y_inter.h"
 #include "p_local.h" // chasecam
 
+#ifdef _XBOX
+#include "sdl/SRB2XBOX/xboxhelp.h"
+#endif
+
 #ifdef HWRENDER
 #include "hardware/hw_main.h" // 3D View Rendering
 #endif
@@ -92,7 +98,6 @@
 //static int demosequence;
 static int pagetic = 0;
 static const char* pagename = "MAP1PIC";
-
 static char* startupwadfiles[MAX_WADFILES];
 
 boolean devparm; // started game with -devparm
@@ -103,8 +108,13 @@ boolean eastermode; // Easter mode
 
 boolean singletics = false; // timedemo
 
+#ifdef _XBOX
+boolean nomusic = true, nosound = true;
+boolean nofmod = true;
+#else
 boolean nomusic = false, nosound = false;
 boolean nofmod = false; // No fmod-based music
+#endif
 
 // These variables are only true if
 // the respective sound system is initialized
@@ -118,7 +128,19 @@ boolean advancedemo;
 int debugload = 0;
 #endif
 
+#ifdef _arch_dreamcast
+char srb2home[256] = "/cd";
+char srb2path[256] = "/cd";
+#else
 char srb2home[256] = ".";
+char srb2path[256] = ".";
+#endif
+boolean usehome = true;
+#if defined(LINUX) || defined(__MACH__)
+const char *pandf = "%s/%s";
+#else
+const char *pandf = "%s\\%s";
+#endif
 
 //
 // EVENT HANDLING
@@ -130,7 +152,7 @@ char srb2home[256] = ".";
 event_t events[MAXEVENTS];
 int eventhead, eventtail;
 
-boolean dedicated =false;
+boolean dedicated = false;
 
 //
 // D_PostEvent
@@ -184,8 +206,7 @@ static void D_Display(void)
 	static boolean menuactivestate = false;
 	static gamestate_t oldgamestate = -1;
 	static int borderdrawcount;
-	tic_t nowtime, tics, wipestart;
-	int y;
+	tic_t nowtime, tics, wipestart, y;
 	boolean done, redrawsbar = false, viewactivestate = false;
 	static boolean wipe = false;
 
@@ -250,15 +271,14 @@ static void D_Display(void)
 				I_UpdateNoBlit();
 				M_Drawer(); // menu is drawn even on top of wipes
 				I_FinishUpdate(); // page flip or blit buffer
-			} while (!done && I_GetTime() < (unsigned)y);
+			} while (!done && I_GetTime() < y);
 		}
 
 		F_WipeStartScreen();
 	}
 	else if(wipe && rendermode != render_none) // Delay the hardware modes as well
 	{
-		tic_t nowtime, tics, wipestart;
-		int y;
+		tic_t nowtime, tics, wipestart, y;
 
 		wipestart = I_GetTime() - 1;
 		y = wipestart + 32; // init a timeout
@@ -275,7 +295,7 @@ static void D_Display(void)
 			I_UpdateNoBlit();
 			M_Drawer(); // menu is drawn even on top of wipes
 			I_FinishUpdate(); // page flip or blit buffer
-		} while(I_GetTime() < (unsigned)y);
+		} while(I_GetTime() < y);
 	}
 
 	// do buffered drawing
@@ -429,6 +449,7 @@ static void D_Display(void)
 	// draw pause pic
 	if(paused && (!menuactive || netgame))
 	{
+		int y;
 		patch_t* patch;
 		if(automapactive)
 			y = 4;
@@ -494,13 +515,12 @@ static void D_Display(void)
 			I_UpdateNoBlit();
 			M_Drawer(); // menu is drawn even on top of wipes
 			I_FinishUpdate(); // page flip or blit buffer
-		} while(!done && I_GetTime() < (unsigned)y);
+		} while(!done && I_GetTime() < y);
 	}
 #ifdef HWRENDER
 	else if(rendermode != render_none) // Delay the hardware modes as well
 	{
-		tic_t nowtime, tics, wipestart;
-		int y;
+		tic_t nowtime, tics, wipestart, y;
 
 		wipestart = I_GetTime() - 1;
 		y = wipestart + 32; // init a timeout
@@ -517,7 +537,7 @@ static void D_Display(void)
 			I_UpdateNoBlit();
 			M_Drawer(); // menu is drawn even on top of wipes
 			I_FinishUpdate(); // page flip or blit buffer
-		} while(I_GetTime() < (unsigned)y);
+		} while(I_GetTime() < y);
 	}
 #endif
 }
@@ -531,7 +551,7 @@ boolean supdate;
 
 void D_SRB2Loop(void)
 {
-	tic_t oldentertics, entertic, realtics, rendertimeout = (tic_t)-1;
+	tic_t oldentertics = 0, entertic = 0, realtics = 0, rendertimeout = (tic_t)-1;
 
 	if(demorecording)
 		G_BeginRecording();
@@ -703,6 +723,9 @@ void D_AdvanceDemo(void)
 //
 void D_StartTitle(void)
 {
+	if(netgame)
+		return;
+
 	gameaction = ga_nothing;
 	playerdeadview = false;
 	displayplayer = consoleplayer = 0;
@@ -719,7 +742,7 @@ void D_StartTitle(void)
 //
 static void D_AddFile(const char* file)
 {
-	int numwadfiles;
+	size_t numwadfiles;
 	char* newfile;
 
 	for(numwadfiles = 0; startupwadfiles[numwadfiles]; numwadfiles++)
@@ -735,6 +758,16 @@ static void D_AddFile(const char* file)
 	startupwadfiles[numwadfiles] = newfile;
 }
 
+static inline void D_CleanFile(void)
+{
+	size_t numwadfiles;
+	for(numwadfiles = 0; startupwadfiles[numwadfiles]; numwadfiles++)
+	{
+		free(startupwadfiles[numwadfiles]);
+		startupwadfiles[numwadfiles] = NULL;
+	}
+}
+
 #ifndef _MAX_PATH
 #define _MAX_PATH MAX_WADPATH
 #endif
@@ -745,45 +778,39 @@ static void D_AddFile(const char* file)
 
 static void IdentifyVersion(void)
 {
-#ifndef _WIN32_WCE
 	char* srb2wad1 , *srb2wad2;
-	char pathtemp[_MAX_PATH], pathiwad[_MAX_PATH + 16];
-	size_t i;
-	const char* srb2waddir;
+#ifdef _arch_dreamcast
+	char pathiwad[_MAX_PATH + 16] = "/cd";
+#else
+	char pathiwad[_MAX_PATH + 16] = ".";
 #endif
+	const char* srb2waddir = NULL;
 
 #if defined(LINUX) || defined(SDL)
 	// change to the directory where 'srb2.srb' is found
-	I_LocateWad();
+	srb2waddir = I_LocateWad();
 #endif
 
-#ifdef _WIN32_WCE
-	// Don't forget the core!
-	D_AddFile("/Storage Card/SRB2DEMO/srb2.wad");
-
-	D_AddFile("/Storage Card/SRB2DEMO/sonic.plr");
-	D_AddFile("/Storage Card/SRB2DEMO/tails.plr");
-	D_AddFile("/Storage Card/SRB2DEMO/knux.plr");
-
-	// Add the weapons
-	D_AddFile("/Storage Card/SRB2DEMO/auto.wpn");
-	D_AddFile("/Storage Card/SRB2DEMO/bomb.wpn");
-	D_AddFile("/Storage Card/SRB2DEMO/home.wpn");
-	D_AddFile("/Storage Card/SRB2DEMO/rail.wpn");
-	D_AddFile("/Storage Card/SRB2DEMO/infn.wpn");
-
-	// Add... nights?
-	D_AddFile("/Storage Card/SRB2DEMO/drill.dta");
-	D_AddFile("/Storage Card/SRB2DEMO/soar.dta");
-
-	D_AddFile("/Storage Card/SRB2DEMO/zim.dta"); // ZIIIIM!
-//	D_AddFile("/Storage Card/SRB2DEMO/srb2pat.wad");
-#else
 	// get the current directory (possible problem on NT with "." as current dir)
-	if(getcwd(pathtemp, _MAX_PATH) != NULL)
-		srb2waddir = pathtemp;
+	if(srb2waddir)
+	{
+ 		strncpy(srb2path,srb2waddir,256);
+	}
 	else
-		srb2waddir = ".";
+	{
+#ifndef _WIN32_WCE
+		if(getcwd(srb2path, 256) != NULL)
+			srb2waddir = srb2path;
+		else
+#endif
+		{
+#ifdef _arch_dreamcast
+			srb2waddir = "/cd";
+#else
+			srb2waddir = ".";
+#endif
+		}
+	}
 
 #if defined (__MACOS__) && !defined(SDL)
 	// cwd is always "/" when app is dbl-clicked
@@ -791,43 +818,35 @@ static void IdentifyVersion(void)
 		srb2waddir = I_GetWadDir();
 #endif
 	// Commercial.
-	srb2wad1 = alloca(strlen(srb2waddir)+1+8+1);
-	srb2wad2 = alloca(strlen(srb2waddir)+1+8+1);
+	srb2wad1 = malloc(strlen(srb2waddir)+1+8+1);
+	srb2wad2 = malloc(strlen(srb2waddir)+1+8+1);
 	if(!srb2wad1 && !srb2wad2)
 		I_Error("No more free memory to look in %s", srb2waddir);
-#if defined(LINUX) || defined(__MACH__)
 	if(srb2wad1)
-		sprintf(srb2wad1, "%s/%s", srb2waddir, text[SRB2WAD_NUM]);
+		sprintf(srb2wad1, pandf, srb2waddir, text[SRB2WAD_NUM]);
 	if(srb2wad2)
-		sprintf(srb2wad2, "%s/%s", srb2waddir, "srb2.wad");
+		sprintf(srb2wad2, pandf, srb2waddir, "srb2.wad");
 
+#if defined(LINUX) || defined(__MACH__)
 	// will be overwrite in case of -cdrom or linux home
 	sprintf(configfile, "%s/"CONFIGFILENAME, srb2waddir);
 
 #else
-	if(srb2wad1)
-		sprintf(srb2wad1, "%s\\%s", srb2waddir, text[SRB2WAD_NUM]);
-	if(srb2wad2)
-		sprintf(srb2wad2, "%s\\%s", srb2waddir, "srb2.wad");
-
-	// will be overwrite in case of -cdrom or linux home
+	// will be overwrite in case of -cdrom or win home
 	sprintf(configfile, "%s\\"CONFIGFILENAME, srb2waddir);
 
 #endif
 	// specify the name of the IWAD file to use, so we can have several IWAD's
 	// in the same directory, and/or have srb2's executable only once in a different location
-	if(M_CheckParm("-iwad"))
+	if(M_CheckParm("-iwad") && M_IsNextParm())
 	{
+		size_t i;
 		// big hack for fullpath wad, we should use wadpath instead in D_AddFile
 		char* s = M_GetNextParm();
 		if(s[0] == '/' || s[0] == '\\' || s[1] == ':')
 			sprintf(pathiwad, "%s", s);
 		else
-#if defined (LINUX) || defined(__MACH__)
-			sprintf(pathiwad, "%s/%s", srb2waddir, s);
-#else
-			sprintf(pathiwad, "%s\\%s", srb2waddir, s);
-#endif
+			sprintf(pathiwad, pandf, srb2waddir, s);
 
 		if(access(pathiwad, R_OK))
 			I_Error("%s not found\n", pathiwad);
@@ -846,41 +865,54 @@ static void IdentifyVersion(void)
 		else if(srb2wad1 && !access(srb2wad1, R_OK))
 			D_AddFile(srb2wad1);
 		else
-			I_Error("SRB2.SRB/SRB2.WAD not found! Expected in %s\n", srb2waddir);
+			I_Error("SRB2.SRB/SRB2.WAD not found! Expected in %s, ss files: %s and %s\n", srb2waddir, srb2wad1, srb2wad2);
 	}
+	if(srb2wad1)
+		free(srb2wad1);
+	if(srb2wad2)
+		free(srb2wad2);
 
 	// if you change the ordering of this or add/remove a file, be sure to update the md5
 	// checking in D_SRB2Main
 
 	// Add the players
-	D_AddFile("sonic.plr");
-	D_AddFile("tails.plr");
-	D_AddFile("knux.plr");
+	D_AddFile(va(pandf,srb2waddir,"sonic.plr")); //sonic.plr
+	D_AddFile(va(pandf,srb2waddir,"tails.plr")); //tails.plr
+	D_AddFile(va(pandf,srb2waddir,"knux.plr")); //knux.plr
 
 	// Add the weapons
-	D_AddFile("auto.wpn");
-	D_AddFile("bomb.wpn");
-	D_AddFile("home.wpn");
-	D_AddFile("rail.wpn");
-	D_AddFile("infn.wpn");
+	D_AddFile(va(pandf,srb2waddir,"auto.wpn")); //auto.wpn
+	D_AddFile(va(pandf,srb2waddir,"bomb.wpn")); //bomb.wpn
+	D_AddFile(va(pandf,srb2waddir,"home.wpn")); //home.wpn
+	D_AddFile(va(pandf,srb2waddir,"rail.wpn")); //rail.wpn
+	D_AddFile(va(pandf,srb2waddir,"infn.wpn")); //infn.wpn
 
 	// Add... nights?
-	D_AddFile("drill.dta");
-	D_AddFile("soar.dta");
+	D_AddFile(va(pandf,srb2waddir,"drill.dta")); //drill.dta
+	D_AddFile(va(pandf,srb2waddir,"soar.dta")); //soar.dta
 
-	D_AddFile("zim.dta"); // ZIIIIM!
+	D_AddFile(va(pandf,srb2waddir,"zim.dta")); //zim.dta for ZIIIIM!
 
 #if !defined(SDL) || defined(HAVE_MIXER)
-	// Don't forget the music!
-	if(W_VerifyNMUSlumps("music.dta"))
-		D_AddFile("music.dta");
-	else
-		I_Error("File music.dta has been modified with non-music lumps");
+	{
+#ifdef DC
+		const char *musicfile = "music_dc.dta";
+#else
+		const char *musicfile = "music.dta";
+#endif
+		// Don't forget the music!
+		if(W_VerifyNMUSlumps(va(pandf,srb2waddir,musicfile)))
+			D_AddFile(va(pandf,srb2waddir,musicfile));
+		else
+			I_Error("File %s has been modified with non-music lumps",musicfile);
+	}
 #endif
 
 	// Temporary patchfile loading
-	//D_AddFile("srb2pat.wad");
-#endif
+	//D_AddFile(va(pandf,srb2waddir,"srb2pat.wad"));//srb2pat.wad
+
+	if(xmasmode)
+		D_AddFile(va(pandf,srb2waddir,"3drend.dll"));//3drend.dll for XMAS!
 }
 
 /* ======================================================================== */
@@ -941,6 +973,56 @@ static inline void D_InitCutsceneInfo(void)
 			cutscenes[i].scene[j].text = NULL;
 }
 
+static void D_TimeWad(void)
+{
+#ifndef NO_TIME
+	time_t t1; // Date-checker
+	struct tm* tptr; // Date-checker
+	// Do special stuff around Christmas time Tails 11-15-2001
+	t1 = time(NULL);
+	if(t1 != (time_t)-1)
+	{
+		tptr = localtime(&t1);
+
+		if(tptr)
+		{
+			if((tptr->tm_mon == 11 && tptr->tm_mday > 24))
+			{
+				if(!M_CheckParm("-noxmas")) // Christmas to New Years (by popular demand)
+				{
+					//D_AddFile("3drend.dll");
+					xmasmode = true;
+					xmasoverride = true;
+					modifiedgame = false;
+				}
+			}
+			else if(tptr->tm_mon == 3) // Easter changes every year, so just have it for all of April
+			{
+				if(tptr->tm_mday < 2)
+					introtoplay = 127; // ???
+
+				eastermode = true;
+				modifiedgame = false;
+			}
+		}
+	}
+#endif
+	if(!eastermode && M_CheckParm("-xmas"))
+	{
+		//D_AddFile("3drend.dll");
+		xmasmode = true;
+		xmasoverride = true;
+		modifiedgame = false;
+	}
+#ifdef NO_TIME
+	else if(M_CheckParm("-easter"))
+	{
+		eastermode = true; // Hunt for the eggs!
+		modifiedgame = false;
+	}
+#endif
+}
+
 //
 // D_SRB2Main
 //
@@ -950,12 +1032,8 @@ void D_SRB2Main(void)
 	char srb2[82]; // srb2 title banner
 	char title[82];
 
-	int startmap;
-	boolean autostart;
-#ifndef NO_TIME
-	time_t t1; // Date-checker
-	struct tm* tptr; // Date-checker
-#endif
+	int startmap = 1;
+	boolean autostart = false;
 
 	// keep error messages until the final flush(stderr)
 #if !defined(PC_DOS) && !defined(_WIN32_WCE)
@@ -970,6 +1048,7 @@ void D_SRB2Main(void)
 	G_LoadGameSettings();
 
 	// identify the main IWAD file to use
+	D_TimeWad();
 	IdentifyVersion();
 
 #ifndef _WIN32_WCE
@@ -979,7 +1058,7 @@ void D_SRB2Main(void)
 	devparm = M_CheckParm("-debug");
 
 	// for dedicated server
-#if !defined(_WINDOWS) && !defined(SDLMAIN)
+#if !defined(_WINDOWS) //already check in win_main.c
 	dedicated = M_CheckParm("-dedicated") != 0;
 #endif
 
@@ -1014,7 +1093,7 @@ void D_SRB2Main(void)
 
 		if(!userhome)
 		{
-#if (defined(LINUX) && !defined(__CYGWIN__)) || defined(__MACH__)
+#if (defined(LINUX) && !defined(__CYGWIN__) && !defined(DC)) || defined(__MACH__) 
 			I_Error("Please set $HOME to your home directory\n");
 #elif defined(_WIN32_WCE)
 			if(dedicated)
@@ -1031,6 +1110,7 @@ void D_SRB2Main(void)
 		else
 		{
 			// use user specific config file
+#ifdef DEFAULTDIR
 #if defined(LINUX) || defined(__MACH__)
 			sprintf(srb2home, "%s/"DEFAULTDIR, userhome);
 			sprintf(downloaddir, "%s/DOWNLOAD", srb2home);
@@ -1039,7 +1119,7 @@ void D_SRB2Main(void)
 			else
 				sprintf(configfile, "%s/"CONFIGFILENAME, srb2home);
 
-			// can't use sprintf since there is %d in savegamename
+			// can't use sprintf since there is %u in savegamename
 			strcatbf(savegamename, srb2home, "/");
 #else
 			sprintf(srb2home, "%s\\"DEFAULTDIR, userhome);
@@ -1049,58 +1129,38 @@ void D_SRB2Main(void)
 			else
 				sprintf(configfile, "%s\\"CONFIGFILENAME, srb2home);
 
-			// can't use sprintf since there is %d in savegamename
+			// can't use sprintf since there is %u in savegamename
 			strcatbf(savegamename, srb2home, "\\");
-
 #endif
 			I_mkdir(srb2home, 0700);
-		}
-	}
+#else
+#if defined(LINUX) || defined(__MACH__)
+			sprintf(srb2home, "%s", userhome);
+			sprintf(downloaddir, "%s", userhome);
+			if(dedicated)
+				sprintf(configfile, "%s/d"CONFIGFILENAME, userhome);
+			else
+				sprintf(configfile, "%s/"CONFIGFILENAME, userhome);
 
-#ifndef NO_TIME
-	// Do special stuff around Christmas time Tails 11-15-2001
-	t1 = time(NULL);
-	if(t1 != (time_t)-1)
-	{
-		tptr = localtime(&t1);
+			// can't use sprintf since there is %u in savegamename
+			strcatbf(savegamename, userhome, "/");
+#else
+			sprintf(srb2home, "%s", userhome);
+			sprintf(downloaddir, "%s", userhome);
+			if(dedicated)
+				sprintf(configfile, "%s\\d"CONFIGFILENAME, userhome);
+			else
+				sprintf(configfile, "%s\\"CONFIGFILENAME, userhome);
 
-		if(tptr)
-		{
-			if((tptr->tm_mon == 11 && tptr->tm_mday > 24))
-			{
-				if(!M_CheckParm("-noxmas")) // Christmas to New Years (by popular demand)
-				{
-					D_AddFile("3drend.dll");
-					xmasmode = true;
-					xmasoverride = true;
-					modifiedgame = false;
-				}
-			}
-			else if(tptr->tm_mon == 3) // Easter changes every year, so just have it for all of April
-			{
-				if(tptr->tm_mday < 2)
-					introtoplay = 1; // ???
-
-				eastermode = true;
-				modifiedgame = false;
-			}
-		}
-	}
+			// can't use sprintf since there is %u in savegamename
+			strcatbf(savegamename, userhome, "\\");
 #endif
-	if(!eastermode && M_CheckParm("-xmas"))
-	{
-		D_AddFile("3drend.dll");
-		xmasmode = true;
-		xmasoverride = true;
-		modifiedgame = false;
-	}
-#ifdef NO_TIME
-	else if(M_CheckParm("-easter"))
-	{
-		eastermode = true; // Hunt for the eggs!
-		modifiedgame = false;
-	}
 #endif
+		}
+#ifdef _arch_dreamcast
+	strcpy(downloaddir,"/ram"); // the dreamcat's TMP
+#endif
+	}
 
 	if(M_CheckParm("-password") && M_IsNextParm())
 	{
@@ -1155,9 +1215,6 @@ void D_SRB2Main(void)
 	}
 
 	// get skill / map from parms
-	gameskill = sk_medium;
-	startmap = 1;
-	autostart = false;
 
 	if(M_CheckParm("-server"))
 		netgame = server = true;
@@ -1197,10 +1254,11 @@ void D_SRB2Main(void)
 	// load wad, including the main wad file
 	if(!W_InitMultipleFiles(startupwadfiles))
 		CONS_Error("A WAD file was not found or not valid\n");
+	D_CleanFile();
 
 	// Check MD5s of autoloaded files
 
-W_VerifyFileMD5( 0, "\x31\xBE\xC9\x8B\x88\x40\x39\x1F\x46\xCB\x54\xB1\x4F\x57\xC1\x62");//srb2.srb
+//W_VerifyFileMD5( 0, "\x31\xBE\xC9\x8B\x88\x40\x39\x1F\x46\xCB\x54\xB1\x4F\x57\xC1\x62");//srb2.srb
 W_VerifyFileMD5( 1, "\x5B\x70\x61\x4B\xD8\x7B\xAD\x9A\x9E\x11\xEA\x71\x90\xA1\x08\xF7");//sonic.plr
 W_VerifyFileMD5( 2, "\xC0\xCD\xFE\x35\x62\x2B\xE5\x05\x9E\x96\x26\x73\xE4\x30\x45\x1A");//tails.plr
 W_VerifyFileMD5( 3, "\x29\x2D\x5A\x99\xDB\x48\x20\xFF\xD1\xF4\x7E\x8D\x8A\x84\x92\xCE");//knux.plr
@@ -1282,13 +1340,16 @@ W_VerifyFileMD5(11, "\x91\x31\x34\xDD\xB7\xD8\xB0\xC9\xDA\xE3\x8F\xD8\x42\x48\xB
 
 	// setting up sound
 	CONS_Printf(text[S_SETSOUND_NUM]);
-	nosound = M_CheckParm("-nosound");
+	if(M_CheckParm("-nosound"))
+		nosound = true;
 	if(M_CheckParm("-nomusic")) // combines -nomidimusic and -nodigmusic
 		nomusic = nofmod = true;
 	else
 	{
-		nomusic = M_CheckParm("-nomidimusic"); // WARNING: DOS version initmusic in I_StartupSound
-		nofmod = M_CheckParm("-nodigmusic"); // WARNING: DOS version initmusic in I_StartupSound
+		if(M_CheckParm("-nomidimusic"))
+			nomusic = true;; // WARNING: DOS version initmusic in I_StartupSound
+		if(M_CheckParm("-nodigmusic"))
+			nofmod = true; // WARNING: DOS version initmusic in I_StartupSound
 	}
 	I_StartupSound();
 	I_InitMusic();
@@ -1417,9 +1478,8 @@ W_VerifyFileMD5(11, "\x91\x31\x34\xDD\xB7\xD8\xB0\xC9\xDA\xE3\x8F\xD8\x42\x48\xB
 const char* D_Home(void)
 {
 	char* userhome = NULL;
-	boolean usehome = true;
 
-#ifdef DC
+#ifdef _arch_dreamcast
 	putenv("HOME=/vmu/a1");
 #endif
 

@@ -302,21 +302,19 @@ static boolean P_Move(mobj_t* actor)
 			else
 				actor->z -= FLOATSPEED;
 
-			actor->flags |= MF_INFLOAT;
+			actor->flags2 |= MF2_INFLOAT;
 			return true;
 		}
 
 		if(!numspechit)
 			return false;
 
-		actor->movedir = DI_NODIR;
+		actor->movedir = (angle_t)DI_NODIR;
 		return false;
 	}
 	else
-		actor->flags &= ~MF_INFLOAT;
+		actor->flags2 &= ~MF2_INFLOAT;
 
-	if(!(actor->flags & MF_FLOAT) && actor->type != MT_SKIM) // Don't lower skims!
-		actor->z = actor->floorz;
 	return true;
 }
 
@@ -455,7 +453,7 @@ static void P_NewChaseDir(mobj_t* actor)
 			return;
 	}
 
-	actor->movedir = DI_NODIR; // cannot move
+	actor->movedir = (angle_t)DI_NODIR; // cannot move
 }
 
 /** Looks for players to chase after, aim at, or whatever.
@@ -822,8 +820,8 @@ void A_SkullAttack(mobj_t* actor)
 
 	dest = actor->target;
 	actor->flags2 |= MF2_SKULLFLY;
-	if(actor->info->attacksound)
-		S_StartAttackSound(actor, actor->info->attacksound);
+	if(actor->info->activesound)
+		S_StartSound(actor, actor->info->activesound);
 	A_FaceTarget(actor);
 	an = actor->angle >> ANGLETOFINESHIFT;
 	actor->momx = FixedMul(SKULLSPEED, finecosine[an]);
@@ -868,15 +866,15 @@ void A_BossZoom(mobj_t* actor)
 void A_BossScream(mobj_t* actor)
 {
 	fixed_t x, y, z;
+	angle_t fa;
 
 	actor->movecount += actor->info->speed*16;
-	x = (fixed_t)(actor->x + cos(actor->movecount * deg2rad) * actor->info->radius);
-	y = (fixed_t)(actor->y + sin(actor->movecount * deg2rad) * actor->info->radius);
+	actor->movecount %= 360;
+	fa = ((actor->movecount*ANGLE_1)>>ANGLETOFINESHIFT) & FINEMASK;
+	x = actor->x + FixedMul(finecosine[fa],actor->info->radius);
+	y = actor->y + FixedMul(finesine[fa],actor->info->radius);
 
-	if(actor->movecount >= 360)
-		actor->movecount -= 360;
-
-	z = actor->z - 8*FRACUNIT + ((P_Random()<<FRACBITS) / 4);
+	z = actor->z - 8*FRACUNIT + (P_Random()<<(FRACBITS-2));
 	if(actor->info->deathsound) S_StartSound(P_SpawnMobj(x, y, z, MT_BOSSEXPLODE), actor->info->deathsound);
 }
 
@@ -922,12 +920,19 @@ void A_Fall(mobj_t* actor)
 	// are meant to be obstacles.
 }
 
+#define LIVESBOXDISPLAYPLAYER // Use displayplayer instead of closest player
 //
 // Searches around for the closest player and changes its
 // graphic to match that of the player!
 //
 void A_1upThinker(mobj_t* actor)
 {
+	#ifdef LIVESBOXDISPLAYPLAYER
+	if(!cv_splitscreen.value)
+		actor->frame = states[S_PRUPAUX1+(players[displayplayer].boxindex*3)-3].frame;
+	else
+		actor->frame = states[S_PRUPAUX1].frame;
+	#else
 	int i;
 	fixed_t dist = MAXINT;
 	fixed_t temp;
@@ -952,6 +957,7 @@ void A_1upThinker(mobj_t* actor)
 
 	if(players[closestplayer].boxindex != 0)
 		P_SetMobjState(actor, S_PRUPAUX1+(players[closestplayer].boxindex*3)-3);
+	#endif
 }
 
 /** Falls, screams, and spawns an exploding monitor.
@@ -1155,20 +1161,6 @@ void A_Explode(mobj_t* actor)
 	P_RadiusAttack(actor, actor->target, actor->info->damage);
 }
 
-/** Follows a state and returns the last state in the pattern.
-  * Be careful what value you send this function; it can cause an infinite
-  * loop.
-  *
-  * \param state The state to start with.
-  */
-static state_t* P_FinalState(statenum_t state)
-{
-	while(states[state].tics != -1)
-		state = states[state].nextstate;
-
-	return &states[state];
-}
-
 //
 // A_BossDeath
 // Possibly trigger special effects
@@ -1191,9 +1183,12 @@ void A_BossDeath(mobj_t* mo)
 		}
 	}
 
+	mo->health = 0;
+
 	// make sure there is a player alive for victory
 	for(i = 0; i < MAXPLAYERS; i++)
-		if(playeringame[i] && players[i].health > 0)
+		if(playeringame[i] && (players[i].health > 0
+			|| ((netgame || multiplayer) && (players[i].lives > 0 || players[i].continues > 0))))
 			break;
 
 	if(i == MAXPLAYERS)
@@ -1207,12 +1202,12 @@ void A_BossDeath(mobj_t* mo)
 			continue;
 
 		mo2 = (mobj_t*)th;
-		if(mo2 != mo && mo2->type == mo->type && mo2->state != P_FinalState(mo->info->deathstate))
+		if(mo2 != mo && mo2->type == mo->type && mo2->health > 0)
 			return; // other boss not dead
 	}
 
 	// victory!
-	if(mo->type == MT_EGGMOBILE || mo->type == MT_EGGMOBILE2)
+	if(!mariomode)
 	{
 		if(mo->flags2 & MF2_BOSSNOTRAP)
 		{
@@ -1245,7 +1240,14 @@ void A_BossDeath(mobj_t* mo)
 			mo2 = (mobj_t*)th;
 
 			if(mo2->type == MT_BOSSFLYPOINT)
-				mo->target = mo2;
+			{
+				// If this one's closer then the last one, go for it.
+				if(!mo->target ||
+					P_AproxDistance(P_AproxDistance(mo->x - mo2->x, mo->y - mo2->y), mo->z - mo2->z) <
+					P_AproxDistance(P_AproxDistance(mo->x - mo->target->x, mo->y - mo->target->y), mo->z - mo->target->z))
+						mo->target = mo2;
+				// Otherwise... Don't!
+			}
 		}
 
 		mo->flags |= MF_NOGRAVITY|MF_NOCLIP;
@@ -1666,7 +1668,7 @@ void A_BubbleSpawn(mobj_t* actor)
 void A_BubbleRise(mobj_t* actor)
 {
 	if(actor->type == MT_EXTRALARGEBUBBLE)
-		actor->momz = (fixed_t)(1.2f*FRACUNIT); // make bubbles rise!
+		actor->momz = (6*FRACUNIT)/5; // make bubbles rise!
 	else
 	{
 		actor->momz += 1024; // make bubbles rise!
@@ -1778,7 +1780,7 @@ void A_FishJump(mobj_t* actor)
 {
 	if((actor->z <= actor->floorz) || (actor->z <= actor->watertop - (64 << FRACBITS)))
 	{
-			actor->momz = (fixed_t)((actor->threshold*FRACUNIT)/4);
+			actor->momz = actor->threshold*(FRACUNIT/4);
 			P_SetMobjState(actor, actor->info->seestate);
 	}
 
@@ -1881,6 +1883,9 @@ void A_ThrownRing(mobj_t* actor)
 
 		if(player->mo->health <= 0)
 			continue; // dead
+
+		if(gametype == GT_CTF && !player->ctfteam)
+			continue; // spectator
 
 		if(actor->target && actor->target->player)
 		{
@@ -2245,20 +2250,20 @@ Distance = Sqrt(dX^2 + dY^2 + dZ^2)
 	// movedir is up/down angle: how much it has to go up as it goes over to the player
 	xydist = P_AproxDistance(actor->target->x - actor->x, actor->target->y - actor->y);
 	exact = R_PointToAngle2(actor->x, actor->z, actor->x + xydist, actor->target->z);
-	actor->movedir = (int)exact;
-	if(exact != (angle_t)actor->movedir)
+	actor->movedir = exact;
+	if(exact != actor->movedir)
 	{
-		if(exact - (angle_t)actor->movedir > ANG180)
+		if(exact - actor->movedir > ANG180)
 		{
-			actor->movedir -= (int)actor->info->raisestate;
-			if(exact - (angle_t)actor->movedir < ANG180)
-				actor->movedir = (int)exact;
+			actor->movedir -= actor->info->raisestate;
+			if(exact - actor->movedir < ANG180)
+				actor->movedir = exact;
 		}
 		else
 		{
-			actor->movedir += (int)actor->info->raisestate;
-			if(exact - (angle_t)actor->movedir > ANG180)
-				actor->movedir = (int)exact;
+			actor->movedir += actor->info->raisestate;
+			if(exact - actor->movedir > ANG180)
+				actor->movedir = exact;
 		}
 	}
 
@@ -2305,9 +2310,9 @@ Distance = Sqrt(dX^2 + dY^2 + dZ^2)
 		actor->reactiontime = -42;
 		actor->tracer = actor->target;
 
-		exact = ((angle_t)actor->movedir)>>ANGLETOFINESHIFT;
-		xyspeed = FixedMul(actor->target->player->normalspeed*FRACUNIT*75/100, finecosine[exact]);
-		actor->momz = FixedMul(actor->target->player->normalspeed*FRACUNIT*75/100, finesine[exact]);
+		exact = actor->movedir>>ANGLETOFINESHIFT;
+		xyspeed = FixedMul(actor->target->player->normalspeed*3*(FRACUNIT/4), finecosine[exact]);
+		actor->momz = FixedMul(actor->target->player->normalspeed*3*(FRACUNIT/4), finesine[exact]);
 
 		exact = actor->angle>>ANGLETOFINESHIFT;
 		actor->momx = FixedMul(xyspeed, finecosine[exact]);
@@ -2351,7 +2356,7 @@ void A_CapeChase(mobj_t* actor)
   */
 void A_RotateSpikeBall(mobj_t* actor)
 {
-	double radius, conangle, sinangle;
+	const fixed_t radius = 12*actor->info->speed;
 
 	if(actor->type == MT_SPECIALSPIKEBALL)
 		return;
@@ -2363,15 +2368,13 @@ void A_RotateSpikeBall(mobj_t* actor)
 		return;
 	}
 
-	radius = 12.0*actor->info->speed;
-	actor->angle += (fixed_t)((double)actor->info->speed/FRACUNIT);
+	actor->angle += (actor->info->speed>>FRACBITS)*ANGLE_1;
 	P_UnsetThingPosition(actor);
 	{
-		conangle = cos(actor->angle * deg2rad);
-		sinangle = sin(actor->angle * deg2rad);
-		actor->x = (fixed_t)(actor->target->x + conangle * radius);
-		actor->y = (fixed_t)(actor->target->y + sinangle * radius);
-		actor->z = (fixed_t)(actor->target->z + actor->target->height/2);
+		const angle_t fa = actor->angle>>ANGLETOFINESHIFT;
+		actor->x = actor->target->x + FixedMul(finecosine[fa],radius);
+		actor->y = actor->target->y + FixedMul(finesine[fa],radius);
+		actor->z = actor->target->z + actor->target->height/2;
 		P_SetThingPosition(actor);
 	}
 }
@@ -2517,23 +2520,20 @@ void A_RingExplode(mobj_t* actor)
 {
 	int i;
 	mobj_t* mo;
+	const fixed_t ns = 30 * FRACUNIT;
 
 	for(i = 0; i < 32; i++)
 	{
+		const angle_t fa = (i*FINEANGLES/16) & FINEMASK;
+
 		mo = P_SpawnMobj(actor->x, actor->y, actor->z, MT_REDRING);
 		mo->target = actor->target; // Transfer target so player gets the points
 
+		mo->momx = FixedMul(finesine[fa],ns);
+		mo->momy = FixedMul(finecosine[fa],ns);
+
 		if(i > 15)
-		{
-			mo->momx = (fixed_t)(sin(i*22.5) * 30 * FRACUNIT);
-			mo->momy = (fixed_t)(cos(i*22.5) * 30 * FRACUNIT);
 			mo->momz = 30*FRACUNIT;
-		}
-		else
-		{
-			mo->momx = (fixed_t)(sin(i*22.5) * 30 * FRACUNIT);
-			mo->momy = (fixed_t)(cos(i*22.5) * 30 * FRACUNIT);
-		}
 
 		mo->flags2 |= MF2_DEBRIS;
 		mo->fuse = TICRATE/(OLDTICRATE/5);
@@ -2692,7 +2692,7 @@ void A_PumaJump(mobj_t* actor)
 {
 	if((actor->z <= actor->floorz) || (actor->z <= actor->watertop-(64<<FRACBITS)))
 	{
-		actor->momz = (actor->threshold*FRACUNIT)/4;
+		actor->momz = actor->threshold*(FRACUNIT/4);
 	}
 
 	if(actor->momz < 0
@@ -2776,7 +2776,7 @@ nomissile:
 //
 void A_Boss2Chase(mobj_t* actor)
 {
-	int radius;
+	const fixed_t radius = 384*FRACUNIT;
 	boolean reverse = false;
 
 	if(actor->health <= 0)
@@ -2804,33 +2804,37 @@ void A_Boss2Chase(mobj_t* actor)
 	if(reverse)
 		actor->watertop = -actor->watertop;
 
-	radius = 384*FRACUNIT;
-
-	actor->target->angle += actor->watertop >> FRACBITS;
+	actor->target->angle += (actor->watertop>>FRACBITS)*ANGLE_1;
 	P_UnsetThingPosition(actor);
-	actor->angle = R_PointToAngle2(actor->x, actor->y, actor->target->x + (fixed_t)(cos(actor->target->angle * deg2rad) * radius), actor->target->y + (fixed_t)(sin(actor->target->angle * deg2rad) * radius));
-	actor->x = (fixed_t)(actor->target ->x + cos(actor->target->angle * deg2rad) * radius);
-	actor->y = (fixed_t)(actor->target->y + sin(actor->target->angle * deg2rad) * radius);
-	actor->z = actor->target->z + 64*FRACUNIT;
+	{
+		const angle_t fa = actor->target->angle>>ANGLETOFINESHIFT;
+		const fixed_t fc = FixedMul(finecosine[fa],radius);
+		const fixed_t fs = FixedMul(finesine[fa],radius);
+		actor->angle = R_PointToAngle2(actor->x, actor->y, actor->target->x + fc, actor->target->y + fs);
+		actor->x = actor->target->x + fc;
+		actor->y = actor->target->y + fs;
+		actor->z = actor->target->z + 64*FRACUNIT;
+	}
 	P_SetThingPosition(actor);
-
-	if(actor->angle > ANGLE_MAX)
-		actor->angle -= ANGLE_MAX;
 
 	// Spray goo once every second
 	if(leveltime % 7 == 1)
 	{
+		const fixed_t ns = 3 * FRACUNIT;
 		mobj_t* goop;
+		fixed_t fz = actor->z+actor->height+56*FRACUNIT;
+		angle_t fa;
 		// actor->movedir is used to determine the last
 		// direction goo was sprayed in. There are 8 possible
 		// directions to spray. (45-degree increments)
 
 		actor->movedir++;
 		actor->movedir %= NUMDIRS;
+		fa = (actor->movedir*FINEANGLES/8) & FINEMASK;
 
-		goop = P_SpawnMobj(actor->x, actor->y, actor->z+actor->height+56*FRACUNIT, actor->info->painchance);
-		goop->momx = (fixed_t)(sin(actor->movedir*45.0) * 3 * FRACUNIT);
-		goop->momy = (fixed_t)(cos(actor->movedir*45.0) * 3 * FRACUNIT);
+		goop = P_SpawnMobj(actor->x, actor->y, fz, actor->info->painchance);
+		goop->momx = FixedMul(finesine[fa],ns);
+		goop->momy = FixedMul(finecosine[fa],ns);
 		goop->momz = 4*FRACUNIT;
 		goop->fuse = 30*TICRATE+P_Random();
 		if(actor->info->attacksound)
@@ -2862,17 +2866,21 @@ void A_Boss2Pogo(mobj_t* actor)
 	}
 	else if(actor->momz < 0 && actor->reactiontime)
 	{
+		const fixed_t ns = 3 * FRACUNIT;
 		mobj_t* goop;
+		fixed_t fz = actor->z+actor->height+56*FRACUNIT;
+		angle_t fa;
 		int i;
 		// spray in all 8 directions!
 		for(i = 0; i < 8; i++)
 		{
 			actor->movedir++;
 			actor->movedir %= NUMDIRS;
+			fa = (actor->movedir*FINEANGLES/8) & FINEMASK;
 
-			goop = P_SpawnMobj(actor->x, actor->y, actor->z+actor->height+56*FRACUNIT, actor->info->painchance);
-			goop->momx = (fixed_t)(sin(actor->movedir*45.0) * 3 * FRACUNIT);
-			goop->momy = (fixed_t)(cos(actor->movedir*45.0) * 3 * FRACUNIT);
+			goop = P_SpawnMobj(actor->x, actor->y, fz, actor->info->painchance);
+			goop->momx = FixedMul(finesine[fa],ns);
+			goop->momy = FixedMul(finecosine[fa],ns);
 			goop->momz = 4*FRACUNIT;
 
 			if(gametype == GT_CHAOS)
@@ -2983,8 +2991,6 @@ void A_TurretStop(mobj_t* actor)
 
 void A_SparkFollow(mobj_t* actor)
 {
-	int radius;
-
 	if(actor->state == &states[S_DISS])
 		return;
 
@@ -2994,13 +3000,14 @@ void A_SparkFollow(mobj_t* actor)
 		return;
 	}
 
-	radius = actor->info->speed;
-
-	actor->angle += actor->info->damage;
+	actor->angle += actor->info->damage*ANGLE_1;
 	P_UnsetThingPosition(actor);
-	actor->x = (fixed_t)(actor->target->x + cos(actor->angle * deg2rad) * radius);
-	actor->y = (fixed_t)(actor->target->y + sin(actor->angle * deg2rad) * radius);
-	actor->z = (fixed_t)(actor->target->z + actor->target->height/3 - actor->height);
+	{
+		const angle_t fa = actor->angle>>ANGLETOFINESHIFT;
+		actor->x = actor->target->x + FixedMul(finecosine[fa],actor->info->speed);
+		actor->y = actor->target->y + FixedMul(finesine[fa],actor->info->speed);
+		actor->z = actor->target->z + FixedDiv(actor->target->height,3*FRACUNIT) - actor->height;
+	}
 	P_SetThingPosition(actor);
 }
 
@@ -3063,13 +3070,14 @@ void A_BuzzFly(mobj_t* actor)
 	// chase towards player
 	{
 		int dist, realspeed;
+		const fixed_t mf = 5*(FRACUNIT/4);
 
 		if(gameskill <= sk_easy)
-			realspeed = actor->info->speed*4/5;
+			realspeed = FixedDiv(actor->info->speed,mf);
 		else if(gameskill < sk_hard)
 			realspeed = actor->info->speed;
 		else
-			realspeed = actor->info->speed*5/4;
+			realspeed = FixedMul(actor->info->speed,mf);
 
 		dist = P_AproxDistance(P_AproxDistance(actor->target->x - actor->x,
 			actor->target->y - actor->y), actor->target->z - actor->z);

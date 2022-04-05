@@ -77,6 +77,7 @@ void S_Init(int sfxVolume, int digMusicVolume, int midiMusicVolume);
 // Kills playing sounds at start of level, determines music if any, changes music.
 //
 void S_StopSounds(void);
+void S_ClearSfx(void);
 void S_Start(void);
 
 //

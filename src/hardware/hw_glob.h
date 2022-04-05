@@ -71,12 +71,6 @@
 #include "hw_defs.h"
 #include "hw_main.h"
 
-#ifdef _MSC_VER
-#pragma warning(disable :  4200)
-#endif
-
-#define crapmul (1.0f / 65536.0f)
-
 // the original aspect ratio of Doom graphics isn't square
 #define ORIGINAL_ASPECT     (320.0f/200.0f)
 
@@ -93,11 +87,20 @@ typedef struct {
 //#endif
 } polyvertex_t;
 
+
+#ifdef _MSC_VER
+#pragma warning(disable :  4200)
+#endif
+
 // a convex 'plane' polygon, clockwise order
 typedef struct {
 	int          numpts;
 	polyvertex_t pts[0];
 } poly_t;
+
+#ifdef _MSC_VER
+#pragma warning(default :  4200)
+#endif
 
 // holds extra info for 3D render, for each subsector in subsectors[]
 typedef struct {

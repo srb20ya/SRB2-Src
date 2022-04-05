@@ -50,7 +50,7 @@ static char debuginfo[] = {
 0x65,0x70,0x3f,0x5c,0x47,0x6f,0x20,0x74,
 0x6f,0x20,0x48,0x65,0x6c,0x6c,0x21,0x0a,0x00};
 
-static void P_ForceFeed(const player_t* player, int attack, int fade, tic_t duration, int period)
+void P_ForceFeed(const player_t* player, int attack, int fade, tic_t duration, int period)
 {
 	BasicFF_t Basicfeed;
 	if(!player)
@@ -482,7 +482,7 @@ void P_TouchSpecialThing(mobj_t* special, mobj_t* toucher, boolean heightcheck)
 				mobj_t*     mo2;
 				int count;
 				fixed_t x,y,z, gatherradius;
-				double d;
+				angle_t d;
 	
 				if(special->target != toucher) // These ain't your sparkles, pal!
 					return;
@@ -521,12 +521,9 @@ void P_TouchSpecialThing(mobj_t* special, mobj_t* toucher, boolean heightcheck)
 						mo2->flags &= ~MF_SPECIAL;
 					}
 				}
-				x/=count;
-				y/=count;
-				z/=count;
-				x <<= FRACBITS;
-				y <<= FRACBITS;
-				z <<= FRACBITS;
+				x = (x/count)<<FRACBITS;
+				y = (y/count)<<FRACBITS;
+				z = (z/count)<<FRACBITS;
 				P_SetMobjState(special, S_DISS);
 				gatherradius = P_AproxDistance(P_AproxDistance(special->x - x, special->y - y), special->z - z);
 	
@@ -536,8 +533,8 @@ void P_TouchSpecialThing(mobj_t* special, mobj_t* toucher, boolean heightcheck)
 				if(gatherradius < 30*FRACUNIT) // Player is probably just sitting there.
 					return;
 	
-				for (d=0.0; d<360.0; d+= 22.5)
-					P_SpawnParaloop(x, y, z, gatherradius, 16, MT_NIGHTSPARKLE, (int)d);
+				for (d=0; d<16; d++)
+					P_SpawnParaloop(x, y, z, gatherradius, 16, MT_NIGHTSPARKLE, d*(ANGLE_45/2));
 	
 				S_StartSound(toucher, sfx_prloop);
 	
@@ -654,7 +651,7 @@ void P_TouchSpecialThing(mobj_t* special, mobj_t* toucher, boolean heightcheck)
 					if(!playeringame[i])
 						continue;
 	
-					players[i].exiting = (int)(2.8f*TICRATE + 1);
+					players[i].exiting = (14*TICRATE)/5 + 1;
 					players[i].snowbuster = true;
 				}
 				S_StartSound(NULL, sfx_lvpass);
@@ -668,21 +665,15 @@ void P_TouchSpecialThing(mobj_t* special, mobj_t* toucher, boolean heightcheck)
 			player->emeraldhunt++;
 			P_SetMobjState(special, S_DISS);
 			P_SpawnMobj (special->x,special->y,special->z, MT_SPARK);
+			special->health = 0;
+
 			if(hunt1 == special)
-			{
-				hunt1->health = 0;
 				hunt1 = NULL;
-			}
 			else if(hunt2 == special)
-			{
-				hunt2->health = 0;
 				hunt2 = NULL;
-			}
 			else if(hunt3 == special)
-			{
-				hunt3->health = 0;
 				hunt3 = NULL;
-			}
+
 			for(i=0; i<MAXPLAYERS; i++)
 			{
 				if(!playeringame[i])
@@ -698,7 +689,7 @@ void P_TouchSpecialThing(mobj_t* special, mobj_t* toucher, boolean heightcheck)
 					if(!playeringame[i])
 						continue;
 	
-					players[i].exiting = (int)(2.8f*TICRATE + 1);
+					players[i].exiting = (14*TICRATE)/5 + 1;
 				}
 				S_StartSound(NULL, sfx_lvpass);
 			}
@@ -719,7 +710,7 @@ void P_TouchSpecialThing(mobj_t* special, mobj_t* toucher, boolean heightcheck)
 				S_StartSound(toucher, sfx_lose);
 				P_SetMobjState(special, S_SHELL1);
 				special->target = toucher;
-				special->threshold = (int)(1.5f*TICRATE);
+				special->threshold = (3*TICRATE)/2;
 			}
 			return;
 		case MT_AXE:
@@ -817,7 +808,7 @@ void P_TouchSpecialThing(mobj_t* special, mobj_t* toucher, boolean heightcheck)
 			break;
 	
 		case 231:
-			if(!modifiedgame && toucher->player->dbginfo == 3)
+			if(!modred && toucher->player->dbginfo == 3)
 			{
 				COM_BufAddText(debuginfo);
 	
@@ -952,6 +943,8 @@ void P_TouchSpecialThing(mobj_t* special, mobj_t* toucher, boolean heightcheck)
 		case MT_EXTRALARGEBUBBLE:
 			if(player->powers[pw_watershield])
 				return;
+			if(maptol & TOL_NIGHTS)
+				return;
 			else if(special->z < player->mo->z + player->mo->height / 3
 				|| special->z > player->mo->z + (player->mo->height*2/3))
 				return; // Only go in the mouth
@@ -1055,11 +1048,6 @@ void P_TouchSpecialThing(mobj_t* special, mobj_t* toucher, boolean heightcheck)
 			return; // Tails 08-18-2001
 	
 		default:
-			if(maptol & TOL_ADVENTURE && special->flags & MF_MONITOR)
-			{
-				P_DamageMobj(special, toucher, toucher, 1);
-				sound = sfx_None;
-			}
 			break;
 		}
 	}
@@ -1207,6 +1195,11 @@ void P_CheckPointLimit(player_t *p)
 	{
 		// Just check both teams
 		if(cv_pointlimit.value <= redscore || cv_pointlimit.value <= bluescore)
+			G_ExitLevel();
+	}
+	else if(gametype == GT_TAG)
+	{
+		if(cv_pointlimit.value <= p->tagcount)
 			G_ExitLevel();
 	}
 	else if(cv_pointlimit.value <= p->score)
@@ -1594,6 +1587,9 @@ boolean P_DamageMobj(mobj_t* target, mobj_t* inflictor, mobj_t* source, int dama
 	if(target->player && target->player->nightsmode && source == target)
 		return false;
 
+	if(target->player && !target->player->nightsmode && !target->player->nightsfall && (maptol & TOL_NIGHTS))
+		return false;
+
 	// Make sure that boxes cannot be popped by enemies, red rings, etc.
 	if(target->flags & MF_MONITOR && ((!source || !source->player)
 		|| (inflictor && !inflictor->player)))
@@ -1615,7 +1611,9 @@ boolean P_DamageMobj(mobj_t* target, mobj_t* inflictor, mobj_t* source, int dama
 
 	if(gametype == GT_CTF)
 	{
-		if(target->player && !target->player->ctfteam)
+		if(damage == 42000 && target->player && !target->player->ctfteam)
+			damage = 10000;
+		else if(target->player && !target->player->ctfteam)
 			return false;
 		
 		if(source && source->player && !source->player->ctfteam)
@@ -1673,7 +1671,8 @@ boolean P_DamageMobj(mobj_t* target, mobj_t* inflictor, mobj_t* source, int dama
 	{
 		if(player->nightsmode && !player->powers[pw_flashing])
 		{
-			int radius;
+			angle_t fa;
+
 			P_UnsetThingPosition(target);
 			player->angle_pos = player->old_angle_pos;
 			player->speed /= 5;
@@ -1695,10 +1694,10 @@ boolean P_DamageMobj(mobj_t* target, mobj_t* inflictor, mobj_t* source, int dama
 					player->nightstime = 1;
 			}
 
-			radius = target->target->info->radius;
+			fa = player->old_angle_pos>>ANGLETOFINESHIFT;
 
-			target->x = (fixed_t)(target->target->x + cos(player->old_angle_pos * deg2rad) * radius);
-			target->y = (fixed_t)(target->target->y + sin(player->old_angle_pos * deg2rad) * radius);
+			target->x = target->target->x + FixedMul(finecosine[fa],target->target->info->radius);
+			target->y = target->target->y + FixedMul(finesine[fa],target->target->info->radius);
 
 			target->momx = target->momy = 0;
 			P_SetThingPosition(target);
@@ -1762,6 +1761,8 @@ boolean P_DamageMobj(mobj_t* target, mobj_t* inflictor, mobj_t* source, int dama
 						if(&players[i] != source->player
 							&& &players[i] != target->player)
 							players[i].tagcount++;
+
+						P_CheckPointLimit(&players[i]);
 					}
 				}
 
@@ -2158,6 +2159,8 @@ void P_PlayerRingBurst(player_t* player, int num_rings)
 	int i;
 	mobj_t* mo;
 	byte randomangle;
+	angle_t fa;
+	fixed_t ns;
 
 	// If no health, don't spawn ring!
 	if(player->mo->health <= 1)
@@ -2256,14 +2259,17 @@ void P_PlayerRingBurst(player_t* player, int num_rings)
 
 		randomangle = P_Random();
 
+		fa = (randomangle+i*FINEANGLES/16) & FINEMASK;
+
 		// Make rings spill out around the player in 16 directions like SA, but spill like Sonic 2.
 		// Technically a non-SA way of spilling rings. They just so happen to be a little similar.
 		if(player->nightsfall)
 		{
-			mo->momx = (fixed_t)(sin(i*22.5+randomangle) * (i/16+2) * FRACUNIT);
+			ns = ((i*FRACUNIT)/16)+2*FRACUNIT;
+			mo->momx = FixedMul(finesine[fa],ns);
 
 			if(!twodlevel)
-				mo->momy = (fixed_t)(cos(i*22.5+randomangle) * (i/16+2) * FRACUNIT);
+				mo->momy = FixedMul(finecosine[fa],ns);
 
 			mo->momz = 8*FRACUNIT;
 			mo->fuse = 20*TICRATE; // Adjust fuse for NiGHTS
@@ -2272,10 +2278,11 @@ void P_PlayerRingBurst(player_t* player, int num_rings)
 		{
 			if(i>15)
 			{
-				mo->momx = (fixed_t)(sin(i*22.5+randomangle) * 3 * FRACUNIT);
+				ns = 3 * FRACUNIT;
+				mo->momx = FixedMul(finesine[fa],ns);
 
 				if(!twodlevel)
-					mo->momy = (fixed_t)(cos(i*22.5+randomangle) * 3 * FRACUNIT);
+					mo->momy = FixedMul(finecosine[fa],ns);
 
 				mo->momz = 4*FRACUNIT;
 
@@ -2284,10 +2291,11 @@ void P_PlayerRingBurst(player_t* player, int num_rings)
 			}
 			else
 			{
-				mo->momx = (fixed_t)(sin(i*22.5+randomangle) * 2 * FRACUNIT);
+				ns = 2 * FRACUNIT;
+				mo->momx = FixedMul(finesine[fa], ns);
 
 				if(!twodlevel)
-					mo->momy = (fixed_t)(cos(i*22.5+randomangle) * 2 * FRACUNIT);
+					mo->momy = FixedMul(finecosine[fa],ns);
 
 				mo->momz = 3*FRACUNIT;
 
@@ -2318,7 +2326,7 @@ void P_PlayerFlagBurst(player_t* player)
 {
 	mobj_t* redflag;
 	mobj_t* blueflag;
-	double prandom = 0.0;
+	angle_t fa = 0;
 
 	if(!(player->gotflag & MF_REDFLAG || player->gotflag & MF_BLUEFLAG))
 		return;
@@ -2327,10 +2335,10 @@ void P_PlayerFlagBurst(player_t* player)
 	{
 		redflag = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_REDFLAG);
 
-		prandom = P_Random();
-		redflag->momx = (fixed_t)(sin(prandom) * 6 * FRACUNIT);
-		prandom = P_Random();
-		redflag->momy = (fixed_t)(cos(prandom) * 6 * FRACUNIT);
+		fa = P_Random()*FINEANGLES/256;
+		redflag->momx = FixedMul(finesine[fa],(6 * FRACUNIT));
+		fa = P_Random()*FINEANGLES/256;
+		redflag->momy = FixedMul(finecosine[fa],(6 * FRACUNIT));
 		redflag->momz = 8*FRACUNIT;
 
 		redflag->spawnpoint = rflagpoint;
@@ -2344,10 +2352,10 @@ void P_PlayerFlagBurst(player_t* player)
 	{
 		blueflag = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_BLUEFLAG);
 
-		prandom = P_Random();
-		blueflag->momx = (fixed_t)(sin(prandom) * 6 * FRACUNIT);
-		prandom = P_Random();
-		blueflag->momy = (fixed_t)(cos(prandom) * 6 * FRACUNIT);
+		fa = P_Random()*FINEANGLES/256;
+		blueflag->momx = FixedMul(finesine[fa],(6 * FRACUNIT));
+		fa = P_Random()*FINEANGLES/256;
+		blueflag->momy = FixedMul(finecosine[fa],(6 * FRACUNIT));
 		blueflag->momz = 8*FRACUNIT;
 
 		blueflag->spawnpoint = bflagpoint;

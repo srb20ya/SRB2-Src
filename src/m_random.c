@@ -65,7 +65,7 @@ static byte prndindex = 0;
   * \return A random byte, 0 to 255.
   * \sa P_SignedRandom, M_Random
   */
-byte P_Random()
+byte P_Random(void)
 {
 	return rndtable[++prndindex];
 }

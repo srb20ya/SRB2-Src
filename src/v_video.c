@@ -258,11 +258,11 @@ void VID_BlitLinearScreen(const byte* srcptr, byte* destptr, int width, int heig
 //
 void V_DrawMappedPatch(int x, int y, int scrn, patch_t* patch, const byte* colormap)
 {
-	int count, col, w, dupx, dupy, ofs, colfrac, rowfrac;
+	size_t count;
+	int col, w, dupx, dupy, ofs, colfrac, rowfrac;
 	const column_t* column;
-	byte* desttop;
-	byte* dest;
-	const byte* source;
+	byte* desttop, *dest;
+	const byte* source, *deststop;
 
 #ifdef HWRENDER
 	// draw a hardware converted patch
@@ -285,10 +285,14 @@ void V_DrawMappedPatch(int x, int y, int scrn, patch_t* patch, const byte* color
 	x -= SHORT(patch->leftoffset);
 
 	if(scrn & V_NOSCALESTART)
+	{
 		desttop = screens[scrn&0xffff] + (y*vid.width) + x;
+		deststop = screens[scrn&0xffff] + vid.width * vid.height * vid.bpp;
+	}
 	else
 	{
 		desttop = screens[scrn&0xffff] + (y*vid.dupy*vid.width) + (x*vid.dupx);
+		deststop = screens[scrn&0xffff] + vid.width * vid.height * vid.bpp;
 
 		// Center it if necessary
 		if(!(scrn & V_NOSCALEPATCH))
@@ -336,7 +340,10 @@ void V_DrawMappedPatch(int x, int y, int scrn, patch_t* patch, const byte* color
 			ofs = 0;
 			while(count--)
 			{
-				*dest = *(colormap + source[ofs>>FRACBITS] );
+				if(dest < deststop)
+					*dest = *(colormap + source[ofs>>FRACBITS] );
+				else
+					count = 0;
 				dest += vid.width;
 				ofs += rowfrac;
 			}
@@ -354,12 +361,11 @@ void V_DrawMappedPatch(int x, int y, int scrn, patch_t* patch, const byte* color
 //
 void V_DrawScaledPatch(int x, int y, int scrn, patch_t* patch)
 {
-	int count, col, dupx, dupy, ofs, colfrac, rowfrac;
+	size_t count;
+	int col, dupx, dupy, ofs, colfrac, rowfrac;
 	const column_t* column;
-	byte* desttop;
-	byte* dest;
-	byte* destend;
-	const byte* source;
+	byte* desttop, *dest, *destend;
+	const byte* source, *deststop;
 
 #ifdef HWRENDER
 	// draw a hardware converted patch
@@ -385,6 +391,11 @@ void V_DrawScaledPatch(int x, int y, int scrn, patch_t* patch)
 	rowfrac = FixedDiv(FRACUNIT, dupy<<FRACBITS);
 
 	desttop = screens[scrn&0xFF];
+	deststop = screens[scrn&0xFF] + vid.width * vid.height * vid.bpp;
+
+	if(!desttop)
+		return;
+
 	if(scrn & V_NOSCALESTART)
 		desttop += (y*vid.width) + x;
 	else
@@ -422,11 +433,11 @@ void V_DrawScaledPatch(int x, int y, int scrn, patch_t* patch)
 	{
 		register int heightmask;
 
-		column = (const column_t*)((const byte*)patch + LONG(patch->columnofs[col>>FRACBITS]));
+		column = (const column_t*)((const byte*)(patch) + LONG(patch->columnofs[col>>FRACBITS]));
 
 		while(column->topdelta != 0xff)
 		{
-			source = (const byte*)column + 3;
+			source = (const byte*)(column) + 3;
 			dest = desttop + column->topdelta*dupy*vid.width;
 			count = column->length*dupy;
 
@@ -448,7 +459,10 @@ void V_DrawScaledPatch(int x, int y, int scrn, patch_t* patch)
 
 				do
 				{
-					*dest = source[ofs>>FRACBITS];
+					if(dest < deststop)
+						*dest = source[ofs>>FRACBITS];
+					else
+						count = 0;
 					dest += vid.width;
 					ofs += rowfrac;
 					if((ofs + rowfrac) > heightmask)
@@ -459,7 +473,10 @@ void V_DrawScaledPatch(int x, int y, int scrn, patch_t* patch)
 			{
 				while(count--)
 				{
-					*dest = source[ofs>>FRACBITS];
+					if(dest < deststop)
+						*dest = source[ofs>>FRACBITS];
+					else
+						count = 0;
 					dest += vid.width;
 					ofs += rowfrac;
 				}
@@ -489,10 +506,8 @@ static void V_DrawClippedScaledPatch(int x, int y, int scrn, patch_t* patch)
 	size_t count;
 	int col, dupx, dupy, ofs, colfrac, rowfrac;
 	const column_t* column;
-	byte* desttop;
-	byte* dest;
-	byte* destend;
-	const byte* source;
+	byte* desttop, *dest, *destend;
+	const byte* source, *deststop;
 
 #ifdef HWRENDER
 	// draw a hardware converted patch
@@ -521,7 +536,11 @@ static void V_DrawClippedScaledPatch(int x, int y, int scrn, patch_t* patch)
 	colfrac = FixedDiv(FRACUNIT, dupx<<FRACBITS);
 	rowfrac = FixedDiv(FRACUNIT, dupy<<FRACBITS);
 
+	if(!screens[scrn&0xff])
+		return;
+
 	desttop = screens[scrn&0xff] + (y*vid.width) + x;
+	deststop = screens[scrn&0xff] + vid.width * vid.height * vid.bpp;
 
 	// make sure it doesn't go off the right
 	if(x + SHORT(patch->width)*dupx <= vid.width)
@@ -564,7 +583,10 @@ static void V_DrawClippedScaledPatch(int x, int y, int scrn, patch_t* patch)
 
 				do
 				{
-					*dest = source[ofs>>FRACBITS];
+					if(dest < deststop)
+						*dest = source[ofs>>FRACBITS];
+					else
+						count = 0;
 					dest += vid.width;
 					ofs += rowfrac;
 					if((ofs + rowfrac) > heightmask)
@@ -576,7 +598,10 @@ static void V_DrawClippedScaledPatch(int x, int y, int scrn, patch_t* patch)
 				// length is a power of two
 				while(count--)
 				{
-					*dest = source[ofs>>FRACBITS];
+					if(dest < deststop)
+						*dest = source[ofs>>FRACBITS];
+					else
+						count = 0;
 					dest += vid.width;
 					ofs += rowfrac;
 				}
@@ -590,12 +615,11 @@ doneclipping:
 // Draws a patch 2x as small.
 void V_DrawSmallScaledPatch(int x, int y, int scrn, patch_t* patch, const byte* colormap)
 {
-	int count, col, dupx, dupy, ofs, colfrac, rowfrac;
+	size_t count;
+	int col, dupx, dupy, ofs, colfrac, rowfrac;
 	const column_t* column;
-	byte* desttop;
-	byte* dest;
-	const byte* source;
-	byte* destend;
+	byte* desttop, *dest, *destend;
+	const byte* source, *deststop;
 	boolean skippixels = false;
 
 #ifdef HWRENDER
@@ -631,6 +655,7 @@ void V_DrawSmallScaledPatch(int x, int y, int scrn, patch_t* patch, const byte* 
 	rowfrac = FixedDiv(FRACUNIT, dupy<<FRACBITS);
 
 	desttop = screens[scrn&0xFF] + (y * vid.dupy * vid.width) + (x * vid.dupx);
+	deststop = screens[scrn&0xFF] + vid.width * vid.height * vid.bpp;
 
 	/// \bug yeah... the Y still seems to be off a few lines...
 	/// see rankings in 640x480 or 800x600
@@ -672,7 +697,10 @@ void V_DrawSmallScaledPatch(int x, int y, int scrn, patch_t* patch, const byte* 
 				ofs = 0;
 				while(count--)
 				{
-					*dest = *(colormap + source[ofs>>FRACBITS] );
+					if(dest < deststop)
+						*dest = *(colormap + source[ofs>>FRACBITS] );
+					else
+						count = 0;
 					dest += vid.width;
 					ofs += rowfrac;
 					ofs += rowfrac;
@@ -697,7 +725,10 @@ void V_DrawSmallScaledPatch(int x, int y, int scrn, patch_t* patch, const byte* 
 				ofs = 0;
 				while(count--)
 				{
-					*dest = *(colormap + source[ofs>>FRACBITS] );
+					if(dest < deststop)
+						*dest = *(colormap + source[ofs>>FRACBITS] );
+					else
+						count = 0;
 					dest += vid.width;
 					ofs += rowfrac;
 				}
@@ -714,12 +745,11 @@ void V_DrawSmallScaledPatch(int x, int y, int scrn, patch_t* patch, const byte* 
 //
 void V_DrawTranslucentPatch(int x, int y, int scrn, patch_t* patch)
 {
-	int count, col, w, dupx, dupy, ofs, colfrac, rowfrac;
+	size_t count;
+	int col, w, dupx, dupy, ofs, colfrac, rowfrac;
 	const column_t* column;
-	byte* desttop;
-	byte* dest;
-	const byte* source;
-	const byte* translevel;
+	byte* desttop, *dest;
+	const byte* source, *translevel, *deststop;
 
 #ifdef HWRENDER
 	// draw a hardware converted patch
@@ -755,6 +785,7 @@ void V_DrawTranslucentPatch(int x, int y, int scrn, patch_t* patch)
 	rowfrac = FixedDiv(FRACUNIT, dupy<<FRACBITS);
 
 	desttop = screens[scrn&0xffff];
+	deststop = screens[scrn&0xffff] + vid.width * vid.height * vid.bpp;
 	if(scrn & V_NOSCALESTART)
 		desttop += (y*vid.width) + x;
 	else
@@ -802,7 +833,10 @@ void V_DrawTranslucentPatch(int x, int y, int scrn, patch_t* patch)
 			ofs = 0;
 			while(count--)
 			{
-				*dest = *(translevel + ((source[ofs>>FRACBITS]<<8)&0xff00) + (*dest&0xff));
+				if(dest < deststop)
+					*dest = *(translevel + ((source[ofs>>FRACBITS]<<8)&0xff00) + (*dest&0xff));
+				else
+					count = 0;
 				dest += vid.width;
 				ofs += rowfrac;
 			}
@@ -818,11 +852,11 @@ void V_DrawTranslucentPatch(int x, int y, int scrn, patch_t* patch)
 //
 void V_DrawPatch(int x, int y, int scrn, patch_t* patch)
 {
-	int count, col, w;
+	size_t count;
+	int col, w;
 	const column_t* column;
-	byte* desttop;
-	byte* dest;
-	const byte* source;
+	byte* desttop, *dest;
+	const byte* source, *deststop;
 
 #ifdef HWRENDER
 	// draw a hardware converted patch
@@ -847,6 +881,7 @@ void V_DrawPatch(int x, int y, int scrn, patch_t* patch)
 #endif
 
 	desttop = screens[scrn] + y*vid.width + x;
+	deststop = screens[scrn&0xffff] + vid.width * vid.height * vid.bpp;
 	w = SHORT(patch->width);
 
 	for(col = 0; col < w; x++, col++, desttop++)
@@ -862,7 +897,10 @@ void V_DrawPatch(int x, int y, int scrn, patch_t* patch)
 
 			while(count--)
 			{
-				*dest = *source++;
+				if(dest < deststop)
+					*dest = *source++;
+				else
+					count = 0;
 				dest += vid.width;
 			}
 			column = (const column_t*)((const byte*)column + column->length + 4);
@@ -877,6 +915,7 @@ void V_DrawPatch(int x, int y, int scrn, patch_t* patch)
 void V_DrawBlock(int x, int y, int scrn, int width, int height, const byte* src)
 {
 	byte* dest;
+	const byte* deststop;
 
 #ifdef RANGECHECK
 	if(x < 0 || x + width > vid.width || y < 0 || y + height > vid.height || (unsigned)scrn>4)
@@ -884,6 +923,7 @@ void V_DrawBlock(int x, int y, int scrn, int width, int height, const byte* src)
 #endif
 
 	dest = screens[scrn] + y*vid.width + x;
+	deststop = screens[scrn] + vid.width * vid.height * vid.bpp;
 
 	while(height--)
 	{
@@ -891,6 +931,8 @@ void V_DrawBlock(int x, int y, int scrn, int width, int height, const byte* src)
 
 		src += width;
 		dest += vid.width;
+		if(dest > deststop)
+			return;
 	}
 }
 
@@ -900,6 +942,7 @@ void V_DrawBlock(int x, int y, int scrn, int width, int height, const byte* src)
 void V_DrawFill(int x, int y, int w, int h, int c)
 {
 	byte* dest;
+	const byte* deststop;
 	int u, v, dupx, dupy;
 
 #ifdef HWRENDER
@@ -913,7 +956,11 @@ void V_DrawFill(int x, int y, int w, int h, int c)
 	dupx = vid.dupx;
 	dupy = vid.dupy;
 
+	if(!screens[0])
+		return;
+
 	dest = screens[0] + y*dupy*vid.width + x*dupx;
+	deststop = screens[0] + vid.width * vid.height * vid.bpp;
 
 	w *= dupx;
 	h *= dupy;
@@ -944,7 +991,11 @@ void V_DrawFill(int x, int y, int w, int h, int c)
 
 	for(v = 0; v < h; v++, dest += vid.width)
 		for(u = 0; u<w; u++)
+		{
+			if(dest > deststop)
+				return;
 			dest[u] = (byte)c;
+		}
 }
 
 //
@@ -955,7 +1006,7 @@ void V_DrawFlatFill(int x, int y, int w, int h, int flatnum)
 	byte* dest;
 	int u, v, dupx, dupy;
 	fixed_t dx, dy, xfrac, yfrac;
-	const byte* src;
+	const byte* src, *deststop;
 	byte* flat;
 	int size, flatsize, flatshift;
 
@@ -1007,6 +1058,7 @@ void V_DrawFlatFill(int x, int y, int w, int h, int flatnum)
 	dupy = vid.dupy;
 
 	dest = screens[0] + y*dupy*vid.width + x*dupx;
+	deststop = screens[0] + vid.width * vid.height * vid.bpp;
 
 	// from V_DrawScaledPatch
 	if(vid.fdupx != vid.dupx)
@@ -1034,6 +1086,8 @@ void V_DrawFlatFill(int x, int y, int w, int h, int flatnum)
 		src = flat + (((yfrac >> (FRACBITS - 1)) & (flatsize - 1)) << flatshift);
 		for(u = 0; u < w; u++)
 		{
+			if(&dest[u] > deststop)
+				return;
 			dest[u] = src[(xfrac>>FRACBITS)&(flatsize-1)];
 			xfrac += dx;
 		}
@@ -1068,9 +1122,9 @@ void V_DrawFadeScreen(void)
 {
 	int x, y, w;
 	int* buf;
-	unsigned quad;
+	unsigned int quad;
 	byte p1, p2, p3, p4;
-	const byte* fadetable = (byte*) colormaps + 16*256;
+	const byte* fadetable = (byte*) colormaps + 16*256, *deststop = screens[0] + vid.width * vid.height * vid.bpp;;
 
 #ifdef HWRENDER
 	if(rendermode != render_soft && rendermode != render_none)
@@ -1086,12 +1140,15 @@ void V_DrawFadeScreen(void)
 		buf = (int*)(screens[0] + vid.width*y);
 		for(x = 0; x < w; x++)
 		{
-			quad = buf[x];
+			if(buf+ x > (const int*)deststop)
+				return;
+			memcpy(&quad,buf+x,sizeof(quad)); //quad = buf[x];
 			p1 = fadetable[quad&255];
 			p2 = fadetable[(quad>>8)&255];
 			p3 = fadetable[(quad>>16)&255];
 			p4 = fadetable[quad>>24];
-			buf[x] = (p4<<24) | (p3<<16) | (p2<<8) | p1;
+			quad = (p4<<24) | (p3<<16) | (p2<<8) | p1;//buf[x] = (p4<<24) | (p3<<16) | (p2<<8) | p1;
+			memcpy(buf+x,&quad,sizeof(quad));
 		}
 	}
 }
@@ -1102,9 +1159,10 @@ void V_DrawFadeConsBack(int x1, int y1, int x2, int y2)
 {
 	int x, y, w;
 	int* buf;
-	unsigned quad;
+	unsigned int quad;
 	byte p1, p2, p3, p4;
 	short* wput;
+	const byte* deststop = screens[0] + vid.width * vid.height * vid.bpp;
 
 #ifdef HWRENDER // not win32 only 19990829 by Kin
 	if(rendermode != render_soft && rendermode != render_none)
@@ -1123,12 +1181,15 @@ void V_DrawFadeConsBack(int x1, int y1, int x2, int y2)
 			buf = (int*)(screens[0] + vid.width*y);
 			for(x = x1; x < x2; x++)
 			{
-				quad = buf[x];
+				if(&buf[x] > (const int*)deststop)
+					return;
+				memcpy(&quad,buf+x,sizeof(quad)); //quad = buf[x];
 				p1 = greenmap[quad&255];
 				p2 = greenmap[(quad>>8)&255];
 				p3 = greenmap[(quad>>16)&255];
 				p4 = greenmap[quad>>24];
-				buf[x] = (p4<<24) | (p3<<16) | (p2<<8) | p1;
+				quad = (p4<<24) | (p3<<16) | (p2<<8) | p1;//buf[x] = (p4<<24) | (p3<<16) | (p2<<8) | p1;
+				memcpy(buf+x,&quad,sizeof(quad));
 			}
 		}
 	}
@@ -1140,6 +1201,8 @@ void V_DrawFadeConsBack(int x1, int y1, int x2, int y2)
 			wput = (short*)(screens[0] + vid.width*y) + x1;
 			for(x = 0; x < w; x++)
 			{
+				if(wput > (const short*)deststop)
+					return;
 				*wput = (short)(((*wput&0x7bde) + (15<<5)) >>1);
 				wput++;
 			}
@@ -1374,7 +1437,7 @@ void V_DrawLevelTitle(int x, int y, int option, const char* string)
 		}
 
 		c = toupper(c);
-		if((c != LT_FONTSTART) && (c < LT_REALFONTSTART || c > LT_FONTEND))
+		if((c != LT_FONTSTART && (c < '0' || c > '9')) && (c < LT_REALFONTSTART || c > LT_FONTEND))
 		{ /// \note font start hack
 			cx += 16*dupx;
 			continue;
@@ -1461,29 +1524,27 @@ int V_StringWidth(const char* string)
 void V_Init(void)
 {
 	int i;
-	byte* base;
-	int screensize;
+	byte* base = vid.buffer;
+	const int screensize = vid.width * vid.height * vid.bpp;
 
 	LoadPalette("PLAYPAL");
 	// hardware modes do not use screens[] pointers
+	for(i = 0; i < NUMSCREENS; i++)
+		screens[i] = NULL;
 	if(rendermode != render_soft)
 	{
-		// be sure to cause a NULL read/write error so we detect it, in case of..
-		for(i = 0; i < NUMSCREENS; i++)
-			screens[i] = NULL;
-		return;
+		return; // be sure to cause a NULL read/write error so we detect it, in case of..
 	}
 
 	// start address of NUMSCREENS * width*height vidbuffers
-	base = vid.buffer;
-
-	screensize = vid.width * vid.height * vid.bpp;
-
-	for(i = 0; i < NUMSCREENS; i++)
-		screens[i] = base + i*screensize;
-
-	// statusbar buffer
-	screens[4] = base + NUMSCREENS*screensize;
+	if(base)
+	{
+		for(i = 0; i < NUMSCREENS; i++)
+			screens[i] = base + i*screensize;
+	
+		// statusbar buffer
+		screens[4] = base + NUMSCREENS*screensize;
+	}
 
 #ifdef DEBUG
 	CONS_Printf("V_Init done:\n");

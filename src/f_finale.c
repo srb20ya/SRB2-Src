@@ -34,21 +34,24 @@
 #include "i_system.h"
 #include "m_menu.h"
 #include "dehacked.h"
-#include "keys.h"
+#include "g_input.h"
 #include "console.h"
 #include "m_random.h"
+#include "y_inter.h"
 
 credit_t credits[19];
 
 // Stage of animation:
 // 0 = text, 1 = art screen
-static int finalestage, finalecount;
+static int finalestage;
+static int finalecount;
 
-static int timetonext; // Delay between screen changes
+static tic_t timetonext; // Delay between screen changes
 static int finaletextcount;
-static int animtimer; // Used for some animation timings
+static tic_t animtimer; // Used for some animation timings
 
-static int deplete, stoptimer;
+static int deplete;
+static tic_t stoptimer;
 
 #define TEXTSPEED 3
 #define TEXTWAIT 250
@@ -95,7 +98,7 @@ static boolean drawemblem = false, drawchaosemblem = false, runningprecutscene =
 
 typedef struct
 {
-	int frame;
+	USHORT frame;
 	int tics;
 } mouth_t;
 
@@ -697,7 +700,7 @@ void F_StartTitleScreen(void)
 // Demo end thingy
 void F_StartDemoEnd(void)
 {
-	int i;
+	size_t i;
 
 	if(modifiedgame)
 		D_StartTitle();
@@ -749,7 +752,7 @@ void F_StartGameEvaluation(void)
 
 void F_StartCredits(void)
 {
-	int i = 0;
+	size_t i = 0;
 	gamestate = GS_CREDITS;
 
 	gameaction = ga_nothing;
@@ -820,10 +823,12 @@ void F_StartCredits(void)
 	strcpy(credits[i].fakenames[0], "Alam_GBC\n");
 	strcpy(credits[i].fakenames[1], "Graue\n");
 	strcpy(credits[i].fakenames[2], "Orospakr\n");
+	strcpy(credits[i].fakenames[3], "Jason the Echidna\n");
 	strcpy(credits[i].realnames[0], "Alam Arias\n");
 	strcpy(credits[i].realnames[1], "Scott Feeney\n");
 	strcpy(credits[i].realnames[2], "Andrew Clunis\n");
-	credits[i].numnames = 3;
+	strcpy(credits[i].realnames[3], "John J. Muniz\n");
+	credits[i].numnames = 4;
 	i++;
 	strcpy(credits[i].header, "Coding Assistants\n");
 	strcpy(credits[i].fakenames[0], "StroggOnMeth\n");
@@ -992,7 +997,7 @@ void F_StartIntro(void)
 	CON_ClearHUD();
 	finaletext = E0TEXT;
 
-	finalestage = finalecount = finaletextcount = timetonext = animtimer = stoptimer = 0;
+	finalestage = finaletextcount = finalecount = timetonext = animtimer = stoptimer = 0;
 	mouthtics = BASEVIDWIDTH - 64;
 }
 
@@ -1018,7 +1023,7 @@ boolean F_IntroResponder(event_t* event)
 	if(event->type != ev_keydown && event->data1 != 301)
 		return false;
 
-	if(event->data1 != 27 && event->data1 != KEY_ENTER && event->data1 != KEY_SPACE)
+	if(event->data1 != 27 && event->data1 != KEY_ENTER && event->data1 != KEY_SPACE && event->data1 != (KEY_JOY1+1))
 		return false;
 
 	if(keypressed)
@@ -1044,7 +1049,7 @@ boolean F_CreditResponder(event_t* event)
 	if(event->type != ev_keydown)
 		return false;
 
-	if(event->data1 != 27 && event->data1 != KEY_ENTER && event->data1 != KEY_SPACE)
+	if(event->data1 != 27 && event->data1 != KEY_ENTER && event->data1 != KEY_SPACE && event->data1 != (KEY_JOY1+1))
 		return false;
 
 	if(keypressed)
@@ -1069,7 +1074,7 @@ void F_Ticker(void)
 			if(keypressed)
 			{
 				keypressed = false;
-				if(finaletext && (unsigned)finalecount < strlen(finaletext)*TEXTSPEED)
+				if(finaletext && finalecount < (signed)strlen(finaletext)*TEXTSPEED)
 					finalecount += MAXINT/2; // force text to be written
 				else
 				{
@@ -1207,7 +1212,7 @@ void F_CutsceneTicker(void)
 //
 static void F_TextWrite(void)
 {
-	int w, count, c, cx, cy;
+	int count, c, w, cx, cy;
 	const char* ch;
 
 	// erase the entire screen with a tiled background
@@ -1265,18 +1270,14 @@ static void F_TextWrite(void)
 //
 static void F_WriteText(int cx, int cy)
 {
-	int w, count, c, originalx;
-	const char* ch;
-
-	originalx = cx;
-
-	// draw some of the text onto the screen
-	ch = finaletext;
+	int count, c, w, originalx = cx;
+	const char* ch = finaletext; // draw some of the text onto the screen
 
 	count = (finaletextcount - 10)/2;
 
 	if(count < 0)
 		count = 0;
+
 	if(timetonext == 1 || !ch)
 	{
 		finaletextcount = 0;
@@ -1326,13 +1327,8 @@ static void F_WriteText(int cx, int cy)
 
 static void F_WriteCutsceneText(void)
 {
-	int w, count, c, originalx, cx = textxpos, cy = textypos;
-	const char* ch;
-
-	originalx = cx;
-
-	// draw some of the text onto the screen
-	ch = finaletext;
+	int count, c, w, originalx = textxpos, cx = textxpos, cy = textypos;
+	const char* ch = finaletext; // draw some of the text onto the screen
 
 	count = (finaletextcount - 10)/2;
 
@@ -1555,8 +1551,7 @@ static void F_IntroTextWrite(void)
 		{
 			if(rendermode == render_soft)
 			{
-				tic_t nowtime, tics, wipestart;
-				int y;
+				tic_t nowtime, tics, wipestart, y;
 				boolean done;
 
 				F_WriteText(cx, cy);
@@ -1585,13 +1580,12 @@ static void F_IntroTextWrite(void)
 					I_UpdateNoBlit();
 					M_Drawer(); // menu is drawn even on top of wipes
 					I_FinishUpdate(); // page flip or blit buffer
-				} while(!done && I_GetTime() < (unsigned)y);
+				} while(!done && I_GetTime() < y);
 			}
 #ifdef HWRENDER
 			else if(rendermode != render_none) // Delay the hardware modes as well
 			{
-				tic_t nowtime, tics, wipestart;
-				int y;
+				tic_t nowtime, tics, wipestart, y;
 
 				wipestart = I_GetTime() - 1;
 				y = wipestart + 32; // init a timeout
@@ -1608,7 +1602,7 @@ static void F_IntroTextWrite(void)
 					I_UpdateNoBlit();
 					M_Drawer(); // menu is drawn even on top of wipes
 					I_FinishUpdate(); // page flip or blit buffer
-				} while(I_GetTime() < (unsigned)y);
+				} while(I_GetTime() < y);
 			}
 #endif
 		}
@@ -1621,8 +1615,7 @@ static void F_IntroTextWrite(void)
 		{
 			if(rendermode == render_soft)
 			{
-				tic_t nowtime, tics, wipestart;
-				int y;
+				tic_t nowtime, tics, wipestart, y;
 				boolean done;
 
 				F_WriteText(cx, cy);
@@ -1652,13 +1645,12 @@ static void F_IntroTextWrite(void)
 					I_UpdateNoBlit();
 					M_Drawer(); // menu is drawn even on top of wipes
 					I_FinishUpdate(); // page flip or blit buffer
-				} while(!done && I_GetTime() < (unsigned)y);
+				} while(!done && I_GetTime() < y);
 			}
 #ifdef HWRENDER
 			else if(rendermode != render_none) // Delay the hardware modes as well
 			{
-				tic_t nowtime, tics, wipestart;
-				int y;
+				tic_t nowtime, tics, wipestart, y;
 
 				wipestart = I_GetTime() - 1;
 				y = wipestart + 32; // init a timeout
@@ -1675,7 +1667,7 @@ static void F_IntroTextWrite(void)
 					I_UpdateNoBlit();
 					M_Drawer(); // menu is drawn even on top of wipes
 					I_FinishUpdate(); // page flip or blit buffer
-				} while(I_GetTime() < (unsigned)y);
+				} while(I_GetTime() < y);
 			}
 #endif
 		}
@@ -1689,8 +1681,7 @@ static void F_IntroTextWrite(void)
 		{
 			if(rendermode == render_soft)
 			{
-				tic_t nowtime, tics, wipestart;
-				int y;
+				tic_t nowtime, tics, wipestart, y;
 				boolean done;
 
 				F_WriteText(cx, cy);
@@ -1720,13 +1711,12 @@ static void F_IntroTextWrite(void)
 					I_UpdateNoBlit();
 					M_Drawer(); // menu is drawn even on top of wipes
 					I_FinishUpdate(); // page flip or blit buffer
-				} while(!done && I_GetTime() < (unsigned)y);
+				} while(!done && I_GetTime() < y);
 			}
 #ifdef HWRENDER
 			else if(rendermode != render_none) // Delay the hardware modes as well
 			{
-				tic_t nowtime, tics, wipestart;
-				int y;
+				tic_t nowtime, tics, wipestart, y;
 
 				wipestart = I_GetTime() - 1;
 				y = wipestart+32; // init a timeout
@@ -1743,7 +1733,7 @@ static void F_IntroTextWrite(void)
 					I_UpdateNoBlit();
 					M_Drawer(); // menu is drawn even on top of wipes
 					I_FinishUpdate(); // page flip or blit buffer
-				} while(I_GetTime() < (unsigned)y);
+				} while(I_GetTime() < y);
 			}
 #endif
 		}
@@ -1788,19 +1778,20 @@ static void F_IntroTextWrite(void)
 //
 static void F_DrawPatchCol(int x, patch_t* patch, int col, int yrepeat)
 {
-	column_t* column;
-	byte* source;
-	byte* dest = NULL;
-	byte* desttop;
-	int count;
+	const column_t* column;
+	const byte *source;
+	byte *desttop, *dest = NULL;
+	const byte* deststop;
+	size_t count;
 
 	column = (column_t*)((byte*)patch + LONG(patch->columnofs[col]));
 	desttop = screens[0] + x*vid.dupx;
+	deststop = screens[0] + vid.width * vid.height * vid.bpp;
 
 	// step through the posts in a column
 	while(column->topdelta != 0xff)
 	{
-		source = (byte*)column + 3;
+		source = (const byte*)column + 3;
 		dest = desttop + column->topdelta*vid.width;
 		count = column->length;
 
@@ -1811,14 +1802,14 @@ static void F_DrawPatchCol(int x, patch_t* patch, int col, int yrepeat)
 			while(dupycount--)
 			{
 				int dupxcount = vid.dupx;
-				while(dupxcount--)
+				while(dupxcount-- && dest <= deststop)
 					*dest++ = *source;
 
 				dest += (vid.width - vid.dupx);
 			}
 			source++;
 		}
-		column = (column_t*)((byte*)column + column->length + 4);
+		column = (const column_t*)((const byte*)column + column->length + 4);
 	}
 
 	// repeat a second time, for yrepeat number of pixels
@@ -1827,7 +1818,7 @@ static void F_DrawPatchCol(int x, patch_t* patch, int col, int yrepeat)
 		column = (column_t*)((byte*)patch + LONG(patch->columnofs[col]));
 		while(column->topdelta != 0xff)
 		{
-			source = (byte*)column + 3;
+			source = (const byte*)column + 3;
 			count = column->length;
 
 			while(count--)
@@ -1837,7 +1828,7 @@ static void F_DrawPatchCol(int x, patch_t* patch, int col, int yrepeat)
 				while(dupycount--)
 				{
 					int dupxcount = vid.dupx;
-					while(dupxcount--)
+					while(dupxcount-- && dest <= deststop)
 						*dest++ = *source;
 
 					dest += (vid.width - vid.dupx);
@@ -1846,7 +1837,7 @@ static void F_DrawPatchCol(int x, patch_t* patch, int col, int yrepeat)
 			}
 			if(!--yrepeat)
 				break;
-			column = (column_t*)((byte*)column + column->length + 4);
+			column = (const column_t*)((const byte*)column + column->length + 4);
 		}
 	}
 }
@@ -2077,7 +2068,8 @@ void F_DemoEndDrawer(void)
 void F_GameEvaluationDrawer(void)
 {
 	int x, y;
-	const int radius = 48;
+	const fixed_t radius = 48*FRACUNIT;
+	angle_t fa;
 
 	V_DrawFill(0, 0, vid.width, vid.height, 0);
 
@@ -2098,8 +2090,9 @@ void F_GameEvaluationDrawer(void)
 	finalestage++;
 	timetonext = finalestage;
 
-	x = (int)(160 + cos(timetonext * deg2rad) * radius);
-	y = (int)(100 + sin(timetonext * deg2rad) * radius);
+	fa = ((timetonext*ANGLE_1)>>ANGLETOFINESHIFT) & FINEMASK;
+	x = 160 + (int)(FixedMul(finecosine[fa],radius)/FRACUNIT);
+	y = 100 + (int)(FixedMul(finesine[fa],radius)/FRACUNIT);
 
 	if(emeralds & EMERALD1)
 		V_DrawScaledPatch(x, y, 0, W_CachePatchName("CEMGA0", PU_CACHE));
@@ -2107,8 +2100,10 @@ void F_GameEvaluationDrawer(void)
 		V_DrawTranslucentPatch(x, y, TRANSLEVEL|V_TOPLEFT, W_CachePatchName("CEMGA0", PU_CACHE));
 
 	timetonext += INTERVAL;
-	x = (int)(160 + cos(timetonext * deg2rad) * radius);
-	y = (int)(100 + sin(timetonext * deg2rad) * radius);
+
+	fa = ((timetonext*ANGLE_1)>>ANGLETOFINESHIFT) & FINEMASK;
+	x = 160 + (int)(FixedMul(finecosine[fa],radius)/FRACUNIT);
+	y = 100 + (int)(FixedMul(finesine[fa],radius)/FRACUNIT);
 
 	if(emeralds & EMERALD2)
 		V_DrawScaledPatch(x, y, 0, W_CachePatchName("CEMOA0", PU_CACHE));
@@ -2116,8 +2111,10 @@ void F_GameEvaluationDrawer(void)
 		V_DrawTranslucentPatch(x, y, TRANSLEVEL|V_TOPLEFT, W_CachePatchName("CEMOA0", PU_CACHE));
 
 	timetonext += INTERVAL;
-	x = (int)(160 + cos(timetonext * deg2rad) * radius);
-	y = (int)(100 + sin(timetonext * deg2rad) * radius);
+
+	fa = ((timetonext*ANGLE_1)>>ANGLETOFINESHIFT) & FINEMASK;
+	x = 160 + (int)(FixedMul(finecosine[fa],radius)/FRACUNIT);
+	y = 100 + (int)(FixedMul(finesine[fa],radius)/FRACUNIT);
 
 	if(emeralds & EMERALD3)
 		V_DrawScaledPatch(x, y, 0, W_CachePatchName("CEMPA0", PU_CACHE));
@@ -2125,8 +2122,10 @@ void F_GameEvaluationDrawer(void)
 		V_DrawTranslucentPatch(x, y, TRANSLEVEL|V_TOPLEFT, W_CachePatchName("CEMPA0", PU_CACHE));
 
 	timetonext += INTERVAL;
-	x = (int)(160 + cos(timetonext * deg2rad) * radius);
-	y = (int)(100 + sin(timetonext * deg2rad) * radius);
+
+	fa = ((timetonext*ANGLE_1)>>ANGLETOFINESHIFT) & FINEMASK;
+	x = 160 + (int)(FixedMul(finecosine[fa],radius)/FRACUNIT);
+	y = 100 + (int)(FixedMul(finesine[fa],radius)/FRACUNIT);
 
 	if(emeralds & EMERALD4)
 		V_DrawScaledPatch(x, y, 0, W_CachePatchName("CEMBA0", PU_CACHE));
@@ -2134,8 +2133,10 @@ void F_GameEvaluationDrawer(void)
 		V_DrawTranslucentPatch(x, y, TRANSLEVEL|V_TOPLEFT, W_CachePatchName("CEMBA0", PU_CACHE));
 
 	timetonext += INTERVAL;
-	x = (int)(160 + cos(timetonext * deg2rad) * radius);
-	y = (int)(100 + sin(timetonext * deg2rad) * radius);
+
+	fa = ((timetonext*ANGLE_1)>>ANGLETOFINESHIFT) & FINEMASK;
+	x = 160 + (int)(FixedMul(finecosine[fa],radius)/FRACUNIT);
+	y = 100 + (int)(FixedMul(finesine[fa],radius)/FRACUNIT);
 
 	if(emeralds & EMERALD5)
 		V_DrawScaledPatch(x, y, 0, W_CachePatchName("CEMRA0", PU_CACHE));
@@ -2143,8 +2144,10 @@ void F_GameEvaluationDrawer(void)
 		V_DrawTranslucentPatch(x, y, TRANSLEVEL|V_TOPLEFT, W_CachePatchName("CEMRA0", PU_CACHE));
 
 	timetonext += INTERVAL;
-	x = (int)(160 + cos(timetonext * deg2rad) * radius);
-	y = (int)(100 + sin(timetonext * deg2rad) * radius);
+
+	fa = ((timetonext*ANGLE_1)>>ANGLETOFINESHIFT) & FINEMASK;
+	x = 160 + (int)(FixedMul(finecosine[fa],radius)/FRACUNIT);
+	y = 100 + (int)(FixedMul(finesine[fa],radius)/FRACUNIT);
 
 	if(emeralds & EMERALD6)
 		V_DrawScaledPatch(x, y, 0, W_CachePatchName("CEMLA0", PU_CACHE));
@@ -2152,8 +2155,10 @@ void F_GameEvaluationDrawer(void)
 		V_DrawTranslucentPatch(x, y, TRANSLEVEL|V_TOPLEFT, W_CachePatchName("CEMLA0", PU_CACHE));
 
 	timetonext += INTERVAL;
-	x = (int)(160 + cos(timetonext * deg2rad) * radius);
-	y = (int)(100 + sin(timetonext * deg2rad) * radius);
+
+	fa = ((timetonext*ANGLE_1)>>ANGLETOFINESHIFT) & FINEMASK;
+	x = 160 + (int)(FixedMul(finecosine[fa],radius)/FRACUNIT);
+	y = 100 + (int)(FixedMul(finesine[fa],radius)/FRACUNIT);
 
 	if(emeralds & EMERALD7)
 		V_DrawScaledPatch(x, y, 0, W_CachePatchName("CEMYA0", PU_CACHE));
@@ -2222,9 +2227,6 @@ void F_GameEvaluationDrawer(void)
 			grade |= 32;
 	}
 
-	if(savemoddata)
-		grade = 0;
-
 	G_SaveGameData();
 
 	if(finalecount >= 5*TICRATE)
@@ -2237,7 +2239,7 @@ void F_GameEvaluationDrawer(void)
 
 		V_DrawString(8, 16, V_WHITEMAP, "Unlocked:");
 
-		if(grade & 8)
+		if(grade & 8 && !modifiedgame)
 			V_DrawString(8, 32, 0, "Mario");
 
 		if(grade & 16)
@@ -2263,7 +2265,7 @@ void F_GameEvaluationDrawer(void)
 
 		if(netgame)
 			V_DrawString(8, 96, V_WHITEMAP, "Prizes only\nawarded in\nsingle player!");
-		else if(modifiedgame)
+		else if(modifiedgame && !savemoddata)
 			V_DrawString(8, 96, V_WHITEMAP, "Prizes not\nawarded in\nmodified games!");
 	}
 }
@@ -2355,8 +2357,7 @@ void F_CreditDrawer(void)
 
 		if(rendermode == render_soft)
 		{
-			tic_t nowtime, tics, wipestart;
-			int y;
+			tic_t nowtime, tics, wipestart, y;
 			boolean done;
 
 			F_WipeStartScreen();
@@ -2380,13 +2381,12 @@ void F_CreditDrawer(void)
 				I_UpdateNoBlit();
 				M_Drawer(); // menu is drawn even on top of wipes
 				I_FinishUpdate(); // page flip or blit buffer
-			} while(!done && I_GetTime() < (unsigned)y);
+			} while(!done && I_GetTime() < y);
 		}
 #ifdef HWRENDER
 		else if(rendermode != render_none) // Delay the hardware modes as well
 		{
-			tic_t nowtime, tics, wipestart;
-			int y;
+			tic_t nowtime, tics, wipestart, y;
 
 			wipestart = I_GetTime() - 1;
 			y = wipestart + 32; // init a timeout
@@ -2403,7 +2403,7 @@ void F_CreditDrawer(void)
 				I_UpdateNoBlit();
 				M_Drawer(); // menu is drawn even on top of wipes
 				I_FinishUpdate(); // page flip or blit buffer
-			} while(I_GetTime() < (unsigned)y);
+			} while(I_GetTime() < y);
 		}
 #endif
 	}
@@ -2455,10 +2455,7 @@ void F_IntroDrawer(void)
 
 			if(rendermode == render_soft)
 			{
-				tic_t nowtime;
-				tic_t tics;
-				tic_t wipestart;
-				int y;
+				tic_t nowtime, tics, wipestart, y;
 				boolean done;
 
 				F_WipeStartScreen();
@@ -2481,15 +2478,12 @@ void F_IntroDrawer(void)
 					I_UpdateNoBlit();
 					M_Drawer(); // menu is drawn even on top of wipes
 					I_FinishUpdate(); // page flip or blit buffer
-				} while(!done && I_GetTime() < (unsigned)y);
+				} while(!done && I_GetTime() < y);
 			}
 #ifdef HWRENDER
 			else if(rendermode != render_none) // Delay the hardware modes as well
 			{
-				tic_t nowtime;
-				tic_t tics;
-				tic_t wipestart;
-				int y;
+				tic_t nowtime, tics, wipestart, y;
 
 				wipestart = I_GetTime() - 1;
 				y = wipestart + 32; // init a timeout
@@ -2506,7 +2500,7 @@ void F_IntroDrawer(void)
 					I_UpdateNoBlit();
 					M_Drawer(); // menu is drawn even on top of wipes
 					I_FinishUpdate(); // page flip or blit buffer
-				} while(I_GetTime() < (unsigned)y);
+				} while(I_GetTime() < y);
 			}
 #endif
 
@@ -2524,8 +2518,7 @@ void F_IntroDrawer(void)
 		{
 			if(rendermode == render_soft)
 			{
-				tic_t nowtime, tics, wipestart;
-				int y;
+				tic_t nowtime, tics, wipestart, y;
 				boolean done;
 
 				F_WipeStartScreen();
@@ -2548,15 +2541,12 @@ void F_IntroDrawer(void)
 					I_UpdateNoBlit();
 					M_Drawer(); // menu is drawn even on top of wipes
 					I_FinishUpdate(); // page flip or blit buffer
-				} while(!done && I_GetTime() < (unsigned)y);
+				} while(!done && I_GetTime() < y);
 			}
 #ifdef HWRENDER
 			else if(rendermode != render_none) // Delay the hardware modes as well
 			{
-				tic_t nowtime;
-				tic_t tics;
-				tic_t wipestart;
-				int y;
+				tic_t nowtime, tics, wipestart, y;
 
 				wipestart = I_GetTime() - 1;
 				y = wipestart + 32; // init a timeout
@@ -2573,7 +2563,7 @@ void F_IntroDrawer(void)
 					I_UpdateNoBlit();
 					M_Drawer(); // menu is drawn even on top of wipes
 					I_FinishUpdate(); // page flip or blit buffer
-				} while(I_GetTime() < (unsigned)y);
+				} while(I_GetTime() < y);
 			}
 #endif
 			// Stay on black for a bit. =)
@@ -2640,8 +2630,7 @@ static void F_AdvanceToNextScene(void)
 
 	if(rendermode == render_soft)
 	{
-		tic_t nowtime, tics, wipestart;
-		int y;
+		tic_t nowtime, tics, wipestart, y;
 		boolean done;
 
 		F_WipeStartScreen();
@@ -2681,13 +2670,12 @@ static void F_AdvanceToNextScene(void)
 			I_UpdateNoBlit();
 			M_Drawer(); // menu is drawn even on top of wipes
 			I_FinishUpdate(); // page flip or blit buffer
-		} while(!done && I_GetTime() < (unsigned)y);
+		} while(!done && I_GetTime() < y);
 	}
 #ifdef HWRENDER
 	else if(rendermode != render_none) // Delay the hardware modes as well
 	{
-		tic_t nowtime, tics, wipestart;
-		int y;
+		tic_t nowtime, tics, wipestart, y;
 
 		wipestart = I_GetTime() - 1;
 		y = wipestart + 32; // init a timeout
@@ -2704,7 +2692,7 @@ static void F_AdvanceToNextScene(void)
 			I_UpdateNoBlit();
 			M_Drawer(); // menu is drawn even on top of wipes
 			I_FinishUpdate(); // page flip or blit buffer
-		} while(I_GetTime() < (unsigned)y);
+		} while(I_GetTime() < y);
 	}
 #endif
 
@@ -2790,27 +2778,10 @@ void F_EndCutScene(void)
 			return;
 		}
 
-		if(nextmap == 1102-1)
-		{
-			if(!modifiedgame && gameskill == sk_nightmare) // Very Hard cleared!
-				veryhardcleared = true;
-
-			if(gametype == GT_COOP)
-				F_StartCredits();
-			else
-				D_StartTitle();
-		}
-		else if(nextmap == 1101-1) // Cut to the chase, captain.
-		{
-			if(gametype == GT_COOP)
-				F_StartGameEvaluation();
-			else
-				D_StartTitle();
-		}
-		else if(nextmap == 1100-1) // Cut to the chase, captain.
-			D_StartTitle();
-		else
+		if(nextmap < 1100-1)
 			G_NextLevel();
+		else
+			Y_EndGame();
 	}
 }
 

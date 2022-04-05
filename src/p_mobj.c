@@ -32,8 +32,6 @@
 #include "m_random.h"
 #include "info.h"
 
-const double deg2rad = 0.017453293;
-
 //Real Prototypes to A_*
 void A_Boss1Chase(mobj_t* actor);
 void A_Boss2Chase(mobj_t* actor);
@@ -86,46 +84,51 @@ boolean P_SetPlayerMobjState(mobj_t* mobj, statenum_t state)
 
 #ifdef PARANOIA
 	if(!mobj->player)
-		I_Error("P_SetPlayerMobjState called with a non-player mobj!\n");
+		I_Error("P_SetPlayerMobjState called with a non-player mobj: %d!\n", mobj->type);
 #endif
 
 	// Catch state changes for Super Sonic
-	if(mobj->player->powers[pw_super])
+	if(mobj->player) // Just in case...
 	{
-		switch(state)
+		if(mobj->player->powers[pw_super])
 		{
-			case S_PLAY_STND:
-				P_SetPlayerMobjState(mobj, S_PLAY_SUPERSTAND);
-				return true;
-				break;
-			case S_PLAY_RUN1:
-				P_SetPlayerMobjState(mobj, S_PLAY_SUPERWALK1);
-				return true;
-				break;
-			case S_PLAY_SPD1:
-				P_SetPlayerMobjState(mobj, S_PLAY_SUPERFLY1);
-				return true;
-				break;
-			case S_PLAY_TEETER1:
-				P_SetPlayerMobjState(mobj, S_PLAY_SUPERTEETER);
-				return true;
-				break;
-			case S_PLAY_CARRY:
-				P_SetPlayerMobjState(mobj, S_PLAY_SUPERSTAND);
-				return true;
-				break;
-			case S_PLAY_ATK1:
-			case S_PLAY_PLG1:
-			case S_PLAY_FALL1:
-			case S_PLAY_GASP:
-				return true;
-				break;
-			default:
-				break;
+			switch(state)
+			{
+				case S_PLAY_STND:
+					P_SetPlayerMobjState(mobj, S_PLAY_SUPERSTAND);
+					return true;
+					break;
+				case S_PLAY_RUN1:
+					P_SetPlayerMobjState(mobj, S_PLAY_SUPERWALK1);
+					return true;
+					break;
+				case S_PLAY_SPD1:
+					P_SetPlayerMobjState(mobj, S_PLAY_SUPERFLY1);
+					return true;
+					break;
+				case S_PLAY_TEETER1:
+					P_SetPlayerMobjState(mobj, S_PLAY_SUPERTEETER);
+					return true;
+					break;
+				case S_PLAY_CARRY:
+					P_SetPlayerMobjState(mobj, S_PLAY_SUPERSTAND);
+					return true;
+					break;
+				case S_PLAY_ATK1:
+				case S_PLAY_PLG1:
+				case S_PLAY_FALL1:
+				case S_PLAY_GASP:
+					return true;
+					break;
+				default:
+					break;
+			}
 		}
+		else if(mobj->state == &states[S_PLAY_PAIN] && mobj->player->powers[pw_flashing] == flashingtics)
+			mobj->player->powers[pw_flashing] = flashingtics-1;
 	}
-	else if(mobj->state == &states[S_PLAY_PAIN] && mobj->player->powers[pw_flashing] == flashingtics)
-		mobj->player->powers[pw_flashing] = flashingtics-1;
+//	else
+//		I_Error("P_SetPlayerMobjState: State changed called on non-player mobj: %d\n", mobj->type);
 
 	if(recursion++) // if recursion detected,
 		memset(seenstate = tempstate, 0, sizeof tempstate); // clear state table
@@ -514,7 +517,7 @@ void P_XYMovement(mobj_t* mo)
 				P_BounceMove(mo);
 				xmove = ymove = 0;
 			}
-			else if((mo->player && !twodlevel) || (mo->flags & MF_SLIDEME)
+			else if((mo->player) || (mo->flags & MF_SLIDEME)
 				|| (mo->flags & MF_PUSHABLE))
 			{ // try to slide along it
 				P_SlideMove(mo);
@@ -604,7 +607,8 @@ void P_XYMovement(mobj_t* mo)
 
 	if(mo->player && !moved && mo->player->nightsmode && mo->target)
 	{
-		int radius;
+		angle_t fa;
+
 		P_UnsetThingPosition(mo);
 		mo->player->angle_pos = mo->player->old_angle_pos;
 		mo->player->speed /= 5;
@@ -612,10 +616,10 @@ void P_XYMovement(mobj_t* mo)
 		player->flyangle += 180;
 		player->flyangle %= 360;
 
-		radius = mo->target->info->radius;
+		fa = player->old_angle_pos>>ANGLETOFINESHIFT;
 
-		mo->x = (fixed_t)(mo->target->x + cos(mo->player->old_angle_pos * deg2rad) * radius);
-		mo->y = (fixed_t)(mo->target->y + sin(mo->player->old_angle_pos * deg2rad) * radius);
+		mo->x = mo->target->x + FixedMul(finecosine[fa],mo->target->info->radius);
+		mo->y = mo->target->y + FixedMul(finesine[fa],mo->target->info->radius);
 
 		mo->momx = mo->momy = 0;
 		P_SetThingPosition(mo);
@@ -644,8 +648,9 @@ void P_XYMovement(mobj_t* mo)
 	{
 		if(player->mfspinning == 1 && (player->rmomx || player->rmomy) && !player->mfstartdash)
 		{
-			mo->momx = FixedMul(mo->momx, (fixed_t)(FRICTION*1.098f));
-			mo->momy = FixedMul(mo->momy, (fixed_t)(FRICTION*1.098f));
+			const fixed_t ns = (549*FRICTION)/500;
+			mo->momx = FixedMul(mo->momx, ns);
+			mo->momy = FixedMul(mo->momy, ns);
 			return;
 		}
 	}
@@ -893,7 +898,7 @@ static void P_ZMovement(mobj_t* mo)
 		case MT_SMALLBUBBLE:
 			if(mo->z <= mo->floorz) // Hit the floor, so POP!
 			{
-				int random;
+				byte random;
 
 				P_SetMobjState(mo, S_DISS);
 
@@ -953,16 +958,17 @@ static void P_ZMovement(mobj_t* mo)
 
 	if(mo->flags & MF_FLOAT && mo->target && mo->health && !(mo->type == MT_DETON ||
 		mo->type == MT_JETTBOMBER || mo->type == MT_JETTGUNNER || mo->type == MT_CRAWLACOMMANDER
-		|| mo->type == MT_EGGMOBILE2))
+		|| mo->type == MT_EGGMOBILE2) && mo->target->health > 0)
 	{
 		// float down towards target if too close
-		if(!(mo->flags2 & MF2_SKULLFLY) && !(mo->flags & MF_INFLOAT))
+		if(!(mo->flags2 & MF2_SKULLFLY) && !(mo->flags2 & MF2_INFLOAT))
 		{
 			dist = P_AproxDistance(mo->x - mo->target->x, mo->y - mo->target->y);
 
 			delta = (mo->target->z + (mo->height>>1)) - mo->z;
 
-			if(delta < 0 && dist < -(delta*3))
+			if(delta < 0 && dist < -(delta*3)
+				&& (mo->type != MT_EGGMOBILE || mo->z - FLOATSPEED >= mo->floorz+33*FRACUNIT))
 				mo->z -= FLOATSPEED;
 			else if(delta > 0 && dist < (delta*3))
 				mo->z += FLOATSPEED;
@@ -1054,9 +1060,9 @@ static void P_ZMovement(mobj_t* mo)
 				|| mo->type == MT_EXPLOSIONRING)
 			{
 				if(maptol & TOL_NIGHTS)
-					mo->momz = (fixed_t)(-mo->momz * 0.1f);
+					mo->momz = -FixedDiv(mo->momz,10*FRACUNIT);
 				else
-					mo->momz = (fixed_t)(-mo->momz * 0.85f);
+					mo->momz = -FixedMul(mo->momz,(20*FRACUNIT)/17);
 			}
 			else if(!(tmfloorthing) || (((tmfloorthing->flags & MF_PUSHABLE) || (tmfloorthing->flags2 & MF2_STANDONME)) || tmfloorthing->type == MT_PLAYER || tmfloorthing->type == MT_FLOORSPIKE))
 				mo->momz = 0;
@@ -1110,7 +1116,7 @@ static void P_ZMovement(mobj_t* mo)
 
 		// Less gravity underwater.
 		if(mo->eflags & MF_UNDERWATER)
-			gravityadd /= 3;
+			gravityadd = FixedDiv(gravityadd,3*FRACUNIT);
 
 		if(!mo->momz) // mobj at stop, no floor, so feel the push of gravity!
 			gravityadd <<= 1;
@@ -1242,7 +1248,7 @@ static void P_PlayerZMovement(mobj_t* mo)
 	}
 
 	// adjust height
-	if(mo->pmomz && mo->z != mo->floorz && !mo->player->mfjumped)
+	if(mo->pmomz && mo->z > mo->floorz && !mo->player->mfjumped)
 	{
 		mo->momz += mo->pmomz;
 		mo->pmomz = 0;
@@ -1282,7 +1288,7 @@ static void P_PlayerZMovement(mobj_t* mo)
 				mo->player->deltaviewheight = mo->momz>>3;
 			}
 
-			if((maptol & TOL_ADVENTURE) && mo->momz < -2*FRACUNIT && mo->info->activesound)
+			if((maptol & TOL_ADVENTURE) && mo->momz < -2*FRACUNIT && mo->info->activesound && !tmfloorthing)
 				S_StartSound(mo, mo->info->activesound);
 
 			// set it once and not continuously
@@ -1490,7 +1496,8 @@ nightsdone:
 			if(mariomode)
 				S_StartSound(mo, sfx_mario1);
 
-			mo->momz = 0;
+			if(!(mo->player && mo->player->climbing))
+				mo->momz = 0;
 		}
 
 		mo->z = mo->ceilingz - mo->height;
@@ -1553,7 +1560,7 @@ static void P_SceneryZMovement(mobj_t* mo)
 		case MT_SMALLBUBBLE:
 			if(mo->z <= mo->floorz) // Hit the floor, so POP!
 			{
-				int random;
+				byte random;
 
 				P_SetMobjState(mo, S_DISS);
 
@@ -1750,29 +1757,28 @@ void P_MobjCheckWater(mobj_t* mobj)
 
 		// Check to make sure you didn't just cross into a sector to jump out of
 		// that has shallower water than the block you were originally in.
-		if(mobj->watertop-mobj->floorz <= mobj->info->height/2)
+		if(mobj->watertop-mobj->floorz <= mobj->info->height>>1)
 			return;
 
 		if(wasinwater && mobj->momz > 0)
 		{
-			mobj->momz = (fixed_t)((780*mobj->momz)/457); // Give the mobj a little out-of-water boost.
+			mobj->momz = FixedMul(mobj->momz,(780*FRACUNIT)/457); // Give the mobj a little out-of-water boost.
 			if(mobj->player)
 			{
-				mobj->momz *= mobj->player->jumpfactor;
-				mobj->momz /= 100;
+				mobj->momz = FixedDiv(mobj->momz,(100*FRACUNIT)/mobj->player->jumpfactor);
 			}
 		}
 
 		if(mobj->momz < 0)
 		{
-			if(mobj->z+(mobj->info->height/2)-mobj->momz >= mobj->watertop)
+			if(mobj->z+(mobj->info->height>>1)-mobj->momz >= mobj->watertop)
 			{
 				P_SpawnMobj(mobj->x, mobj->y, mobj->watertop, MT_SPLISH); // Spawn a splash
 			}
 		}
 		else if(mobj->momz > 0)
 		{
-			if(mobj->z+(mobj->info->height/2)-mobj->momz < mobj->watertop)
+			if(mobj->z+(mobj->info->height>>1)-mobj->momz < mobj->watertop)
 			{
 				P_SpawnMobj(mobj->x, mobj->y, mobj->watertop, MT_SPLISH); // Spawn a splash
 			}
@@ -1797,15 +1803,15 @@ void P_MobjCheckWater(mobj_t* mobj)
 			random[5] = P_Random();
 
 			if(random[0] < 32)
-				P_SpawnMobj(mobj->x + (random[1]<<FRACBITS)/8 * (random[2]&1 ? 1 : -1),
-					mobj->y + (random[3]<<FRACBITS)/8 * (random[4]&1 ? 1 : -1),
-					mobj->z + (random[5]<<FRACBITS)/4, MT_MEDIUMBUBBLE)
-					->momz = mobj->momz < 0 ? mobj->momz/16 : 0;
+				P_SpawnMobj(mobj->x + (random[1]<<(FRACBITS-3)) * (random[2]&1 ? 1 : -1),
+					mobj->y + (random[3]<<(FRACBITS-3)) * (random[4]&1 ? 1 : -1),
+					mobj->z + (random[5]<<(FRACBITS-2)), MT_MEDIUMBUBBLE)
+					->momz = mobj->momz < 0 ? mobj->momz>>4 : 0;
 			else
-				P_SpawnMobj(mobj->x + (random[1]<<FRACBITS)/8 * (random[2]&1 ? 1 : -1),
-					mobj->y + (random[3]<<FRACBITS)/8 * (random[4]&1 ? 1 : -1),
-					mobj->z + (random[5]<<FRACBITS)/4, MT_SMALLBUBBLE)
-					->momz = mobj->momz < 0 ? mobj->momz/16 : 0;
+				P_SpawnMobj(mobj->x + (random[1]<<(FRACBITS-3)) * (random[2]&1 ? 1 : -1),
+					mobj->y + (random[3]<<(FRACBITS-3)) * (random[4]&1 ? 1 : -1),
+					mobj->z + (random[5]<<(FRACBITS-2)), MT_SMALLBUBBLE)
+					->momz = mobj->momz < 0 ? mobj->momz>>4 : 0;
 		}
 	}
 }
@@ -1944,6 +1950,14 @@ void P_CameraThinker(camera_t* thiscam)
 	// always do the gravity bit now, that's simpler, BUT CheckPosition only if wasn't do before.
 	if(thiscam->momz)
 	{
+		// Cameras use the heightsec's heights rather then the actual sector heights.
+		// If you can see through it, why not move the camera through it too?
+		if(thiscam->subsector->sector->heightsec >= 0)
+		{
+			thiscam->floorz = sectors[thiscam->subsector->sector->heightsec].floorheight;
+			thiscam->ceilingz = sectors[thiscam->subsector->sector->heightsec].ceilingheight;
+		}
+
 		// Intercept the stupid 'fall through 3dfloors' bug
 		if(thiscam->subsector->sector->ffloors)
 		{
@@ -1953,7 +1967,7 @@ void P_CameraThinker(camera_t* thiscam)
 
 			for(rover = thiscam->subsector->sector->ffloors; rover; rover = rover->next)
 			{
-				if(!(rover->flags & FF_SOLID || rover->flags & FF_QUICKSAND) || !(rover->flags & FF_EXISTS))
+				if(!(rover->flags & FF_SOLID || rover->flags & FF_QUICKSAND) || !(rover->flags & FF_RENDERALL) || !(rover->flags & FF_EXISTS))
 					continue;
 
 				delta1 = thiscam->z - (*rover->bottomheight + ((*rover->topheight - *rover->bottomheight)/2));
@@ -2107,14 +2121,14 @@ static void P_PlayerMobjThinker(mobj_t* mobj)
 						break;
 					}
 				}
-
+/*
 				// Support for bobbing platforms in "old" water
 				if(!roverfound && node->m_sector->heightsec > -1 && node->m_sector->altheightsec == 1)
 				{
 					// Set the watertop and waterbottom
 					watertop = sectors[node->m_sector->heightsec].floorheight;
 					waterbottom = node->m_sector->floorheight;
-				}
+				}*/
 			}
 		}
 		if(watertop)
@@ -2194,12 +2208,17 @@ static void P_PlayerMobjThinker(mobj_t* mobj)
 static void CalculatePrecipFloor(precipmobj_t* mobj)
 {
 	// recalculate floorz each time
-	mobj->floorz = mobj->subsector->sector->floorheight;
-	if(mobj->subsector->sector->ffloors)
+	const sector_t* mobjsecsubsec;
+	if(mobj && mobj->subsector && mobj->subsector->sector)
+		mobjsecsubsec = mobj->subsector->sector;
+	else
+		return;
+	mobj->floorz = mobjsecsubsec->floorheight;
+	if(mobjsecsubsec->ffloors)
 	{
 		ffloor_t* rover;
 
-		for(rover = mobj->subsector->sector->ffloors; rover; rover = rover->next)
+		for(rover = mobjsecsubsec->ffloors; rover; rover = rover->next)
 		{
 			// If it exists, it'll get rained on.
 			if(!(rover->flags & FF_EXISTS))
@@ -2214,19 +2233,23 @@ static void CalculatePrecipFloor(precipmobj_t* mobj)
 void P_RecalcPrecipInSector(sector_t* sector)
 {
 	/// \todo Why doesn't this work?!
-/*	precipmobj_t* precipthing;
+	precipmobj_t* precipthing;
+
+	//if(!sector || !sector->preciplist)
+		return;
 
 	for(precipthing = sector->preciplist; precipthing; precipthing = precipthing->snext)
 	{
 		CalculatePrecipFloor(precipthing);
-	}*/
-	sector = NULL; // warning C4100: 'sector' : unreferenced formal parameter
+	}
 }
 
 void P_SnowThinker(precipmobj_t* mobj)
 {
 	// adjust height
 	mobj->z += mobj->momz;
+
+	//CalculatePrecipFloor(mobj);
 
 	if(mobj->z <= mobj->floorz)
 		mobj->z = mobj->subsector->sector->ceilingheight;
@@ -2238,6 +2261,8 @@ void P_RainThinker(precipmobj_t* mobj)
 {
 	// adjust height
 	mobj->z += mobj->momz;
+
+	//CalculatePrecipFloor(mobj);
 
 	if(mobj->state != &states[S_RAIN1])
 	{
@@ -2405,6 +2430,43 @@ boolean P_SupermanLook4Players(mobj_t* actor)
 	return true;
 }
 
+// AI for a generic boss.
+static void P_GenericBossThinker(mobj_t* mobj)
+{
+	if(mobj->state->nextstate == mobj->info->spawnstate && mobj->tics == 1)
+	{
+		mobj->flags2 &= ~MF2_FRET;
+		mobj->flags &= ~MF_TRANSLATION;
+	}
+
+	if(!mobj->target || !(mobj->target->flags & MF_SHOOTABLE))
+	{
+		if(mobj->health <= 0)
+		{
+			// look for a new target
+			if(P_Look4Players(mobj, true) && mobj->info->mass) // Bid farewell!
+				S_StartSound(mobj, mobj->info->mass);
+			return;
+		}
+
+		// look for a new target
+		if(P_Look4Players(mobj, true) && mobj->info->seesound)
+			S_StartSound(mobj, mobj->info->seesound);
+
+		return;
+	}
+
+	if(mobj->state == &states[mobj->info->spawnstate])
+		A_Boss1Chase(mobj);
+
+	if(mobj->state == &states[mobj->info->meleestate]
+		|| (mobj->state == &states[mobj->info->missilestate]
+		&& mobj->health > mobj->info->damage))
+	{
+		mobj->angle = R_PointToAngle2(mobj->x, mobj->y, mobj->target->x, mobj->target->y);
+	}
+}
+
 // AI for the first boss.
 static void P_Boss1Thinker(mobj_t* mobj)
 {
@@ -2534,73 +2596,64 @@ static void P_Boss2Thinker(mobj_t* mobj)
 
 // Fun function stuff to make NiGHTS hoops!
 // Thanks a TON, Hurdler!
-typedef float TVector[4];
-typedef float TMatrix[4][4];
+typedef fixed_t TVector[4];
+typedef fixed_t TMatrix[4][4];
 
 static TVector* VectorMatrixMultiply(TVector v, TMatrix m)
 {
 	static TVector ret;
 
-	ret[0] = v[0]*m[0][0] + v[1]*m[1][0] + v[2]*m[2][0] + v[3]*m[3][0];
-	ret[1] = v[0]*m[0][1] + v[1]*m[1][1] + v[2]*m[2][1] + v[3]*m[3][1];
-	ret[2] = v[0]*m[0][2] + v[1]*m[1][2] + v[2]*m[2][2] + v[3]*m[3][2];
-	ret[3] = v[0]*m[0][3] + v[1]*m[1][3] + v[2]*m[2][3] + v[3]*m[3][3];
+	ret[0] = FixedMul(v[0],m[0][0]) + FixedMul(v[1],m[1][0]) + FixedMul(v[2],m[2][0]) + FixedMul(v[3],m[3][0]);
+	ret[1] = FixedMul(v[0],m[0][1]) + FixedMul(v[1],m[1][1]) + FixedMul(v[2],m[2][1]) + FixedMul(v[3],m[3][1]);
+	ret[2] = FixedMul(v[0],m[0][2]) + FixedMul(v[1],m[1][2]) + FixedMul(v[2],m[2][2]) + FixedMul(v[3],m[3][2]);
+	ret[3] = FixedMul(v[0],m[0][3]) + FixedMul(v[1],m[1][3]) + FixedMul(v[2],m[2][3]) + FixedMul(v[3],m[3][3]);
 
 	return &ret;
 }
 
 //ok, now, here is how to compute the transformation regarding the tilt:
-static TMatrix* RotateXMatrix(float rad)
+static TMatrix* RotateXMatrix(angle_t rad)
 {
 	static TMatrix ret;
-	float cosrad, sinrad;
-	cosrad = (float)cos(rad);
-	sinrad = (float)sin(rad);
+	const angle_t fa = rad>>ANGLETOFINESHIFT;
+	const fixed_t cosrad = finecosine[fa], sinrad = finesine[fa];
 
-	ret[0][0] = 1; ret[0][1] = 0;         ret[0][2] = 0;        ret[0][3] = 0;
-	ret[1][0] = 0; ret[1][1] = cosrad;    ret[1][2] = sinrad;   ret[1][3] = 0;
-	ret[2][0] = 0; ret[2][1] = -sinrad;   ret[2][2] = cosrad;   ret[2][3] = 0;
-	ret[3][0] = 0; ret[3][1] = 0;         ret[3][2] = 0;        ret[3][3] = 1;
+	ret[0][0] = FRACUNIT; ret[0][1] =       0; ret[0][2] = 0;        ret[0][3] = 0;
+	ret[1][0] =        0; ret[1][1] =  cosrad; ret[1][2] = sinrad;   ret[1][3] = 0;
+	ret[2][0] =        0; ret[2][1] = -sinrad; ret[2][2] = cosrad;   ret[2][3] = 0;
+	ret[3][0] =        0; ret[3][1] =       0; ret[3][2] = 0;        ret[3][3] = FRACUNIT;
 
 	return &ret;
 }
 
 #if 0
-static TMatrix* RotateYMatrix(float rad)
+static TMatrix* RotateYMatrix(angle_t rad)
 {
 	static TMatrix ret;
-	float cosrad, sinrad;
-	cosrad = (float)cos(rad);
-	sinrad = (float)sin(rad);
+	const angle_t fa = rad>>ANGLETOFINESHIFT;
+	const fixed_t cosrad = finecosine[fa], sinrad = finesine[fa];
 
-	ret[0][0] = cosrad;   ret[0][1] = 0; ret[0][2] = -sinrad;   ret[0][3] = 0;
-	ret[1][0] = 0;        ret[1][1] = 1; ret[1][2] = 0;         ret[1][3] = 0;
-	ret[2][0] = sinrad;   ret[2][1] = 0; ret[2][2] = cosrad;    ret[2][3] = 0;
-	ret[3][0] = 0;        ret[3][1] = 0; ret[3][2] = 0;         ret[3][3] = 1;
+	ret[0][0] = cosrad;   ret[0][1] =        0; ret[0][2] = -sinrad;   ret[0][3] = 0;
+	ret[1][0] = 0;        ret[1][1] = FRACUNIT; ret[1][2] = 0;         ret[1][3] = 0;
+	ret[2][0] = sinrad;   ret[2][1] =        0; ret[2][2] = cosrad;    ret[2][3] = 0;
+	ret[3][0] = 0;        ret[3][1] =        0; ret[3][2] = 0;         ret[3][3] = FRACUNIT;
 
 	return &ret;
 }
 #endif
 
-static TMatrix* RotateZMatrix(float rad)
+static TMatrix* RotateZMatrix(angle_t rad)
 {
 	static TMatrix ret;
-	float cosrad, sinrad;
-	cosrad = (float)cos(rad);
-	sinrad = (float)sin(rad);
+	const angle_t fa = rad>>ANGLETOFINESHIFT;
+	const fixed_t cosrad = finecosine[fa], sinrad = finesine[fa];
 
-	ret[0][0] = cosrad;    ret[0][1] = sinrad; ret[0][2] = 0; ret[0][3] = 0;
-	ret[1][0] = -sinrad;   ret[1][1] = cosrad;   ret[1][2] = 0; ret[1][3] = 0;
-	ret[2][0] = 0;         ret[2][1] = 0;        ret[2][2] = 1; ret[2][3] = 0;
-	ret[3][0] = 0;         ret[3][1] = 0;        ret[3][2] = 0; ret[3][3] = 1;
+	ret[0][0] = cosrad;    ret[0][1] = sinrad;   ret[0][2] =        0; ret[0][3] = 0;
+	ret[1][0] = -sinrad;   ret[1][1] = cosrad;   ret[1][2] =        0; ret[1][3] = 0;
+	ret[2][0] = 0;         ret[2][1] = 0;        ret[2][2] = FRACUNIT; ret[2][3] = 0;
+	ret[3][0] = 0;         ret[3][1] = 0;        ret[3][2] =        0; ret[3][3] = FRACUNIT;
 
 	return &ret;
-}
-
-static fixed_t double2fixed(double t)
-{
-	double fl = floor(t);
-	return ((int)fl << 16) | (int)((t-fl)*65536.0);
 }
 
 //
@@ -2655,25 +2708,16 @@ mobj_t* P_GetClosestAxis(mobj_t* source)
 
 static void P_GimmeAxisXYPos(mobj_t* closestaxis, degenmobj_t* mobj)
 {
-	double angle_pos;
+	const angle_t fa = R_PointToAngle2(closestaxis->x, closestaxis->y, mobj->x, mobj->y)>>ANGLETOFINESHIFT;
 
-	angle_pos = atan2((double)(mobj->y - closestaxis->y), (double)(mobj->x - closestaxis->x))/deg2rad;
-
-	if(angle_pos < 0.0)
-	{
-		angle_pos += 360.0;
-	}
-	else if(angle_pos >= 360.0)
-	{
-		angle_pos -= 360.0;
-	}
-
-	mobj->x = (fixed_t)(closestaxis->x + cos(angle_pos * deg2rad) * closestaxis->info->radius);
-	mobj->y = (fixed_t)(closestaxis->y + sin(angle_pos * deg2rad) * closestaxis->info->radius);
+	mobj->x = closestaxis->x + FixedMul(finecosine[fa],closestaxis->info->radius);
+	mobj->y = closestaxis->y + FixedMul(finesine[fa],closestaxis->info->radius);
 }
 
 static void P_MoveHoop(mobj_t* mobj)
 {
+	const fixed_t fuse = (mobj->fuse*8*FRACUNIT);
+	const angle_t fa = mobj->movedir*(FINEANGLES/32);
 	TVector v;
 	TVector* res;
 	fixed_t finalx, finaly, finalz;
@@ -2684,19 +2728,19 @@ static void P_MoveHoop(mobj_t* mobj)
 	mthingz = mobj->target->z+mobj->target->height/2;
 
 	// Make the sprite travel towards the center of the hoop
-	v[0] = (float)(cos(mobj->movedir*11.25*deg2rad) * (mobj->fuse * 8));
+	v[0] = FixedMul(finecosine[fa],fuse);
 	v[1] = 0;
-	v[2] = (float)(sin(mobj->movedir*11.25*deg2rad) * (mobj->fuse * 8));
-	v[3] = 1;
+	v[2] = FixedMul(finesine[fa],fuse);
+	v[3] = FRACUNIT;
 
-	res = VectorMatrixMultiply(v, *RotateXMatrix((float)(mobj->target->movedir*deg2rad)));
+	res = VectorMatrixMultiply(v, *RotateXMatrix(mobj->target->movedir*ANGLE_1));
 	memcpy(&v, res, sizeof(v));
-	res = VectorMatrixMultiply(v, *RotateZMatrix((float)(mobj->target->movecount*deg2rad)));
+	res = VectorMatrixMultiply(v, *RotateZMatrix(mobj->target->movecount*ANGLE_1));
 	memcpy(&v, res, sizeof(v));
 
-	finalx = mthingx + double2fixed(v[0]);
-	finaly = mthingy + double2fixed(v[1]);
-	finalz = mthingz + double2fixed(v[2]);
+	finalx = mthingx + v[0];
+	finaly = mthingy + v[1];
+	finalz = mthingz + v[2];
 
 	P_UnsetThingPosition(mobj);
 	mobj->x = finalx;
@@ -2705,24 +2749,23 @@ static void P_MoveHoop(mobj_t* mobj)
 	mobj->z = finalz - mobj->height/2;
 }
 
-void P_SpawnHoopOfSomething(fixed_t x, fixed_t y, fixed_t z, fixed_t radius, int number, mobjtype_t type, int rotangle)
+void P_SpawnHoopOfSomething(fixed_t x, fixed_t y, fixed_t z, fixed_t radius, int number, mobjtype_t type, angle_t rotangle)
 {
 	mobj_t* mobj;
 	int i;
 	TVector v;
 	TVector* res;
 	fixed_t finalx, finaly, finalz;
-	degenmobj_t hoopcenter;
+	mobj_t hoopcenter;
 	mobj_t* axis;
-	short closestangle;
 	degenmobj_t xypos;
-	double degrees;
+	angle_t degrees, fa, closestangle;
 
 	hoopcenter.x = x;
 	hoopcenter.y = y;
 	hoopcenter.z = z;
 
-	axis = P_GetClosestAxis((mobj_t*)&hoopcenter);
+	axis = P_GetClosestAxis(&hoopcenter);
 
 	if(!axis)
 	{
@@ -2743,51 +2786,51 @@ void P_SpawnHoopOfSomething(fixed_t x, fixed_t y, fixed_t z, fixed_t radius, int
 	hoopcenter.x = x;
 	hoopcenter.y = y;
 
-	closestangle = (short)(R_PointToAngle2(x, y, axis->x, axis->y)/ANGLE_1);
+	closestangle = R_PointToAngle2(x, y, axis->x, axis->y);
 
-	degrees = 360.0/number;
+	degrees = FINEANGLES/number;
 
 	radius >>= FRACBITS;
 
 	// Create the hoop!
 	for(i = 0; i < number; i++)
 	{
-		v[0] = (float)(cos(i*(degrees)*deg2rad) * radius);
+		fa = (i*degrees);
+		v[0] = FixedMul(finecosine[fa],radius);
 		v[1] = 0;
-		v[2] = (float)(sin(i*(degrees)*deg2rad) * radius);
-		v[3] = 1;
+		v[2] = FixedMul(finesine[fa],radius);
+		v[3] = FRACUNIT;
 
-		res = VectorMatrixMultiply(v, *RotateXMatrix((float)(rotangle*deg2rad)));
+		res = VectorMatrixMultiply(v, *RotateXMatrix(rotangle));
 		memcpy(&v, res, sizeof(v));
-		res = VectorMatrixMultiply(v, *RotateZMatrix((float)(closestangle*deg2rad)));
+		res = VectorMatrixMultiply(v, *RotateZMatrix(closestangle));
 		memcpy(&v, res, sizeof(v));
 
-		finalx = x + double2fixed(v[0]);
-		finaly = y + double2fixed(v[1]);
-		finalz = z + double2fixed(v[2]);
+		finalx = x + v[0];
+		finaly = y + v[1];
+		finalz = z + v[2];
 
 		mobj = P_SpawnMobj(finalx, finaly, finalz, type);
 		mobj->z -= mobj->height/2;
 	}
 }
-void P_SpawnParaloop(fixed_t x, fixed_t y, fixed_t z, fixed_t radius, int number, mobjtype_t type, int rotangle)
+void P_SpawnParaloop(fixed_t x, fixed_t y, fixed_t z, fixed_t radius, int number, mobjtype_t type, angle_t rotangle)
 {
 	mobj_t* mobj;
 	int i;
 	TVector v;
 	TVector* res;
 	fixed_t finalx, finaly, finalz, dist;
-	degenmobj_t hoopcenter;
+	mobj_t hoopcenter;
 	mobj_t* axis;
-	short closestangle;
 	degenmobj_t xypos;
-	double degrees;
+	angle_t degrees, fa, closestangle;
 
 	hoopcenter.x = x;
 	hoopcenter.y = y;
 	hoopcenter.z = z;
 
-	axis = P_GetClosestAxis((mobj_t*)&hoopcenter);
+	axis = P_GetClosestAxis(&hoopcenter);
 
 	if(!axis)
 	{
@@ -2808,32 +2851,32 @@ void P_SpawnParaloop(fixed_t x, fixed_t y, fixed_t z, fixed_t radius, int number
 	hoopcenter.x = x;
 	hoopcenter.y = y;
 
-	closestangle = (short)(R_PointToAngle2(x, y, axis->x, axis->y)/ANGLE_1);
+	closestangle = R_PointToAngle2(x, y, axis->x, axis->y);
 
-	degrees = 360.0/number;
+	degrees = FINEANGLES/number;
 
-	radius >>= FRACBITS;
-	radius = (fixed_t)(0.8f*radius);
+	radius = FixedDiv(radius,5*(FRACUNIT/4));
 
 	// Create the hoop!
 	for(i = 0; i < number; i++)
 	{
-		v[0] = (float)(cos(i*(degrees)*deg2rad) * radius);
+		fa = (i*degrees);
+		v[0] = FixedMul(finecosine[fa],radius);
 		v[1] = 0;
-		v[2] = (float)(sin(i*(degrees)*deg2rad) * radius);
-		v[3] = 1;
+		v[2] = FixedMul(finesine[fa],radius);
+		v[3] = FRACUNIT;
 
-		res = VectorMatrixMultiply(v, *RotateXMatrix((float)(rotangle*deg2rad)));
+		res = VectorMatrixMultiply(v, *RotateXMatrix(rotangle));
 		memcpy(&v, res, sizeof(v));
-		res = VectorMatrixMultiply(v, *RotateZMatrix((float)(closestangle*deg2rad)));
+		res = VectorMatrixMultiply(v, *RotateZMatrix(closestangle));
 		memcpy(&v, res, sizeof(v));
 
-		finalx = x + double2fixed(v[0]);
-		finaly = y + double2fixed(v[1]);
-		finalz = z + double2fixed(v[2]);
+		finalx = x + v[0];
+		finaly = y + v[1];
+		finalz = z + v[2];
 
 		mobj = P_SpawnMobj(finalx, finaly, finalz, type);
-		mobj->z -= mobj->height/2;
+		mobj->z -= mobj->height>>1;
 
 		// change angle
 		mobj->angle = R_PointToAngle2(mobj->x, mobj->y, x, y);
@@ -2847,7 +2890,7 @@ void P_SpawnParaloop(fixed_t x, fixed_t y, fixed_t z, fixed_t radius, int number
 		mobj->momx = FixedMul(FixedDiv(x - mobj->x, dist), 5*FRACUNIT);
 		mobj->momy = FixedMul(FixedDiv(y - mobj->y, dist), 5*FRACUNIT);
 		mobj->momz = FixedMul(FixedDiv(z - mobj->z, dist), 5*FRACUNIT);
-		mobj->fuse = radius/4 + 1;
+		mobj->fuse = (radius>>(FRACBITS+2)) + 1;
 
 		if(mobj->fuse <= 1)
 			mobj->fuse = 2;
@@ -3003,7 +3046,7 @@ static void P_KoopaThinker(mobj_t* koopa)
 	if(P_Random() < 4)
 	{
 		mobj_t* flame;
-		flame = P_SpawnMobj(koopa->x - koopa->radius + 5*FRACUNIT, koopa->y, koopa->z + (P_Random() >> FRACBITS)/4, MT_KOOPAFLAME);
+		flame = P_SpawnMobj(koopa->x - koopa->radius + 5*FRACUNIT, koopa->y, koopa->z + (P_Random()<<(FRACBITS-2)), MT_KOOPAFLAME);
 		if(!flame)
 			return;
 		flame->momx = -flame->info->speed;
@@ -3025,7 +3068,7 @@ static void P_KoopaThinker(mobj_t* koopa)
 //
 void P_MobjThinker(mobj_t* mobj)
 {
-	if(mobj->flags2 & MF2_NOTHINK)
+	if(mobj->flags & MF_NOTHINK)
 		return;
 
 	// Special thinker for scenery objects
@@ -3052,7 +3095,7 @@ void P_MobjThinker(mobj_t* mobj)
 				P_SceneryCheckWater(mobj);
 				if(!(mobj->eflags & MF_UNDERWATER) || mobj->z + mobj->height >= mobj->ceilingz)
 				{
-					int random;
+					byte random;
 
 					P_SetMobjState(mobj, S_DISS);
 
@@ -3114,6 +3157,41 @@ void P_MobjThinker(mobj_t* mobj)
 	{
 		P_MobjCheckWater(mobj);
 		P_PushableThinker(mobj);
+	}
+	else if(mobj->flags & MF_BOSS)
+	{
+		switch(mobj->type)
+		{
+			case MT_EGGMOBILE:
+				if(mobj->health < mobj->info->damage+1 && leveltime & 1 && mobj->health > 0)
+					P_SpawnMobj(mobj->x, mobj->y, mobj->z, MT_SMOK);
+				if(mobj->flags2 & MF2_SKULLFLY)
+				{
+					mobj_t* spawnmobj;
+					spawnmobj = P_SpawnMobj(mobj->x, mobj->y, mobj->z, mobj->info->painchance);
+					spawnmobj->flags = (spawnmobj->flags & ~MF_TRANSLATION) | (1<<MF_TRANSSHIFT);
+				}
+				P_Boss1Thinker(mobj);
+				if(mobj->flags2 & MF2_BOSSFLEE)
+					P_InstaThrust(mobj, mobj->angle, 12*FRACUNIT);
+				break;
+			case MT_EGGMOBILE2:
+				P_Boss2Thinker(mobj);
+				if(mobj->flags2 & MF2_BOSSFLEE)
+					P_InstaThrust(mobj, mobj->angle, 12*FRACUNIT);
+				break;
+			default: // Generic SOC-made boss
+				if(mobj->flags2 & MF2_SKULLFLY)
+				{
+					mobj_t* spawnmobj;
+					spawnmobj = P_SpawnMobj(mobj->x, mobj->y, mobj->z, mobj->info->painchance);
+					spawnmobj->flags = (spawnmobj->flags & ~MF_TRANSLATION) | (1<<MF_TRANSSHIFT);
+				}
+				P_GenericBossThinker(mobj);
+				if(mobj->flags2 & MF2_BOSSFLEE)
+					P_InstaThrust(mobj, mobj->angle, 12*FRACUNIT);
+				break;
+		}
 	}
 	else switch(mobj->type)
 	{
@@ -3190,9 +3268,6 @@ void P_MobjThinker(mobj_t* mobj)
 				mobj->health = 0;
 				P_SetMobjState(mobj, S_DISS);
 			}
-			break;
-		case MT_SPINFIRE:
-			mobj->z = mobj->floorz+1;
 			break;
 		case MT_EGGCAPSULE:
 		case MT_HAMMER:
@@ -3296,7 +3371,7 @@ void P_MobjThinker(mobj_t* mobj)
 		case MT_NIGHTSDRONE:
 			if(mobj->tracer && mobj->tracer->player && !mobj->tracer->player->nightsmode)
 				mobj->flags2 &= ~MF2_DONTDRAW;
-			mobj->angle += ANGLE_1*10;
+			mobj->angle += ANGLE_10;
 			if(mobj->z <= mobj->floorz)
 				mobj->momz = 5*FRACUNIT;
 			break;
@@ -3309,29 +3384,12 @@ void P_MobjThinker(mobj_t* mobj)
 			P_MobjCheckWater(mobj);
 			if(mobj->eflags & MF_UNDERWATER)
 			{
+				fixed_t hz = mobj->z + (4*mobj->height)/5;
 				if(!(P_Random() % 16))
-					P_SpawnMobj(mobj->x, mobj->y, mobj->z + (fixed_t)(mobj->height / 1.25f), MT_SMALLBUBBLE);
+					P_SpawnMobj(mobj->x, mobj->y, hz, MT_SMALLBUBBLE);
 				else if(!(P_Random() % 96))
-					P_SpawnMobj(mobj->x, mobj->y, mobj->z + (fixed_t)(mobj->height / 1.25f), MT_MEDIUMBUBBLE);
+					P_SpawnMobj(mobj->x, mobj->y, hz, MT_MEDIUMBUBBLE);
 			}
-			break;
-		case MT_EGGMOBILE:
-			if(mobj->health < mobj->info->damage+1 && leveltime & 1 && mobj->health > 0)
-				P_SpawnMobj(mobj->x, mobj->y, mobj->z, MT_SMOK);
-			if(mobj->flags2 & MF2_SKULLFLY)
-			{
-				mobj_t* spawnmobj;
-				spawnmobj = P_SpawnMobj(mobj->x, mobj->y, mobj->z, mobj->info->painchance);
-				spawnmobj->flags = (spawnmobj->flags & ~MF_TRANSLATION) | (1<<MF_TRANSSHIFT);
-			}
-			P_Boss1Thinker(mobj);
-			if(mobj->flags2 & MF2_BOSSFLEE)
-				P_InstaThrust(mobj, mobj->angle, 12*FRACUNIT);
-			break;
-		case MT_EGGMOBILE2:
-			P_Boss2Thinker(mobj);
-			if(mobj->flags2 & MF2_BOSSFLEE)
-				P_InstaThrust(mobj, mobj->angle, 12*FRACUNIT);
 			break;
 		case MT_SKIM:
 			// check mobj against possible water content, before movement code
@@ -3385,9 +3443,17 @@ void P_MobjThinker(mobj_t* mobj)
 				mobj->flags2 &= ~MF2_FIRING;
 			}
 			break;
+		case MT_SPINFIRE:
+			mobj->z = mobj->floorz+1;
+			// THERE IS NO BREAK HERE ON PURPOSE
 		default:
 			// check mobj against possible water content, before movement code
 			P_MobjCheckWater(mobj);
+
+			// Extinguish fire objects in water
+			if((mobj->flags & MF_FIRE)
+				&& ((mobj->eflags & MF_UNDERWATER) || (mobj->eflags & MF_TOUCHWATER)))
+				P_SetMobjState(mobj, S_DISS);
 			break;
 	}
 
@@ -3430,7 +3496,7 @@ void P_MobjThinker(mobj_t* mobj)
 
 			switch(mobj->type)
 			{
-				int random;
+				byte random;
 
 				// gargoyle and snowman handled in P_PushableThinker, not here
 				case MT_BLUEFLAG:
@@ -3586,7 +3652,7 @@ void P_MobjThinker(mobj_t* mobj)
 				case MT_EGGTRAP: // Egg Capsule animal release
 				{
 					int i,j;
-					fixed_t x, y, z;
+					fixed_t x, y, z, ns;
 					mobj_t* mo2;
 
 					z = mobj->subsector->sector->floorheight + 64*FRACUNIT;
@@ -3594,12 +3660,15 @@ void P_MobjThinker(mobj_t* mobj)
 					{
 						for(i = 0; i < 32; i++)
 						{
-							x = (fixed_t)(mobj->x + sin(i*22.5) * 64 * FRACUNIT);
-							y = (fixed_t)(mobj->y + cos(i*22.5) * 64 * FRACUNIT);
+							const angle_t fa = (i*FINEANGLES/16) & FINEMASK;
+							ns = 64 * FRACUNIT;
+							x = mobj->x + FixedMul(finesine[fa],ns);
+ 							y = mobj->y + FixedMul(finecosine[fa],ns);
 
 							mo2 = P_SpawnMobj(x, y, z, MT_EXPLODE);
-							mo2->momx = (fixed_t)(sin(i*22.5) * 4 * FRACUNIT);
-							mo2->momy = (fixed_t)(cos(i*22.5) * 4 * FRACUNIT);
+							ns = 4 * FRACUNIT;
+							mo2->momx = FixedMul(finesine[fa],ns);
+							mo2->momy = FixedMul(finecosine[fa],ns);
 
 							if(i&1)
 							{
@@ -3615,7 +3684,7 @@ void P_MobjThinker(mobj_t* mobj)
 					}
 					// Mark all players with the time to exit thingy!
 					for(i = 0; i < MAXPLAYERS; i++)
-						players[i].exiting = (int)(2.8f*TICRATE + 1);
+						players[i].exiting = (14*TICRATE)/5 + 1;
 				}
 				break;
 				case MT_CHAOSSPAWNER: // Chaos Mode spawner thingy
@@ -3865,9 +3934,37 @@ void P_PushableThinker(mobj_t* mobj)
 
 	if(mobj->fuse == 1) // it would explode in the MobjThinker code
 	{
+		mobj_t* spawnmo;
+		fixed_t x, y, z;
+		subsector_t* ss;
+
 		// Left here just in case we'd
 		// want to make pushable bombs
 		// or something in the future.
+		switch(mobj->type)
+		{
+			case MT_SNOWMAN:
+			case MT_GARGOYLE:
+				x = mobj->spawnpoint->x << FRACBITS;
+				y = mobj->spawnpoint->y << FRACBITS;
+
+				ss = R_PointInSubsector(x, y);
+
+				if(mobj->spawnpoint->z != 0)
+					z = mobj->spawnpoint->z << FRACBITS;
+				else
+					z = ss->sector->floorheight;
+
+				spawnmo = P_SpawnMobj(x, y, z, mobj->type);
+				spawnmo->spawnpoint = mobj->spawnpoint;
+				P_SetMobjState(mobj, S_DISS);
+				spawnmo->flags = mobj->flags;
+				spawnmo->flags2 = mobj->flags2;
+				spawnmo->flags |= MF_PUSHABLE;
+				break;
+			default:
+				break;
+		}
 	}
 }
 
@@ -3957,7 +4054,6 @@ mobj_t* P_SpawnMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
 			mobj_t* mo2;
 			mobj_t* closestaxis = NULL;
 			unsigned short first = 0;
-			double angle_pos;
 
 			// scan the thinkers to find the closest axis point
 			for(th = thinkercap.next; th != &thinkercap; th = th->next)
@@ -4002,14 +4098,10 @@ mobj_t* P_SpawnMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
 
 			if(closestaxis)
 			{
-				angle_pos = atan2((mobj->y - closestaxis->y), (mobj->x - closestaxis->x))/deg2rad;
-				if(angle_pos < 0.0)
-					angle_pos += 360.0;
-				else if(angle_pos >= 360.0)
-					angle_pos -= 360.0;
+				const angle_t fa = R_PointToAngle2(closestaxis->x, closestaxis->y, mobj->x, mobj->y)>>ANGLETOFINESHIFT;
 
-				mobj->x = (fixed_t)(closestaxis->x + cos(angle_pos * deg2rad) * closestaxis->info->radius);
-				mobj->y = (fixed_t)(closestaxis->y + sin(angle_pos * deg2rad) * closestaxis->info->radius);
+				mobj->x = closestaxis->x + FixedMul(finecosine[fa],closestaxis->info->radius);
+				mobj->y = closestaxis->y + FixedMul(finesine[fa],closestaxis->info->radius);
 				mobj->angle = R_PointToAngle2(mobj->x, mobj->y, closestaxis->x, closestaxis->y);
 			}
 		}
@@ -4075,6 +4167,11 @@ mobj_t* P_SpawnMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
 	// Fuse for bunnies, squirrels, and flingrings
 	if(mobj->type == MT_BIRD || mobj->type == MT_SQRL || mobj->type == MT_MOUSE)
 		mobj->fuse = 300 + (P_Random() % 50);
+
+	if(maptol & TOL_ADVENTURE && mobj->flags & MF_MONITOR)
+	{
+		mobj->flags &= ~MF_SOLID;
+	}
 
 	return mobj;
 }
@@ -4250,22 +4347,35 @@ consvar_t cv_itemrespawn = {"respawnitem", "Off", CV_NETVAR|CV_CALL, CV_OnOff, R
 consvar_t cv_flagtime = {"flagtime", "30", CV_NETVAR, CV_Unsigned, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_suddendeath = {"suddendeath", "Off", CV_NETVAR, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
+static inline fixed_t P_Rand(void)
+{
+//#if RANDMAX > FRACUNIT/2
+	const unsigned d = (unsigned)rand()*FRACUNIT;
+	const fixed_t t = (fixed_t)(d/RAND_MAX); //RAND_MAX is 2147483647 under linux, eeeee.... vs 0x7FFF(32767) in Window's rand()
+//#else
+//	const fixed_t d = rand()*FRACUNIT;
+//	const fixed_t t = FixedDiv(d,RAND_MAX*FRACUNIT);
+//#endif
+	return (t-FRACUNIT/2)<<FRACBITS;
+}
+
 void P_SpawnPrecipitation(void)
 {
+	const int preloop = 1048576;
 	int i;
 	fixed_t x, y, height;
 
 	if(cv_snow.value)
 	{
-		int z;
+		const int snowloop = preloop / cv_numsnow.value;
+		byte z = 0;
 		subsector_t* snowsector;
-		z = 0;
 
-		for(i = 0; i < 1048576 / cv_numsnow.value; i++)
+		for(i = 0; i < snowloop; i++)
 		{
-			x = ((rand() * (65536 / (int)RAND_MAX)) - 32768) << FRACBITS;
-			y = ((rand() * (65536 / (int)RAND_MAX)) - 32768) << FRACBITS;
-			height = ((rand() * (65536 / (int)RAND_MAX)) - 32768) << FRACBITS;
+			x = P_Rand();
+			y = P_Rand();
+			height = P_Rand();
 
 			snowsector = R_IsPointInSubsector(x, y);
 
@@ -4279,9 +4389,9 @@ void P_SpawnPrecipitation(void)
 				{
 					while(height < snowsector->sector->floorheight ||
 						height >= snowsector->sector->ceilingheight)
-						height = ((rand() * (65536 / (int)RAND_MAX)) - 32768) << FRACBITS;
+						height = P_Rand();
 
-					z = rand() % 256; //P_Random();
+					z = M_Random(); //P_Random();
 					if(z < 64)
 						P_SetPrecipMobjState(P_SpawnSnowMobj(x, y, height, MT_SNOWFLAKE), S_SNOW3);
 					else if(z < 144)
@@ -4298,9 +4408,9 @@ void P_SpawnPrecipitation(void)
 				{
 					while(height < snowsector->sector->floorheight ||
 						height >= snowsector->sector->ceilingheight)
-						height = ((rand() * (65536 / (int)RAND_MAX)) - 32768) << FRACBITS;
+						height = P_Rand();
 
-					z = rand() % 256;
+					z = M_Random();
 					if(z < 64)
 						P_SetPrecipMobjState(P_SpawnSnowMobj(x, y, height, MT_SNOWFLAKE), S_SNOW3);
 					else if(z < 144)
@@ -4313,14 +4423,14 @@ void P_SpawnPrecipitation(void)
 	}
 	else if(cv_storm.value || cv_rain.value)
 	{
-
+		const int rainloop = preloop / cv_raindensity.value;
 		subsector_t* rainsector;
 
-		for(i = 0; i < 1048576 / cv_raindensity.value; i++)
+		for(i = 0; i < rainloop; i++)
 		{
-			x = ((rand() * (65536 / (int)RAND_MAX)) - 32768) << FRACBITS;
-			y = ((rand() * (65536 / (int)RAND_MAX)) - 32768) << FRACBITS;
-			height = ((rand() * (65536 / (int)RAND_MAX)) - 32768) << FRACBITS;
+			x = P_Rand();
+			y = P_Rand();
+			height = P_Rand();
 
 			rainsector = R_IsPointInSubsector(x, y);
 
@@ -4329,9 +4439,9 @@ void P_SpawnPrecipitation(void)
 
 			if(rainsector->sector->ceilingpic == skyflatnum && rainsector->sector->floorheight < rainsector->sector->ceilingheight)
 			{
-				while(!(height < rainsector->sector->ceilingheight &&
-					height > rainsector->sector->floorheight))
-					height = ((rand() * (65536 / (int)RAND_MAX)) - 32768) << FRACBITS;
+				while(height < rainsector->sector->floorheight ||
+					height >= rainsector->sector->ceilingheight)
+					height = P_Rand();
 
 				P_SpawnRainMobj(x, y, height, MT_RAIN);
 			}
@@ -4354,9 +4464,10 @@ void P_RespawnSpecials(void)
 	{
 		int volume;
 
-		volume = 255;
-
-		if(players[displayplayer].mo->subsector->sector->ceilingpic == skyflatnum);
+		if(players[displayplayer].mo->subsector->sector->ceilingpic == skyflatnum)
+			volume = 255;
+		else if(nosound || sound_disabled)
+			volume = 0;
 		else
 		{
 			fixed_t x, y, yl, yh, xl, xh;
@@ -4386,7 +4497,7 @@ void P_RespawnSpecials(void)
 						}
 					}
 				}
-			volume = 255 - (closedist>>FRACBITS)/4;
+			volume = 255 - (closedist>>(FRACBITS+2));
 		}
 		if(volume < 0)
 			volume = 0;
@@ -4400,15 +4511,14 @@ void P_RespawnSpecials(void)
 		{
 			if(netgame ? (P_Random() < 2) : (M_Random() < 2))
 			{
-				sector_t* ss;
+				sector_t* ss = sectors;
 				int i;
-				ss = sectors;
 
-				for(i = 0; i < numsectors; i++, ss++)
+				for(i = 0; i <= numsectors; i++, ss++)
 					if(ss->ceilingpic == skyflatnum) // Only for the sky.
 						P_SpawnLightningFlash(ss); // Spawn a quick flash thinker
 
-				i = rand() % 256; // This doesn't need to use P_Random().
+				i = M_Random(); // This doesn't need to use P_Random().
 
 				if(i < 128 && leveltime & 1)
 					S_StartSoundAtVolume(players[displayplayer].mo, sfx_litng1, volume);
@@ -4421,9 +4531,9 @@ void P_RespawnSpecials(void)
 			}
 			else if(leveltime & 1)
 			{
-				int random;
+				byte random;
 
-				random = rand() % 256; // This doesn't need to use P_Random().
+				random = M_Random(); // This doesn't need to use P_Random().
 
 				if(random > 253)
 				{
@@ -4491,6 +4601,7 @@ void P_SpawnPlayer(mapthing_t* mthing, int playernum)
 	player_t* p;
 	fixed_t x, y, z;
 	mobj_t* mobj;
+	int i;
 
 	// not playing?
 	if(!playeringame[playernum])
@@ -4527,6 +4638,10 @@ void P_SpawnPlayer(mapthing_t* mthing, int playernum)
 	// set 'spritedef' override in mobj for player skins.. (see ProjectSprite)
 	// (usefulness: when body mobj is detached from player (who respawns),
 	// the dead body mobj retains the skin through the 'spritedef' override).
+	if(atoi(skins[p->skin].highres))
+		mobj->flags |= MF_HIRES;
+	else
+		mobj->flags &= ~MF_HIRES;
 	mobj->skin = &skins[p->skin];
 
 	mobj->angle = ANGLE_1*mthing->angle;
@@ -4543,6 +4658,19 @@ void P_SpawnPlayer(mapthing_t* mthing, int playernum)
 	p->bonuscount = 0;
 	p->viewheight = cv_viewheight.value<<FRACBITS;
 	p->viewz = p->mo->z + p->viewheight;
+
+	if(server && (p == &players[consoleplayer]))
+	{
+		p->bonustime = 0;
+	}
+	else
+	{
+		for(i=0; i<MAXPLAYERS; i++)
+		{
+			if(players[i].bonustime)
+				p->bonustime = 1;
+		}
+	}
 
 	if(playernum == consoleplayer)
 	{
@@ -4615,6 +4743,10 @@ void P_SpawnStarpostPlayer(mobj_t* mobj, int playernum)
 	// set 'spritedef' override in mobjy for player skins.. (see ProjectSprite)
 	// (usefulness : when body mobjy is detached from player (who respawns),
 	// the dead body mobj retains the skin through the 'spritedef' override).
+	if(atoi(skins[p->skin].highres))
+		mobj->flags |= MF_HIRES;
+	else
+		mobj->flags &= ~MF_HIRES;
 	mobj->skin = &skins[p->skin];
 
 	mobj->angle = angle;
@@ -4668,7 +4800,7 @@ int numhuntemeralds[3];
 //
 void P_SpawnMapThing(mapthing_t* mthing)
 {
-	int i, bit;
+	mobjtype_t i;
 	mobj_t* mobj;
 	fixed_t x, y, z;
 	subsector_t* ss;
@@ -4742,12 +4874,13 @@ void P_SpawnMapThing(mapthing_t* mthing)
 		&& mthing->type != 45 && mthing->type != 46 && mthing->type != 55
 		&& mthing->type != 82 && mthing->type != 85 && mthing->type != 3006)
 	{
+		unsigned int bit;
 		if(gameskill == sk_baby)
 			bit = 1;
 		else if(gameskill >= sk_nightmare)
 			bit = 4;
 		else
-			bit = 1<<(gameskill-1);
+			bit = 1<<((byte)gameskill-1);
 
 		if(!(mthing->options & bit))
 			return;
@@ -4802,18 +4935,33 @@ void P_SpawnMapThing(mapthing_t* mthing)
 	}
 	else if(i == MT_EMERHUNT)
 	{
+		subsector_t* ss;
+
+		ss = R_PointInSubsector(mthing->x << FRACBITS, mthing->y << FRACBITS);
+		mthing->z = (short)((ss->sector->floorheight>>FRACBITS) + (mthing->options >> 4));
+
 		if(numhuntemeralds[0] < MAXHUNTEMERALDS)
 			huntemeralds[0][numhuntemeralds[0]++] = mthing;
 		return;
 	}
 	else if(i == MT_EMESHUNT)
 	{
+		subsector_t* ss;
+
+		ss = R_PointInSubsector(mthing->x << FRACBITS, mthing->y << FRACBITS);
+		mthing->z = (short)((ss->sector->floorheight>>FRACBITS) + (mthing->options >> 4));
+
 		if(numhuntemeralds[1] < MAXHUNTEMERALDS)
 			huntemeralds[1][numhuntemeralds[1]++] = mthing;
 		return;
 	}
 	else if(i == MT_EMETHUNT)
 	{
+		subsector_t* ss;
+
+		ss = R_PointInSubsector(mthing->x << FRACBITS, mthing->y << FRACBITS);
+		mthing->z = (short)((ss->sector->floorheight>>FRACBITS) + (mthing->options >> 4));
+
 		if(numhuntemeralds[2] < MAXHUNTEMERALDS)
 			huntemeralds[2][numhuntemeralds[2]++] = mthing;
 		return;
@@ -4977,19 +5125,13 @@ void P_SpawnMapThing(mapthing_t* mthing)
 	mobj = P_SpawnMobj(x, y, z, i);
 	mobj->spawnpoint = mthing;
 
-	if(maptol & TOL_ADVENTURE && mobj->flags & MF_MONITOR)
-	{
-		mobj->flags |= MF_SPECIAL;
-		mobj->flags &= ~MF_SOLID;
-	}
-
 	if(mobj->type == MT_FAN)
 	{
 		if(mthing->angle)
 			mobj->health = mthing->angle;
 		else
 		{
-			mobj->health = (int)(ss->sector->ceilingheight - .25f*(ss->sector->ceilingheight - ss->sector->floorheight));
+			mobj->health = ss->sector->ceilingheight - (ss->sector->ceilingheight - ss->sector->floorheight)/4;
 			mobj->health -= ss->sector->floorheight;
 			mobj->health >>= FRACBITS;
 		}
@@ -5139,7 +5281,7 @@ void P_SpawnHoopsAndRings(mapthing_t* mthing)
 		mobj_t* hoopcenter;
 		mobj_t* nextmobj = NULL;
 		mobj_t* axis = NULL;
-		short closestangle;
+		angle_t closestangle, fa;
 		fixed_t mthingx, mthingy, mthingz;
 		degenmobj_t xypos;
 
@@ -5150,7 +5292,7 @@ void P_SpawnHoopsAndRings(mapthing_t* mthing)
 
 		hoopcenter = P_SpawnMobj(mthingx, mthingy, mthingz, MT_HOOPCENTER);
 
-		hoopcenter->flags2 |= MF2_NOTHINK;
+		hoopcenter->flags |= MF_NOTHINK;
 
 		axis = P_GetClosestAxis(hoopcenter);
 
@@ -5177,27 +5319,28 @@ void P_SpawnHoopsAndRings(mapthing_t* mthing)
 		hoopcenter->y = mthingy;
 		P_SetThingPosition(hoopcenter);
 
-		closestangle = (short)(R_PointToAngle2(mthingx, mthingy, axis->x, axis->y)/ANGLE_1);
+		closestangle = R_PointToAngle2(mthingx, mthingy, axis->x, axis->y);
 
 		hoopcenter->movedir = mthing->angle;
-		hoopcenter->movecount = closestangle;
+		hoopcenter->movecount = closestangle/ANGLE_1;
 
 		// Create the hoop!
 		for(i = 0; i < 32; i++)
 		{
-			v[0] = (float)(cos(i*11.25*deg2rad) * 96.0f);
+			fa = i*(FINEANGLES/32);
+			v[0] = FixedMul(finecosine[fa],96*FRACUNIT);
 			v[1] = 0;
-			v[2] = (float)(sin(i*11.25*deg2rad) * 96.0f);
-			v[3] = 1;
+			v[2] = FixedMul(finesine[fa],96*FRACUNIT);
+			v[3] = FRACUNIT;
 
-			res = VectorMatrixMultiply(v, *RotateXMatrix((float)(mthing->angle*deg2rad)));
+			res = VectorMatrixMultiply(v, *RotateXMatrix(mthing->angle*ANGLE_1));
 			memcpy(&v, res, sizeof(v));
-			res = VectorMatrixMultiply(v, *RotateZMatrix((float)(closestangle*deg2rad)));
+			res = VectorMatrixMultiply(v, *RotateZMatrix(closestangle));
 			memcpy(&v, res, sizeof(v));
 
-			finalx = mthingx + double2fixed(v[0]);
-			finaly = mthingy + double2fixed(v[1]);
-			finalz = mthingz + double2fixed(v[2]);
+			finalx = mthingx + v[0];
+			finaly = mthingy + v[1];
+			finalz = mthingz + v[2];
 
 			mobj = P_SpawnMobj(finalx, finaly, finalz, MT_HOOP);
 			mobj->z -= mobj->height/2;
@@ -5220,18 +5363,19 @@ void P_SpawnHoopsAndRings(mapthing_t* mthing)
 		// Create the collision detectors!
 		for(i = 0; i < 16; i++)
 		{
-			v[0] = (float)(cos(i*22.5*deg2rad) * 32.0f);
+			fa = i*FINEANGLES/16;
+			v[0] = FixedMul(finecosine[fa],32*FRACUNIT);
 			v[1] = 0;
-			v[2] = (float)(sin(i*22.5*deg2rad) * 32.0f);
-			v[3] = 1;
-			res = VectorMatrixMultiply(v, *RotateXMatrix((float)(mthing->angle*deg2rad)));
+			v[2] = FixedMul(finesine[fa],32*FRACUNIT);
+			v[3] = FRACUNIT;
+			res = VectorMatrixMultiply(v, *RotateXMatrix(mthing->angle*ANGLE_1));
 			memcpy(&v, res, sizeof(v));
-			res = VectorMatrixMultiply(v, *RotateZMatrix((float)(closestangle*deg2rad)));
+			res = VectorMatrixMultiply(v, *RotateZMatrix(closestangle));
 			memcpy(&v, res, sizeof(v));
 
-			finalx = mthingx + double2fixed(v[0]);
-			finaly = mthingy + double2fixed(v[1]);
-			finalz = mthingz + double2fixed(v[2]);
+			finalx = mthingx + v[0];
+			finaly = mthingy + v[1];
+			finalz = mthingz + v[2];
 
 			mobj = P_SpawnMobj(finalx, finaly, finalz, MT_HOOPCOLLIDE);
 			mobj->z -= mobj->height/2;
@@ -5245,18 +5389,19 @@ void P_SpawnHoopsAndRings(mapthing_t* mthing)
 		// Create the collision detectors!
 		for(i = 0; i < 16; i++)
 		{
-			v[0] = (float)(cos(i*22.5*deg2rad) * 64.0f);
+			fa = i*FINEANGLES/16;
+			v[0] = FixedMul(finecosine[fa],64*FRACUNIT);
 			v[1] = 0;
-			v[2] = (float)(sin(i*22.5*deg2rad) * 64.0f);
-			v[3] = 1;
-			res = VectorMatrixMultiply(v, *RotateXMatrix((float)(mthing->angle*deg2rad)));
+			v[2] = FixedMul(finesine[fa],64*FRACUNIT);
+			v[3] = FRACUNIT;
+			res = VectorMatrixMultiply(v, *RotateXMatrix(mthing->angle*ANGLE_1));
 			memcpy(&v, res, sizeof(v));
-			res = VectorMatrixMultiply(v, *RotateZMatrix((float)(closestangle*deg2rad)));
+			res = VectorMatrixMultiply(v, *RotateZMatrix(closestangle));
 			memcpy(&v, res, sizeof(v));
 
-			finalx = mthingx + double2fixed(v[0]);
-			finaly = mthingy + double2fixed(v[1]);
-			finalz = mthingz + double2fixed(v[2]);
+			finalx = mthingx + v[0];
+			finaly = mthingy + v[1];
+			finalz = mthingz + v[2];
 
 			mobj = P_SpawnMobj(finalx, finaly, finalz, MT_HOOPCOLLIDE);
 			mobj->z -= mobj->height/2;
@@ -5293,7 +5438,7 @@ void P_SpawnHoopsAndRings(mapthing_t* mthing)
 		fixed_t finalx, finaly, finalz;
 		mobj_t* hoopcenter;
 		mobj_t* axis = NULL;
-		short closestangle;
+		angle_t closestangle, fa;
 		fixed_t mthingx, mthingy, mthingz;
 		degenmobj_t xypos;
 
@@ -5325,22 +5470,23 @@ void P_SpawnHoopsAndRings(mapthing_t* mthing)
 		mthingx = xypos.x;
 		mthingy = xypos.y;
 
-		closestangle = (short)((R_PointToAngle2(mthingx, mthingy, axis->x, axis->y)+ANG90)/ANGLE_1);
+		closestangle = R_PointToAngle2(mthingx, mthingy, axis->x, axis->y)+ANG90;
 
 		// Create the hoop!
 		for(i = 0; i < 8; i++)
 		{
-			v[0] = (float)(cos(i*45*deg2rad) * 96);
+			fa = i*FINEANGLES/8;
+			v[0] = FixedMul(finecosine[fa],96*FRACUNIT);
 			v[1] = 0;
-			v[2] = (float)(sin(i*45*deg2rad) * 96);
-			v[3] = 1;
+			v[2] = FixedMul(finesine[fa],96*FRACUNIT);
+			v[3] = FRACUNIT;
 
-			res = VectorMatrixMultiply(v, *RotateZMatrix((float)(closestangle*deg2rad)));
+			res = VectorMatrixMultiply(v, *RotateZMatrix(closestangle));
 			memcpy(&v, res, sizeof(v));
 
-			finalx = mthingx + double2fixed(v[0]);
-			finaly = mthingy + double2fixed(v[1]);
-			finalz = mthingz + double2fixed(v[2]);
+			finalx = mthingx + v[0];
+			finaly = mthingy + v[1];
+			finalz = mthingz + v[2];
 
 			mobj = P_SpawnMobj(finalx, finaly, finalz, MT_NIGHTSWING);
 			mobj->z -= mobj->height/2;
@@ -5355,7 +5501,7 @@ void P_SpawnHoopsAndRings(mapthing_t* mthing)
 		fixed_t finalx, finaly, finalz;
 		mobj_t* hoopcenter;
 		mobj_t* axis = NULL;
-		short closestangle;
+		angle_t closestangle;
 		fixed_t mthingx, mthingy, mthingz;
 		degenmobj_t xypos;
 
@@ -5387,22 +5533,23 @@ void P_SpawnHoopsAndRings(mapthing_t* mthing)
 		mthingx = xypos.x;
 		mthingy = xypos.y;
 
-		closestangle = (short)((R_PointToAngle2(mthingx, mthingy, axis->x, axis->y)+ANG90)/ANGLE_1);
+		closestangle = R_PointToAngle2(mthingx, mthingy, axis->x, axis->y)+ANG90;
 
 		// Create the hoop!
 		for(i = 0; i < 16; i++)
 		{
-			v[0] = (float)(cos(i*45*deg2rad) * 192);
+			const angle_t fa = (i*FINEANGLES/8) & FINEMASK;
+			v[0] = FixedMul(finecosine[fa],192*FRACUNIT);
 			v[1] = 0;
-			v[2] = (float)(sin(i*45*deg2rad) * 192);
-			v[3] = 1;
+			v[2] = FixedMul(finesine[fa],192*FRACUNIT);
+			v[3] = FRACUNIT;
 
-			res = VectorMatrixMultiply(v, *RotateZMatrix((float)(closestangle*deg2rad)));
+			res = VectorMatrixMultiply(v, *RotateZMatrix(closestangle));
 			memcpy(&v, res, sizeof(v));
 
-			finalx = mthingx + double2fixed(v[0]);
-			finaly = mthingy + double2fixed(v[1]);
-			finalz = mthingz + double2fixed(v[2]);
+			finalx = mthingx + v[0];
+			finaly = mthingy + v[1];
+			finalz = mthingz + v[2];
 
 			mobj = P_SpawnMobj(finalx, finaly, finalz, MT_NIGHTSWING);
 			mobj->z -= mobj->height/2;
@@ -5416,13 +5563,13 @@ void P_SpawnHoopsAndRings(mapthing_t* mthing)
 
 		if(mthing->type == 2014) // Your basic ring.
 		{
-			int bit;
+			unsigned int bit;
 			if(gameskill == sk_baby)
 				bit = 1;
 			else if(gameskill >= sk_nightmare)
 				bit = 4;
 			else
-				bit = 1<<(gameskill-1);
+				bit = 1<<((byte)gameskill-1);
 
 			if(!(mthing->options & bit))
 				return;
@@ -5448,14 +5595,14 @@ void P_SpawnHoopsAndRings(mapthing_t* mthing)
 		}
 		else if(mthing->type == 10005) // Your basic coin.
 		{
-			int bit;
+			unsigned int bit;
 
 			if(gameskill == sk_baby)
 				bit = 1;
 			else if(gameskill >= sk_nightmare)
 				bit = 4;
 			else
-				bit = 1<<(gameskill-1);
+				bit = 1<<((byte)gameskill-1);
 
 			if(!(mthing->options & bit))
 				return;
@@ -5570,7 +5717,7 @@ void P_SpawnHoopsAndRings(mapthing_t* mthing)
 			fixed_t finalx, finaly, finalz;
 			mobj_t* hoopcenter;
 			mobj_t* axis = NULL;
-			short closestangle;
+			angle_t closestangle, fa;
 			fixed_t mthingx, mthingy, mthingz;
 			degenmobj_t xypos;
 
@@ -5602,22 +5749,23 @@ void P_SpawnHoopsAndRings(mapthing_t* mthing)
 			mthingx = xypos.x;
 			mthingy = xypos.y;
 
-			closestangle = (short)((R_PointToAngle2(mthingx, mthingy, axis->x, axis->y)+ANG90)/ANGLE_1);
+			closestangle = R_PointToAngle2(mthingx, mthingy, axis->x, axis->y)+ANG90;
 
 			// Create the hoop!
 			for(i = 0; i < 8; i++)
 			{
-				v[0] = (float)(cos(i*45*deg2rad) * 96);
+				fa = i*FINEANGLES/8;
+				v[0] = FixedMul(finecosine[fa],96*FRACUNIT);
 				v[1] = 0;
-				v[2] = (float)(sin(i*45*deg2rad) * 96);
-				v[3] = 1;
+				v[2] = FixedMul(finesine[fa],96*FRACUNIT);
+				v[3] = FRACUNIT;
 
-				res = VectorMatrixMultiply(v, *RotateZMatrix((float)(closestangle*deg2rad)));
+				res = VectorMatrixMultiply(v, *RotateZMatrix(closestangle));
 				memcpy(&v, res, sizeof(v));
 
-				finalx = mthingx + double2fixed(v[0]);
-				finaly = mthingy + double2fixed(v[1]);
-				finalz = mthingz + double2fixed(v[2]);
+				finalx = mthingx + v[0];
+				finaly = mthingy + v[1];
+				finalz = mthingz + v[2];
 
 				mobj = P_SpawnMobj(finalx, finaly, finalz, MT_RING);
 				mobj->z -= mobj->height/2;
@@ -5633,7 +5781,7 @@ void P_SpawnHoopsAndRings(mapthing_t* mthing)
 			fixed_t finalx, finaly, finalz;
 			mobj_t* hoopcenter;
 			mobj_t* axis = NULL;
-			short closestangle;
+			angle_t closestangle, fa;
 			fixed_t mthingx, mthingy, mthingz;
 			degenmobj_t xypos;
 
@@ -5665,22 +5813,23 @@ void P_SpawnHoopsAndRings(mapthing_t* mthing)
 			mthingx = xypos.x;
 			mthingy = xypos.y;
 
-			closestangle = (short)((R_PointToAngle2(mthingx, mthingy, axis->x, axis->y)+ANG90)/ANGLE_1);
+			closestangle = R_PointToAngle2(mthingx, mthingy, axis->x, axis->y)+ANG90;
 
 			// Create the hoop!
 			for(i = 0; i < 16; i++)
 			{
-				v[0] = (float)(cos(i*22.5*deg2rad) * 192.0f);
+ 				fa = i*FINEANGLES/16;
+				v[0] = FixedMul(finecosine[fa],192*FRACUNIT);
 				v[1] = 0;
-				v[2] = (float)(sin(i*22.5*deg2rad) * 192.0f);
-				v[3] = 1;
+				v[2] = FixedMul(finesine[fa],192*FRACUNIT);
+				v[3] = FRACUNIT;
 
-				res = VectorMatrixMultiply(v, *RotateZMatrix((float)(closestangle*deg2rad)));
+				res = VectorMatrixMultiply(v, *RotateZMatrix(closestangle));
 				memcpy(&v, res, sizeof(v));
 
-				finalx = mthingx + double2fixed(v[0]);
-				finaly = mthingy + double2fixed(v[1]);
-				finalz = mthingz + double2fixed(v[2]);
+				finalx = mthingx + v[0];
+				finaly = mthingy + v[1];
+				finalz = mthingz + v[2];
 
 				mobj = P_SpawnMobj(finalx, finaly, finalz, MT_RING);
 				mobj->z -= mobj->height/2;
@@ -5696,7 +5845,7 @@ void P_SpawnHoopsAndRings(mapthing_t* mthing)
 			fixed_t finalx, finaly, finalz;
 			mobj_t* hoopcenter;
 			mobj_t* axis = NULL;
-			short closestangle;
+			angle_t closestangle, fa;
 			fixed_t mthingx, mthingy, mthingz;
 			degenmobj_t xypos;
 
@@ -5728,22 +5877,23 @@ void P_SpawnHoopsAndRings(mapthing_t* mthing)
 			mthingx = xypos.x;
 			mthingy = xypos.y;
 
-			closestangle = (short)((R_PointToAngle2(mthingx, mthingy, axis->x, axis->y)+ANG90)/ANGLE_1);
+			closestangle = R_PointToAngle2(mthingx, mthingy, axis->x, axis->y)+ANG90;
 
 			// Create the hoop!
 			for(i = 0; i < 8; i++)
 			{
-				v[0] = (float)(cos(i*45*deg2rad) * 96);
+				fa = i*FINEANGLES/8;
+				v[0] = FixedMul(finecosine[fa],96*FRACUNIT);
 				v[1] = 0;
-				v[2] = (float)(sin(i*45*deg2rad) * 96);
-				v[3] = 1;
+				v[2] = FixedMul(finesine[fa],96*FRACUNIT);
+				v[3] = FRACUNIT;
 
-				res = VectorMatrixMultiply(v, *RotateZMatrix((float)(closestangle*deg2rad)));
+				res = VectorMatrixMultiply(v, *RotateZMatrix(closestangle));
 				memcpy(&v, res, sizeof(v));
 
-				finalx = mthingx + double2fixed(v[0]);
-				finaly = mthingy + double2fixed(v[1]);
-				finalz = mthingz + double2fixed(v[2]);
+				finalx = mthingx + v[0];
+				finaly = mthingy + v[1];
+				finalz = mthingz + v[2];
 
 				if(i & 1)
 					mobj = P_SpawnMobj(finalx, finaly, finalz, MT_RING);
@@ -5763,7 +5913,7 @@ void P_SpawnHoopsAndRings(mapthing_t* mthing)
 			fixed_t finalx, finaly, finalz;
 			mobj_t* hoopcenter;
 			mobj_t* axis = NULL;
-			short closestangle;
+			angle_t closestangle, fa;
 			fixed_t mthingx, mthingy, mthingz;
 			degenmobj_t xypos;
 
@@ -5795,22 +5945,23 @@ void P_SpawnHoopsAndRings(mapthing_t* mthing)
 			mthingx = xypos.x;
 			mthingy = xypos.y;
 
-			closestangle = (short)((R_PointToAngle2(mthingx, mthingy, axis->x, axis->y)+ANG90)/ANGLE_1);
+			closestangle = R_PointToAngle2(mthingx, mthingy, axis->x, axis->y)+ANG90;
 
 			// Create the hoop!
 			for(i = 0; i < 16; i++)
 			{
-				v[0] = (float)(cos(i*22.5*deg2rad) * 192.0f);
+				fa = i*FINEANGLES/16;
+				v[0] = FixedMul(finecosine[fa],192*FRACUNIT);
 				v[1] = 0;
-				v[2] = (float)(sin(i*22.5*deg2rad) * 192.0f);
-				v[3] = 1;
+				v[2] = FixedMul(finesine[fa],192*FRACUNIT);
+				v[3] = FRACUNIT;
 
-				res = VectorMatrixMultiply(v, *RotateZMatrix((float)(closestangle*deg2rad)));
+				res = VectorMatrixMultiply(v, *RotateZMatrix(closestangle));
 				memcpy(&v, res, sizeof(v));
 
-				finalx = mthingx + double2fixed(v[0]);
-				finaly = mthingy + double2fixed(v[1]);
-				finalz = mthingz + double2fixed(v[2]);
+				finalx = mthingx + v[0];
+				finaly = mthingy + v[1];
+				finalz = mthingz + v[2];
 
 				if(i & 1)
 					mobj = P_SpawnMobj(finalx, finaly, finalz, MT_RING);
@@ -5904,6 +6055,7 @@ mobj_t* P_SpawnMissile(mobj_t* source, mobj_t* dest, mobjtype_t type)
 	angle_t an;
 	int dist;
 	fixed_t z;
+	const fixed_t gsf = (fixed_t)(3*gameskill);
 
 #ifdef PARANOIA
 	if(!source)
@@ -5935,8 +6087,8 @@ mobj_t* P_SpawnMissile(mobj_t* source, mobj_t* dest, mobjtype_t type)
 
 	if(type == MT_TURRETLASER) // More accurate!
 		an = R_PointToAngle2(source->x, source->y,
-			dest->x + (dest->momx*(fixed_t)(3*gameskill)),
-			dest->y + (dest->momy*(fixed_t)(3*gameskill)));
+			dest->x + (dest->momx*gsf),
+			dest->y + (dest->momy*gsf));
 	else
 		an = R_PointToAngle2(source->x, source->y, dest->x, dest->y);
 
@@ -5946,7 +6098,7 @@ mobj_t* P_SpawnMissile(mobj_t* source, mobj_t* dest, mobjtype_t type)
 	th->momy = FixedMul(th->info->speed, finesine[an]);
 
 	if(type == MT_TURRETLASER) // More accurate!
-		dist = P_AproxDistance(dest->x+(dest->momx*(fixed_t)(3*gameskill)) - source->x, dest->y+(dest->momy*(fixed_t)(3*gameskill)) - source->y);
+		dist = P_AproxDistance(dest->x+(dest->momx*gsf) - source->x, dest->y+(dest->momy*gsf) - source->y);
 	else
 		dist = P_AproxDistance(dest->x - source->x, dest->y - source->y);
 
@@ -5956,7 +6108,7 @@ mobj_t* P_SpawnMissile(mobj_t* source, mobj_t* dest, mobjtype_t type)
 		dist = 1;
 
 	if(type == MT_TURRETLASER) // More accurate!
-		th->momz = (dest->z + (dest->momz*(fixed_t)(3*gameskill)) - source->z) / dist;
+		th->momz = (dest->z + (dest->momz*gsf) - source->z) / dist;
 	else
 		th->momz = (dest->z - source->z) / dist;
 

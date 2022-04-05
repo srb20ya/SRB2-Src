@@ -577,8 +577,8 @@ static void HWR_GenerateTexture (int texnum, GlideTexture_t* grtex)
 	// use PU_PURGELEVEL so we can Z_FreeTags all at once
 	Z_ChangeTag (block, PU_HWRCACHE);
 
-	grtex->scaleX = crapmul / (float)texture->width;
-	grtex->scaleY = crapmul / (float)texture->height;
+	grtex->scaleX = 1.0f/(texture->width*FRACUNIT);
+	grtex->scaleY = 1.0f/(texture->height*FRACUNIT);
 }
 
 // grTex : Hardware texture cache info

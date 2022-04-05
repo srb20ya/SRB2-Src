@@ -42,10 +42,7 @@
 #include "dehacked.h"
 #include "r_defs.h"
 #include "i_system.h"
-
-#ifndef NOMD5
 #include "md5.h"
-#endif
 
 #ifdef HWRENDER
 #include "hardware/hw_main.h"
@@ -91,6 +88,7 @@ void W_Shutdown(void)
 //  for the lump name.
 
 static inline void W_LoadDehackedLumps(int wadnum);
+static char filenamebuf[MAX_WADPATH];
 
 //  Allocate a wadfile, setup the lumpinfo (directory) and
 //  lumpcache, add the wadfile to the current active wadfiles
@@ -109,7 +107,9 @@ int W_LoadWadFile(char *filename)
 	SDL_RWops* handle;
 #else
 	int handle;
+#ifndef _arch_dreamcast
 	struct stat bufstat;
+#endif
 #endif
 #ifndef NOMD5
 	FILE* fhandle;
@@ -118,7 +118,6 @@ int W_LoadWadFile(char *filename)
 	lumpcache_t* lumpcache;
 	wadfile_t* wadfile;
 	int numlumps, i, length;
-	char filenamebuf[MAX_WADPATH];
 #ifdef HWRENDER
 	GlidePatch_t* grPatch;
 #endif
@@ -136,7 +135,7 @@ int W_LoadWadFile(char *filename)
 	filename = filenamebuf;
 	// open wad file
 #ifdef SDLIO
-	if(!(handle = SDL_RWFromFile(filename, "rb")))
+	if(NULL == (handle = SDL_RWFromFile(filename, "rb")))
 #else
 	if((handle = open(filename, O_RDONLY|O_BINARY, 0666)) == -1)
 #endif
@@ -145,9 +144,9 @@ int W_LoadWadFile(char *filename)
 		if(findfile(filename, NULL, true))
 		{
 #ifdef SDLIO
-			if(!(handle = SDL_RWFromFile(filename, "rb")))
+			if(NULL == (handle = SDL_RWFromFile(filename, "rb")))
 #else
-            if((handle = open(filename, O_RDONLY|O_BINARY, 0666)) == -1)
+			if((handle = open(filename, O_RDONLY|O_BINARY, 0666)) == -1)
 #endif
 			{
 				CONS_Printf("Can't open %s\n", filename);
@@ -167,7 +166,7 @@ int W_LoadWadFile(char *filename)
 		// This code emulates a wadfile with one lump name "OBJCTCFG"
 		// at position 0 and size of the whole file.
 		// This allows soc files to be like all wads, copied by network and loaded at the console.
-#ifndef SDLIO
+#if !defined(SDLIO) && !defined(_arch_dreamcast)
 		fstat(handle, &bufstat);
 #endif
 		numlumps = 1;
@@ -180,6 +179,8 @@ int W_LoadWadFile(char *filename)
 			lumpinfo->size = SDL_RWtell(handle);
 			SDL_RWseek(handle, currpos, SEEK_SET);
 		}
+#elif defined(_arch_dreamcast)
+		lumpinfo->size = fs_total(handle);
 #else
 		lumpinfo->size = bufstat.st_size;
 #endif
@@ -192,6 +193,7 @@ int W_LoadWadFile(char *filename)
 		wadinfo_t header;
 		lumpinfo_t* lump_p;
 		filelump_t* fileinfo;
+		void* fileinfov;
 
 		// read the header
 #ifdef SDLIO
@@ -216,7 +218,7 @@ int W_LoadWadFile(char *filename)
 
 		// read wad file directory
 		length = header.numlumps * sizeof(filelump_t);
-		fileinfo = alloca(length);
+		fileinfov = fileinfo = malloc(length);
 #ifdef SDLIO
 		if(SDL_RWseek(handle, header.infotableofs, SEEK_SET) == -1
 			|| SDL_RWread(handle, fileinfo, 1, length) < length)
@@ -226,6 +228,7 @@ int W_LoadWadFile(char *filename)
 #endif
 		{
 			CONS_Printf("%s wadfile directory is corrupt\n", filename);
+			free(fileinfov);
 			return -1;
 		}
 
@@ -239,11 +242,12 @@ int W_LoadWadFile(char *filename)
 			lump_p->size = LONG(fileinfo->size);
 			strncpy(lump_p->name, fileinfo->name, 8);
 		}
+		free(fileinfov);
 	}
 	//
 	// link wad file to search files
 	//
-#ifndef SDLIO
+#if !defined(SDLIO) && !defined(_arch_dreamcast)
 	fstat(handle, &bufstat);
 #endif
 	wadfile = Z_Malloc(sizeof(wadfile_t), PU_STATIC, NULL);
@@ -258,6 +262,8 @@ int W_LoadWadFile(char *filename)
 		wadfile->filesize = SDL_RWtell(handle);
 		SDL_RWseek(handle,currpos,SEEK_SET);
 	}
+#elif defined(_arch_dreamcast)
+	wadfile->filesize = fs_total(handle);
 #else
 	wadfile->filesize = bufstat.st_size;
 #endif
@@ -269,9 +275,14 @@ int W_LoadWadFile(char *filename)
 	fhandle = fopen(filenamebuf, "rb");
 	{
 		int t = I_GetTime();
+#ifdef _arch_dreamcast
+		CONS_Printf("Making MD5 for %s\n",wadfile->filename);
+#endif
 		md5_stream(fhandle, wadfile->md5sum);
+#ifndef _arch_dreamcast
 		if(devparm)
-			CONS_Printf("md5 calc for %s took %f second\n",
+#endif
+			CONS_Printf("MD5 calc for %s took %f second\n",
 				wadfile->filename, (float)(I_GetTime() - t)/TICRATE);
 	}
 	fclose(fhandle);
@@ -291,7 +302,7 @@ int W_LoadWadFile(char *filename)
 	// because these were causing a lot of fragmentation of the heap,
 	// considering they are never freed.
 	length = numlumps * sizeof(GlidePatch_t);
-	grPatch = Z_Malloc(length, PU_HWRPATCHINFO, 0); // never freed
+	grPatch = Z_Malloc(length, PU_HWRPATCHINFO, NULL); // never freed
 	// set mipmap.downloaded to false
 	memset(grPatch, 0, length);
 	for(i = 0; i < numlumps; i++)
@@ -338,6 +349,24 @@ int W_InitMultipleFiles(char** filenames)
 		I_Error("W_InitMultipleFiles: no files found");
 
 	return rc;
+}
+
+const char* W_CheckNameForNumPwad(int wadid, int lumpnum)
+{
+	const int lumpnuml = lumpnum & 0xFFFF;
+
+	if(lumpnum < 0 || wadid < 0 || lumpnuml > lumpnum)
+		return NULL;
+
+	if(lumpnuml >= wadfiles[wadid]->numlumps)
+		return NULL;
+
+	return wadfiles[wadid]->lumpinfo[lumpnuml].name;
+}
+
+const char* W_CheckNameForNum(int lumpnum)
+{
+	return W_CheckNameForNumPwad(lumpnum>>16,lumpnum&0xFFFF);
 }
 
 //
@@ -534,8 +563,8 @@ void* W_CacheLumpNum(int lump, int tag)
 	lumpcache_t* lumpcache;
 
 	// Don't keep doing operations to the lump variable!
-	int llump = lump & 0xffff;
-	int lfile = lump >> 16;
+	const int llump = lump & 0xFFFF;
+	const int lfile = lump >> 16;
 
 #ifdef PARANOIA
 	// check return value of a previous W_CheckNumForName()
@@ -667,8 +696,7 @@ static inline void W_LoadDehackedLumps(int wadnum)
 
 /** Verifies a file's MD5 is as it should be.
   * For releases, used as cheat prevention. If the MD5 doesn't match, a fatal
-  * error is thrown. The game must be compiled with MD5 support for this to
-  * work; i.e., it won't on Windows CE.
+  * error is thrown.
   *
   * \param wadfilenum Number of the loaded wad file to check.
   * \param matchmd5   The MD5 sum this wad should have.
@@ -680,7 +708,10 @@ void W_VerifyFileMD5(int wadfilenum, const char* matchmd5)
 	if(wadfilenum >= numwadfiles || wadfilenum < 0)
 		I_Error("W_VerifyFileMD5 called with invalid wadfilenum");
 #endif
-#ifndef NOMD5
+#ifdef NOMD5
+	wadfilenum = 0;
+	matchmd5 = NULL;
+#else
 	if(memcmp(matchmd5, wadfiles[wadfilenum]->md5sum, 16))
 		I_Error("File is corrupt or has been modified: %s (\\x%X\\x%X\\x%X\\x%X\\x%X\\x%X\\x%X\\x%X\\x%X\\x%X\\x%X\\x%X\\x%X\\x%X\\x%X\\x%X)", wadfiles[wadfilenum]->filename, wadfiles[wadfilenum]->md5sum[0],
 																																				wadfiles[wadfilenum]->md5sum[1],
@@ -701,33 +732,22 @@ void W_VerifyFileMD5(int wadfilenum, const char* matchmd5)
 #endif
 }
 
-/** Checks a wad for lumps other than music and sound.
-  * Used during game load to verify music.dta is a good file and during a
-  * netgame join (on the server side) to see if a wad is important enough to
-  * be sent.
-  *
-  * \param filename Filename of the wad to check.
-  * \return 1 if file contains only music/sound lumps, 0 if it contains other
-  *         stuff (maps, sprites, dehacked lumps, and so on).
-  * \author Alam Arias
-  * \todo A bit of cleanup here couldn't hurt.
-  */
-int W_VerifyNMUSlumps(const char* filename)
+int W_VerifyFile(const char* filename, lumpchecklist_t *checklist, boolean status)
 {
 #ifdef SDLIO
 	SDL_RWops* handle;
 #else
 	int handle;
 #endif
-
+	size_t j;
 	int numlumps, i, length, goodfile = false;
-	char filenamebuf[MAX_WADPATH];
 
+	if(!checklist) I_Error("No checklist for %s\n", filename);
 	strncpy(filenamebuf, filename, MAX_WADPATH);
 	filename = filenamebuf;
 	// open wad file
 #ifdef SDLIO
-	if(!(handle = SDL_RWFromFile(filename,"rb")))
+	if(NULL == (handle = SDL_RWFromFile(filename,"rb")))
 #else
 	if((handle = open(filename, O_RDONLY|O_BINARY, 0666)) == -1)
 #endif
@@ -736,7 +756,7 @@ int W_VerifyNMUSlumps(const char* filename)
 		if(findfile(filenamebuf, NULL, true))
 		{
 #ifdef SDLIO
-			if(!(handle = SDL_RWFromFile(filename, "rb")))
+			if(NULL == (handle = SDL_RWFromFile(filename, "rb")))
 #else
 			if((handle = open(filename, O_RDONLY|O_BINARY, 0666)) == -1)
 #endif
@@ -748,13 +768,16 @@ int W_VerifyNMUSlumps(const char* filename)
 
 	// detect dehacked file with the "soc" extension
 	if(!stricmp(&filename[strlen(filename) - 4], ".soc"))
+	{
 		goodfile = false; // no way!
+	}
 	else if(!goodfile)
 	{
 		// assume wad file
 		wadinfo_t header;
 		lumpinfo_t lump_p;
 		filelump_t* fileinfo;
+		void* fileinfov;
 
 		// read the header
 #ifdef SDLIO
@@ -778,7 +801,7 @@ int W_VerifyNMUSlumps(const char* filename)
 
 		// read wad file directory
 		length = header.numlumps*sizeof(filelump_t);
-		fileinfo = alloca(length);
+		fileinfov = fileinfo = malloc(length);
 #ifdef SDLIO
 		SDL_RWseek(handle, header.infotableofs, SEEK_SET);
 		SDL_RWread(handle, fileinfo, 1, length);
@@ -796,14 +819,15 @@ int W_VerifyNMUSlumps(const char* filename)
 			lump_p.position = LONG(fileinfo->filepos);
 			lump_p.size = LONG(fileinfo->size);
 			strncpy(lump_p.name, fileinfo->name, 8);
-			if((strncmp(lump_p.name, "D_", 2)) && // MIDI
-				(strncmp(lump_p.name, "O_", 2)) && // MOD/S3M/IT/XM/OGG/MP3/WAV
-				(strncmp(lump_p.name, "DS", 2))) // WAVE SFX
-			{
-				goodfile = false;
+			goodfile = false;
+			for(j=0;checklist[j].len && checklist[j].name && !goodfile; j++)
+				if((strncmp(lump_p.name, checklist[j].name, checklist[j].len) != false) == status)
+					goodfile = true;
+
+			if(!goodfile)
 				break;
-			}
 		}
+		free(fileinfov);
 	}
 #ifdef SDLIO
 	SDL_RWclose(handle);
@@ -811,4 +835,29 @@ int W_VerifyNMUSlumps(const char* filename)
 	close(handle);
 #endif
 	return goodfile;
+}
+
+
+/** Checks a wad for lumps other than music and sound.
+  * Used during game load to verify music.dta is a good file and during a
+  * netgame join (on the server side) to see if a wad is important enough to
+  * be sent.
+  *
+  * \param filename Filename of the wad to check.
+  * \return 1 if file contains only music/sound lumps, 0 if it contains other
+  *         stuff (maps, sprites, dehacked lumps, and so on).
+  * \author Alam Arias
+  */
+int W_VerifyNMUSlumps(const char* filename)
+{
+	// MIDI, MOD/S3M/IT/XM/OGG/MP3/WAV, WAVE SFX and ENDOOM
+	lumpchecklist_t NMUSlist[] =
+	{
+		{"D_", 2},
+		{"O_", 2},
+		{"DS", 2},
+		{"ENDOOM", 6},
+		{NULL, 0},
+	};
+	return W_VerifyFile(filename, NMUSlist, false);
 }

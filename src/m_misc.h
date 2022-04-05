@@ -28,7 +28,11 @@
 #include "w_wad.h"
 
 // the file where game vars and settings are saved
+#ifdef DC
+#define CONFIGFILENAME "srb2dc.cfg"
+#else
 #define CONFIGFILENAME "config.cfg"
+#endif
 
 int M_MapNumber(char first, char second);
 boolean FIL_WriteFile(char const* name, void* source, size_t length);

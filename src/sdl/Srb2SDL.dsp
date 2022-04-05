@@ -37,7 +37,7 @@ RSC=rc.exe
 # PROP BASE Target_Dir ""
 # PROP Use_MFC 0
 # PROP Use_Debug_Libraries 0
-# PROP Output_Dir "..\..\objs\VC\Release\SDL"
+# PROP Output_Dir "..\..\bin\VC\Release\SDL"
 # PROP Intermediate_Dir "..\..\objs\VC\Release\SDL"
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
@@ -66,13 +66,13 @@ LINK32=link.exe
 # PROP BASE Target_Dir ""
 # PROP Use_MFC 0
 # PROP Use_Debug_Libraries 1
-# PROP Output_Dir "..\..\objs\VC\Debug\SDL"
+# PROP Output_Dir "..\..\bin\VC\Debug\SDL"
 # PROP Intermediate_Dir "..\..\objs\VC\Debug\SDL"
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 MTL=midl.exe
 # ADD BASE CPP /nologo /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /YX /FD /GZ /c
-# ADD CPP /nologo /G6 /W4 /Gm /GX /ZI /Od /D "_DEBUG" /D "WIN32" /D "_CONSOLE" /D "_MBCS" /D "SDL" /D "HAVE_MIXER" /D "DIRECTFULLSCREEN" /D "HWRENDER" /D "HW3SOUND" /D "__WIN32__" /D "__MSC__" /D "USEASM" /FD /GZ /c
+# ADD CPP /nologo /G6 /W4 /Gm /GX /ZI /Od /Op /D "_DEBUG" /D "WIN32" /D "_CONSOLE" /D "_MBCS" /D "SDL" /D "HAVE_MIXER" /D "DIRECTFULLSCREEN" /D "HWRENDER" /D "HW3SOUND" /D "__WIN32__" /D "__MSC__" /D "USEASM" /FD /GZ /c
 # SUBTRACT CPP /YX
 # ADD BASE RSC /l 0x409 /d "_DEBUG"
 # ADD RSC /l 0x409 /d "_DEBUG"
@@ -204,6 +204,10 @@ SOURCE=..\win32\win_dbg.c
 # Begin Source File
 
 SOURCE=..\win32\win_dbg.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\win32\win_main.h
 # End Source File
 # End Group
 # Begin Group "A_Asm"

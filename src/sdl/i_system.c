@@ -72,7 +72,11 @@
 #include <signal.h>
 #endif
 
-#if defined(_WIN32) || defined(_WIN64)
+#ifdef _XBOX
+#include "SRB2XBOX/xboxhelp.h"
+#endif
+
+#if (defined(_WIN32) || defined(_WIN64)) && !defined(_XBOX)
 #define RPC_NO_WINDOWS_H
 #include <windows.h>
 typedef BOOL (WINAPI *MyFunc)(LPCSTR RootName, PULARGE_INTEGER pulA, PULARGE_INTEGER pulB, PULARGE_INTEGER pulFreeBytes);
@@ -93,24 +97,26 @@ typedef DWORD (WINAPI *MyFunc2) (void);
 #endif
 
 #ifdef _arch_dreamcast
-//#include <kos.h>
-#include <dc/maple.h>
-#include <dc/maple/vmu.h>
+#include <arch/gdb.h>
+#include <arch/timer.h>
 #include <conio/conio.h>
+#include <dc/pvr.h>
 void __set_fpscr(long); // in libgcc / kernel's startup.s?
-#elif !defined (SDLMAIN)
+#else
 #include <stdio.h>
 #if defined(_WIN32) || defined(_WIN64)
 #include <conio.h>
 #endif
 #endif
 
+#if defined(_XBOX) && defined(_MSC_VER)
+#include <SDL.h>
+#else
 #include <SDL/SDL.h>
-#if (SDL_MAJOR_VERSION > 1) || (SDL_MINOR_VERSION >= 3) || (SDL_MINOR_VERSION == 2 && SDL_PATCHLEVEL >= 7)
-#ifndef __APPLE_CC__
+#endif
+#if SDL_VERSION_ATLEAST(1,2,7) && !defined(__APPLE_CC__) && !defined(DC)
 #include <SDL/SDL_cpuinfo.h> // 1.2.7 or greater
 #define HAVE_SDLCPUINFO
-#endif
 #endif
 
 #if defined(LINUX) && !defined(_arch_dreamcast)
@@ -137,16 +143,34 @@ void __set_fpscr(long); // in libgcc / kernel's startup.s?
 
 // Locations for searching the srb2.srb
 #ifdef _arch_dreamcast
-#include "SRB2DC/VMU.xbm"
-#define DEFAULTWADLOCATION1 "/cdrom"
+#define DEFAULTWADLOCATION1 "/cd"
 #define DEFAULTWADLOCATION2 "/pc"
-#define DEFAULTSEARCHPATH1 "/cdrom"
+#define DEFAULTWADLOCATION3 "/pc/home/alam/srb2/data"
+#define DEFAULTSEARCHPATH1 "/cd"
 #define DEFAULTSEARCHPATH2 "/pc"
+//#define DEFAULTSEARCHPATH3 "/pc/home/alam/srb2/data"
 #elif defined(LINUX) || defined(__MACH__)
 #define DEFAULTWADLOCATION1 "/usr/local/games/srb2"
 #define DEFAULTWADLOCATION2 "/usr/games/srb2"
 #define DEFAULTSEARCHPATH1 "/usr/local"
 #define DEFAULTSEARCHPATH2 "/usr/games"
+#elif defined(_XBOX)
+#define NOCWD
+#ifdef __GNUC__
+#include <openxdk/debug.h>
+#endif
+#define DEFAULTWADLOCATION1 "c:\\srb2"
+#define DEFAULTWADLOCATION2 "d:\\srb2"
+#define DEFAULTWADLOCATION3 "e:\\srb2"
+#define DEFAULTWADLOCATION4 "f:\\srb2"
+#define DEFAULTWADLOCATION5 "g:\\srb2"
+#define DEFAULTWADLOCATION6 "h:\\srb2"
+#define DEFAULTWADLOCATION7 "i:\\srb2"
+#elif defined(_WIN32_WCE)
+#define NOCWD
+#define NOHOME
+#define DEFAULTWADLOCATION1 "/Storage Card/SRB2DEMO"
+#define DEFAULTSEARCHPATH1 "/Storage Card"
 #elif defined(_WIN32)  || defined(_WIN64)
 #define DEFAULTWADLOCATION1 "c:\\games\\srb2"
 #define DEFAULTWADLOCATION2 "\\games\\srb2"
@@ -172,7 +196,7 @@ static char returnWadPath[256];
 #include "../screen.h" //vid.WndParent
 #include "../d_net.h"
 #include "../g_game.h"
-
+#include "../filesrch.h"
 #include "endtxt.h"
 
 #include "../i_joy.h"
@@ -266,11 +290,12 @@ static int mouse2_started = 0;
 byte keyboard_started = false;
 
 #if 0
+
 static void signal_handler(int num)
 {
 	//static char msg[] = "oh no! back to reality!\r\n";
 	char*       sigmsg;
-	char        sigdef[64];
+	char        sigdef[32];
 
 	switch (num)
 	{
@@ -320,7 +345,7 @@ static void signal_handler(int num)
 //
 void I_StartupKeyboard (void)
 {
-#ifdef NDEBUG
+#if defined(NDEBUG) && !defined(DC)
 #ifdef SIGILL
 //	signal(SIGILL , signal_handler);
 #endif
@@ -347,35 +372,50 @@ void I_StartupKeyboard (void)
 //
 void I_OutputMsg(const char *fmt, ...)
 {
-#ifdef _arch_dreamcast
-	conio_printf(fmt);
-#else
+	size_t len;
+	XBOXSTATIC char txt[8192];
 	va_list  argptr;
+
+#ifdef _arch_dreamcast
+	if(!keyboard_started) conio_printf(fmt);
+#endif
+
 	va_start(argptr,fmt);
-	vfprintf(stderr,fmt,argptr);
+	vsprintf(txt, fmt, argptr);
 	va_end(argptr);
+	len = strlen(txt);
+#if (defined (_WIN32) || defined(_WIN64)) && !defined(_XBOX)
+#ifndef _WIN32_WCE
+	{
+		HANDLE co = GetStdHandle(STD_OUTPUT_HANDLE);
+		DWORD bytesWritten;
+		if(co != (HANDLE)-1)
+		{
+			if(GetFileType(co) == FILE_TYPE_CHAR)
+				WriteConsoleA(co, txt, (DWORD)len, &bytesWritten, NULL);
+			else
+				WriteFile(co, txt, (DWORD)len, &bytesWritten, NULL);
+		}
+	}
+#endif
+	OutputDebugStringA(txt);
+#else
+	fprintf(stderr, "%s", txt);
+#endif
+
+#ifdef LOGMESSAGES
+	if(logstream != INVALID_HANDLE_VALUE)
+	{
+#ifdef SDLIO
+		SDL_RWwrite(logstream, txt, len, 1);
+#else
+		write(logstream, txt, len);
+#endif
+	}
+#endif
+
 	// 2004-03-03 AJR Since not all messages end in newline, some were getting displayed late.	
 	fflush(stderr);
-#endif
-}
-
-int I_ConsoleKey()
-{
-	//defined(__MACH__)?
-#if defined(LINUX) && !defined (SDLMAIN)
-	int key;
-	key = getchar();
-	if(key == '\n')
-		return 0;
-	return key;
-#elif (defined (_WIN32) || defined(_WIN64)) && !defined (SDLMAIN)
-	int key = getch();
-	if(key == 0)
-		key = getch() + 256;
-	return key;
-#else
-	return 0;
-#endif
 }
 
 //
@@ -387,20 +427,11 @@ int I_GetKey (void)
 	event_t* ev;
 	int rc = 0;
 
-	if(!graphics_started)
-	{
-		rc = I_ConsoleKey();
-		if(rc)
-			return rc;
-		else
-			return KEY_ENTER;
-	}
-
 	// return the first keypress from the event queue
 	for(; eventtail != eventhead; eventtail = (eventtail+1)&(MAXEVENTS-1))
 	{
 		ev = &events[eventtail];
-		if(ev->type == ev_keydown)
+		if(ev->type == ev_keydown || ev->type == ev_console)
 		{
 			rc = ev->data1;
 			continue;
@@ -413,13 +444,13 @@ int I_GetKey (void)
 //
 // I_JoyScale
 //
-void I_JoyScale()
+void I_JoyScale(void)
 {
 	Joystick.bGamepadStyle = !cv_joyscale.value;
 	JoyInfo.scale = (Joystick.bGamepadStyle)?1:cv_joyscale.value;
 }
 
-void I_JoyScale2()
+void I_JoyScale2(void)
 {
 	Joystick2.bGamepadStyle = !cv_joyscale2.value;
 	JoyInfo2.scale = (Joystick2.bGamepadStyle)?1:cv_joyscale2.value;
@@ -440,7 +471,7 @@ static INT64 lastjoyhats = 0;
 
 	
 */
-static void I_ShutdownJoystick()
+static void I_ShutdownJoystick(void)
 {
 	int i;
 	event_t event;
@@ -565,8 +596,13 @@ void I_GetJoystickEvents(void)
 			axisy = SDL_JoystickGetAxis(JoyInfo.dev, i*2 + 1);
 		else axisy = 0;
 
+#ifdef _arch_dreamcast // -128 to 127
+		axisx = axisx*8;
+		axisy = axisy*8;
+#else // -32768 to 32767
 		axisx = axisx/32;
 		axisy = axisy/32;
+#endif
 
 		if ( Joystick.bGamepadStyle )
 		{
@@ -618,7 +654,7 @@ static int joy_open(const char *fname)
 		if (SDL_InitSubSystem(SDL_INIT_JOYSTICK) == -1)
 		{
 			CONS_Printf("Couldn't initialize SDL Joystick: %s\n", SDL_GetError());
-			return 0;
+			return -1;
 		}
 		else
 		{
@@ -631,7 +667,7 @@ static int joy_open(const char *fname)
 			for(i=0;i<num_joy;i++)
 				CONS_Printf("#: %d, Name: %s\n", i, SDL_JoystickName(i));
 			I_ShutdownJoystick();
-			return 0;
+			return -1;
 		}
 	}
 	else
@@ -664,7 +700,7 @@ static int joy_open(const char *fname)
 	{
 		CONS_Printf("Couldn't open joystick: %s\n", SDL_GetError());
 		I_ShutdownJoystick();
-		return 0;
+		return -1;
 	}
 	else
 	{
@@ -682,9 +718,13 @@ static int joy_open(const char *fname)
 		if(JoyInfo.buttons > JOYBUTTONS)
 			JoyInfo.buttons = JOYBUTTONS;
 
+#ifdef DC
+		JoyInfo.hats = 0;
+#else
 		JoyInfo.hats = SDL_JoystickNumHats(JoyInfo.dev);
 		if(JoyInfo.hats > JOYHATS)
 			JoyInfo.hats = JOYHATS;
+#endif
 
 		//Joystick.bGamepadStyle = !strcmp ( SDL_JoystickName (SDL_JoystickIndex(JoyInfo.dev) ),"Pad");
 
@@ -709,7 +749,7 @@ static INT64 lastjoy2hats = 0;
 
 	
 */
-static void I_ShutdownJoystick2()
+static void I_ShutdownJoystick2(void)
 {
 	int i;
 	event_t event;
@@ -833,8 +873,13 @@ void I_GetJoystick2Events(void)
 			axisy = SDL_JoystickGetAxis(JoyInfo2.dev, i*2 + 1);
 		else axisy = 0;
 
+#ifdef _arch_dreamcast // -128 to 127
+		axisx = axisx*8;
+		axisy = axisy*8;
+#else // -32768 to 32767
 		axisx = axisx/32;
 		axisy = axisy/32;
+#endif
 
 		if ( Joystick2.bGamepadStyle )
 		{
@@ -889,7 +934,7 @@ static int joy_open2(const char *fname)
 		if (SDL_InitSubSystem(SDL_INIT_JOYSTICK) == -1)
 		{
 			CONS_Printf("Couldn't initialize SDL Joystick: %s\n", SDL_GetError());
-			return 0;
+			return -1;
 		}
 		else
 		{
@@ -902,7 +947,7 @@ static int joy_open2(const char *fname)
 			for(i=0;i<num_joy;i++)
 				CONS_Printf("#: %d, Name: %s\n", i, SDL_JoystickName(i));
 			I_ShutdownJoystick2();
-			return 0;
+			return -1;
 		}
 	}
 	else
@@ -935,7 +980,7 @@ static int joy_open2(const char *fname)
 	{
 		CONS_Printf("Couldn't open joystick2: %s\n", SDL_GetError());
 		I_ShutdownJoystick2();
-		return 0;
+		return -1;
 	}
 	else
 	{
@@ -953,9 +998,13 @@ static int joy_open2(const char *fname)
 		if(JoyInfo2.buttons > JOYBUTTONS)
 			JoyInfo2.buttons = JOYBUTTONS;
 
+#ifdef DC
+		JoyInfo2.hats = 0;
+#else
 		JoyInfo2.hats = SDL_JoystickNumHats(JoyInfo2.dev);
 		if(JoyInfo2.hats > JOYHATS)
 			JoyInfo2.hats = JOYHATS;
+#endif
 
 		//Joystick.bGamepadStyle = !strcmp ( SDL_JoystickName (SDL_JoystickIndex(JoyInfo2.dev) ),"Pad");
 
@@ -971,7 +1020,7 @@ void I_InitJoystick (void)
 	I_ShutdownJoystick();
 	if(!strcmp(cv_usejoystick.string,"0") || M_CheckParm("-nojoy"))
 		return;
-	if(joy_open(cv_usejoystick.string))
+	if(joy_open(cv_usejoystick.string) != -1)
 		JoyInfo.oldjoy = atoi(cv_usejoystick.string);
 	else
 	{
@@ -986,7 +1035,7 @@ void I_InitJoystick2 (void)
 	I_ShutdownJoystick2();
 	if(!strcmp(cv_usejoystick2.string,"0") || M_CheckParm("-nojoy"))
 		return;
-	if(joy_open2(cv_usejoystick2.string))
+	if(joy_open2(cv_usejoystick2.string) != -1)
 		JoyInfo2.oldjoy = atoi(cv_usejoystick2.string);
 	else
 	{
@@ -1097,7 +1146,7 @@ void I_ShutdownMouse2()
 	if(fdmouse2!=-1) close(fdmouse2);
 	mouse2_started = 0;
 }
-#elif defined (_WIN32) || defined(_WIN64)
+#elif (defined(_WIN32) || defined(_WIN64)) && !defined(_XBOX)
 
 static HANDLE mouse2filehandle = (HANDLE)(-1);
 
@@ -1295,7 +1344,7 @@ void I_StartupMouse2 (void)
 	}
 	mouse2_started = 1;
 	I_AddExitFunc (I_ShutdownMouse2);
-#elif defined(_WIN32) || defined(_WIN64)
+#elif (defined(_WIN32) || defined(_WIN64)) && !defined(_XBOX)
 	DCB        dcb ;
 
 	if(mouse2filehandle != (HANDLE)(-1))
@@ -1391,7 +1440,7 @@ ticcmd_t* I_BaseTiccmd2(void)
 	return &emptycmd2;
 }
 
-#if (defined(_WIN32) && !defined(_WIN32_WCE)) || defined(_WIN64)
+#if ((defined(_WIN32) && !defined(_WIN32_WCE)) || defined(_WIN64)) && !defined(_XBOX)
 static DWORD starttickcount = 0; // hack for win2k time bug
 static MyFunc2 pfntimeGetTime = NULL;
 
@@ -1445,24 +1494,26 @@ tic_t I_GetTime(void)
 // I_GetTime
 // returns time in 1/TICRATE second tics
 //
-static const double divticks = TICRATE/1000.0;
-
 tic_t I_GetTime (void)
 {
-	       Uint32 ticks;
+#ifdef _arch_dreamcast 
+	static Uint64 basetime=0;
+	       Uint64 ticks = timer_ms_gettime64(); //using timer_ms_gettime64 instand of SDL_GetTicks for the Dreamcast
+#else
 	static Uint32 basetime=0;
-
-	// milliseconds since SDL initialization
-	ticks = SDL_GetTicks();
+	       Uint32 ticks = SDL_GetTicks();
+#endif
 
 	if (!basetime)
 		basetime = ticks;
 
 	ticks -= basetime;
 
-	ticks  = (Uint32)(ticks * divticks);
+	ticks  = (ticks*TICRATE);
 
-	return ticks;
+	ticks  = (ticks/1000);
+
+	return (tic_t)ticks;
 }
 #endif
 
@@ -1471,7 +1522,7 @@ tic_t I_GetTime (void)
 //
 void I_StartupTimer    (void)
 {
-#if (defined(_WIN32) && !defined(_WIN32_WCE)) || defined(_WIN64)
+#if ((defined(_WIN32) && !defined(_WIN32_WCE)) || defined(_WIN64)) && !defined(_XBOX)
 	// for win2k time bug
 	if(M_CheckParm("-gettickcount"))
 	{
@@ -1486,6 +1537,8 @@ void I_StartupTimer    (void)
 			FreeLibrary(h);
 		}
 	}
+#elif defined(_arch_dreamcast)
+
 #else
 	if(SDL_InitSubSystem(SDL_INIT_TIMER) < 0)
 		I_Error("SRB2: Needs SDL_Timer!, Error: %s",SDL_GetError()); //Alam: Doh!
@@ -1496,8 +1549,10 @@ void I_StartupTimer    (void)
 
 void I_Sleep(void)
 {
+#if !(defined(_arch_dreamcast) || defined(_XBOX))
 	if(cv_sleep.value != -1)
 		SDL_Delay(cv_sleep.value);
+#endif
 }
 
 //
@@ -1522,19 +1577,45 @@ void I_Init (void)
 
 int I_StartupSystem (void)
 {
+	SDL_version SDLcompiled;
+	const SDL_version *SDLlinked;
+#ifdef _XBOX
+#ifdef __GNUC__
+	char DP[] ="      Sonic Robo Blast 2!\n";
+	debugPrint(DP);
+#endif
+	unlink ("e:/Games/SRB2/stdout.txt");
+	freopen ("e:/Games/SRB2/stdout.txt", "w+", stdout);
+	unlink ("e:/Games/SRB2/stderr.txt");
+	freopen ("e:/Games/SRB2/stderr.txt", "w+", stderr);
+#endif
+#ifdef _arch_dreamcast
+#ifdef _DEBUG
+	//gdb_init();
+#endif
+	pvr_init_defaults(); //CONS_Printf(__FILE__":%i\n",__LINE__);
+#ifdef _DEBUG
+	//gdb_breakpoint();
+#endif
+	{
+		char title[] = "SRB2 for Dreamcast!\n";
+		__set_fpscr(0x00040000); /* ignore FPU underflow */
+		//printf("\nHello world!\n\n");
+		conio_init(CONIO_TTY_PVR,CONIO_INPUT_LINE);
+		conio_set_theme(CONIO_THEME_MATRIX);
+		conio_clear();
+		conio_putstr(title);
+		//printf("\nHello world!\n\n");
+	}
+#endif
+	SDL_VERSION(&SDLcompiled)
+	SDLlinked = SDL_Linked_Version();
+	CONS_Printf("Compiled for SDL version: %d.%d.%d\n",
+                        SDLcompiled.major, SDLcompiled.minor, SDLcompiled.patch);
+	CONS_Printf("Linked with SDL version: %d.%d.%d\n",
+                        SDLlinked->major, SDLlinked->minor, SDLlinked->patch);
 	if(SDL_Init(SDL_INIT_NOPARACHUTE) < 0)
 		I_Error("SRB2: SDL System Error: %s",SDL_GetError()); //Alam: Oh no....
-#ifdef _arch_dreamcast
-	char title[] = "SRB2 for Dreamcast!\n";
-	vmu_set_icon(VMU_bits);
-	__set_fpscr(0x00040000); /* ignore FPU underflow */
-	//printf("\nHello world!\n\n");
-	conio_init(CONIO_TTY_PVR,CONIO_INPUT_NONE);
-	conio_set_theme(CONIO_THEME_MATRIX);
-	conio_clear();
-	conio_putstr(title);
-	//printf("\nHello world!\n\n");
-#endif
 	return 0;
 }
 
@@ -1547,7 +1628,7 @@ void I_Quit (void)
 	static int quiting=0;
 	/* prevent recursive I_Quit() */
 	if(quiting) exit(1);
-	quiting = 1;
+	quiting = true;
 	M_SaveConfig (NULL);   //save game config, cvars..
 	G_SaveGameData(); // Tails 12-08-2002
 	//added:16-02-98: when recording a demo, should exit using 'q' key,
@@ -1560,7 +1641,9 @@ void I_Quit (void)
 	I_ShutdownCD();
 	// use this for 1.28 19990220 by Kin
 	I_ShutdownGraphics();
+#ifndef _arch_dreamcast
 	SDL_Quit();
+#endif
 	I_ShutdownSystem();
 	/* if option -noendtxt is set, don't print the text */
 	if (!M_CheckParm("-noendtxt") && W_CheckNumForName("ENDOOM")!=-1)
@@ -1608,7 +1691,7 @@ static boolean shutdowning = false;
 void I_Error (const char *error, ...)
 {
 	va_list        argptr;
-#if defined(MAC_ALERT) || defined(_WIN32) || defined(_WIN64) || defined(_WIN32_WCE)
+#if (defined(MAC_ALERT) || defined(_WIN32) || defined(_WIN64) || defined(_WIN32_WCE)) && !defined(_XBOX)
 	char    buffer[8192];
 #endif
 
@@ -1625,8 +1708,10 @@ void I_Error (const char *error, ...)
 			I_ShutdownCD();
 		if(errorcount == 5)
 			I_ShutdownGraphics();
+#ifndef _arch_dreamcast
 		if(errorcount == 6)
 			SDL_Quit();
+#endif
 		if(errorcount == 7)
 			I_ShutdownSystem();
 		if(errorcount == 8)
@@ -1642,10 +1727,23 @@ void I_Error (const char *error, ...)
 			va_end(argptr);
 			// 2004-03-03 AJR Since the Mac user is most likely double clicking to run the game, give them a panel.
 			MacShowAlert("Recursive Error", buffer, "Quit", NULL, NULL);
-#elif defined(_WIN32) || defined(_WIN64) || defined(_WIN32_WCE)
+#elif (defined(_WIN32) || defined(_WIN64) || defined(_WIN32_WCE)) && !defined(_XBOX)
 			va_start(argptr,error);
 			vsprintf(buffer, error, argptr);
 			va_end(argptr);
+#ifndef _WIN32_WCE
+			{
+				HANDLE co = GetStdHandle(STD_OUTPUT_HANDLE);
+				DWORD bytesWritten;
+				if(co != (HANDLE)-1)
+				{
+					if(GetFileType(co) == FILE_TYPE_CHAR)
+						WriteConsoleA(co, buffer, (DWORD)strlen(buffer), NULL, NULL);
+					else
+						WriteFile(co, buffer, (DWORD)strlen(buffer), &bytesWritten, NULL);
+				}
+			}
+#endif
 			MessageBoxA(vid.WndParent, buffer, "SRB2 Recursive Error", MB_OK|MB_ICONERROR);
 #else
 			// Don't print garbage
@@ -1682,7 +1780,9 @@ void I_Error (const char *error, ...)
 	I_ShutdownCD();
 	// use this for 1.28 19990220 by Kin
 	I_ShutdownGraphics();
+#ifndef _arch_dreamcast
 	SDL_Quit();
+#endif
 	I_ShutdownSystem();
 #ifdef MAC_ALERT
 	va_start(argptr, error);
@@ -1751,22 +1851,24 @@ void I_RemoveExitFunc(void (*func)())
 //
 //  NOTE : Shutdown user funcs. are effectively called in reverse order.
 //
-void I_ShutdownSystem()
+void I_ShutdownSystem(void)
 {
 	int c;
 
 	for (c=MAX_QUIT_FUNCS-1; c>=0; c--)
 		if (quit_funcs[c])
 			(*quit_funcs[c])();
-#ifdef SDLIO
-if(logstream) SDL_RWclose(logstream);
+#if defined(SDLIO) && defined(LOGMESSAGES)
+	if(logstream) SDL_RWclose(logstream);
 #endif
 
 }
 
 void I_GetDiskFreeSpace(INT64 *freespace)
 {
-#if defined (LINUX) && !defined(_arch_dreamcast)
+#if defined(_arch_dreamcast)
+	*freespace = 0;
+#elif defined (LINUX)
 #ifdef SOLARIS
 	*freespace = MAXINT;
 	return;
@@ -1779,7 +1881,7 @@ void I_GetDiskFreeSpace(INT64 *freespace)
 	}
 	*freespace = stfs.f_bavail*stfs.f_bsize;
 #endif
-#elif (defined (_WIN32) && !defined(_WIN32_WCE)) || defined(_WIN64)
+#elif ((defined (_WIN32) && !defined(_WIN32_WCE)) || defined(_WIN64)) && !defined(_XBOX)
 
 	static MyFunc pfnGetDiskFreeSpaceEx=NULL;
 	static boolean testwin95 = false;
@@ -1809,8 +1911,6 @@ void I_GetDiskFreeSpace(INT64 *freespace)
 							&NumberOfFreeClusters, &TotalNumberOfClusters);
 		*freespace = BytesPerSector*SectorsPerCluster*NumberOfFreeClusters;
 	}
-#elif defined(__DC__)
-	*freespace = 16*1024*1024;
 #else // Dummy for platform independent; 1GB should be enough
 	*freespace = 1024*1024*1024;
 #endif
@@ -1818,13 +1918,13 @@ void I_GetDiskFreeSpace(INT64 *freespace)
 
 char *I_GetUserName(void)
 {
-#ifndef _WIN32_WCE
+#if !(defined(_WIN32_WCE) || defined(_XBOX))
 	static char username[MAXPLAYERNAME];
 	char  *p;
 #if defined(_WIN32) || defined(_WIN64)
 	DWORD i = MAXPLAYERNAME;
 
-	if (!GetUserName(username, &i))
+	if (!GetUserNameA(username, &i))
 #endif
 	{
 		p = getenv("USER");
@@ -1857,15 +1957,15 @@ char *I_GetUserName(void)
 int I_mkdir(const char *dirname, int unixright)
 {
 //[segabor]
-#if defined(LINUX) || defined(__MACH__) || defined (__CYGWIN__) || defined(__OS2__)
+#if defined(LINUX) || defined(__MACH__) || defined (__CYGWIN__) || defined(__OS2__) || (defined(_XBOX) && defined(__GNUC__))
 	return mkdir(dirname, unixright);
-#elif defined(_WIN32) || (defined(_WIN32_WCE) && !defined(__GNUC__)) || defined(_WIN64)
+#elif (defined(_WIN32) || (defined(_WIN32_WCE) && !defined(__GNUC__)) || defined(_WIN64)) && !defined(_XBOX)
 	SECURITY_ATTRIBUTES ntrights= { 0, NULL, TRUE }; /// \todo should implement ntright under nt...
 	unixright = 0;
 #ifdef _WIN32_WCE
 	return CreateDirectoryA(dirname,&ntrights);
 #else
-	return CreateDirectoryEx(".",dirname,&ntrights);
+	return CreateDirectoryExA(".",dirname,&ntrights);
 #endif
 #else
 	dirname = NULL;
@@ -1884,19 +1984,42 @@ int I_mkdir(const char *dirname, int unixright)
 */
 static boolean isWadPathOk(const char *path)
 {
-	char wad3path[256];
+	char *wad3path = malloc(256);
+
+	if(!wad3path)
+		return false;
 
 	sprintf(wad3path, "%s/%s", path, WADKEYWORD1);
 
 	if(!access(wad3path, R_OK))
+	{
+		free(wad3path);
 		return true;
+	}
 
 	sprintf(wad3path, "%s/%s", path, WADKEYWORD2);
 
 	if(!access(wad3path, R_OK))
+	{
+		free(wad3path);
 		return true;
+	}
 
+	free(wad3path);
 	return false;
+}
+
+static inline void pathonly(char* s)
+{
+	size_t j;
+
+	for(j=strlen(s);j != (size_t)-1;j--)
+		if( (s[j]=='\\') || (s[j]==':') || (s[j]=='/') )
+		{
+			if(s[j]==':') s[j+1] = 0;
+			else s[j] = 0;
+			return;
+		}
 }
 
 /**	\brief	search for srb2.srb in the given path
@@ -1909,8 +2032,25 @@ static boolean isWadPathOk(const char *path)
 */
 static const char *searchWad(const char *searchDir) 
 {
-	searchDir = NULL;
-	return searchDir; /// \todo use filesearch?
+	static char tempsw[256] = "";
+	filestatus_t fstemp;
+
+	strcpy(tempsw, WADKEYWORD1);
+	fstemp = filesearch(tempsw,searchDir,NULL,true,20);
+	if(fstemp == FS_FOUND)
+	{
+		pathonly(tempsw);
+		return tempsw;
+	}
+
+	strcpy(tempsw, WADKEYWORD2);
+	fstemp = filesearch(tempsw,searchDir,NULL,true,20);
+	if(fstemp == FS_FOUND)
+	{
+		pathonly(tempsw);
+		return tempsw;
+	}
+	return NULL;
 }
 
 /**	\brief go through all possible paths and look for srb2.srb
@@ -1919,48 +2059,93 @@ static const char *searchWad(const char *searchDir)
 */
 static const char *locateWad(void)
 {
+	const char *envstr;
 	const char *WadPath;
-	char *userhome;
-	
+
+	I_OutputMsg("SRB2WADDIR");
 	// does SRB2WADDIR exist?
-	WadPath = getenv("SRB2WADDIR");
-	if(WadPath && isWadPathOk(WadPath))
-		return WadPath;
-	
+	if(((envstr = getenv("SRB2WADDIR")) != NULL) && isWadPathOk(envstr))
+		return envstr;
+
+#ifndef NOCWD
+	I_OutputMsg(",.");
 	// examine current dir
 	strcpy(returnWadPath, ".");
 	if(isWadPathOk(returnWadPath))
-		return returnWadPath;
-	
-#ifdef DEFAULTWADLOCATION1
+		return NULL;
+#endif
+
 	// examine default dirs
+#ifdef DEFAULTWADLOCATION1
+	I_OutputMsg(","DEFAULTWADLOCATION1);
 	strcpy(returnWadPath, DEFAULTWADLOCATION1);
 	if(isWadPathOk(returnWadPath))
 		return returnWadPath;
 #endif
 #ifdef DEFAULTWADLOCATION2
+	I_OutputMsg(","DEFAULTWADLOCATION2);
 	strcpy(returnWadPath, DEFAULTWADLOCATION2);
 	if(isWadPathOk(returnWadPath))
 		return returnWadPath;
 #endif
-	
+#ifdef DEFAULTWADLOCATION3
+	I_OutputMsg(","DEFAULTWADLOCATION3);
+	strcpy(returnWadPath, DEFAULTWADLOCATION3);
+	if(isWadPathOk(returnWadPath))
+		return returnWadPath;
+#endif
+#ifdef DEFAULTWADLOCATION4
+	I_OutputMsg(","DEFAULTWADLOCATION4);
+	strcpy(returnWadPath, DEFAULTWADLOCATION4);
+	if(isWadPathOk(returnWadPath))
+		return returnWadPath;
+#endif
+#ifdef DEFAULTWADLOCATION5
+	I_OutputMsg(","DEFAULTWADLOCATION5);
+	strcpy(returnWadPath, DEFAULTWADLOCATION5);
+	if(isWadPathOk(returnWadPath))
+		return returnWadPath;
+#endif
+#ifdef DEFAULTWADLOCATION6
+	I_OutputMsg(","DEFAULTWADLOCATION6);
+	strcpy(returnWadPath, DEFAULTWADLOCATION6);
+	if(isWadPathOk(returnWadPath))
+		return returnWadPath;
+#endif
+#ifdef DEFAULTWADLOCATION7
+	I_OutputMsg(","DEFAULTWADLOCATION7);
+	strcpy(returnWadPath, DEFAULTWADLOCATION7);
+	if(isWadPathOk(returnWadPath))
+		return returnWadPath;
+#endif
+#ifndef NOHOME
 	// find in $HOME
-	userhome = getenv("HOME");
-	if(userhome)
+	I_OutputMsg(",HOME");
+	if((envstr = getenv("HOME")) != NULL)
 	{
-		WadPath = searchWad(userhome);
+		WadPath = searchWad(envstr);
 		if(WadPath)
 			return WadPath;
 	}
+#endif
 #ifdef DEFAULTSEARCHPATH1
 	// find in /usr/local
+	I_OutputMsg(", in:"DEFAULTSEARCHPATH1);
 	WadPath = searchWad(DEFAULTSEARCHPATH1);
 	if(WadPath)
 		return WadPath;
 #endif
 #ifdef DEFAULTSEARCHPATH2
 	// find in /usr/games
+	I_OutputMsg(", in:"DEFAULTSEARCHPATH2);
 	WadPath = searchWad(DEFAULTSEARCHPATH2);
+	if(WadPath)
+		return WadPath;
+#endif
+#ifdef DEFAULTSEARCHPATH3
+	// find in ???
+	I_OutputMsg(", in:"DEFAULTSEARCHPATH3);
+	WadPath = searchWad(DEFAULTSEARCHPATH3);
 	if(WadPath)
 		return WadPath;
 #endif
@@ -1968,20 +2153,24 @@ static const char *locateWad(void)
 	return NULL;
 }
 
-void I_LocateWad(void)
+const char *I_LocateWad(void)
 {
 	const char *waddir;
 
+	I_OutputMsg("Looking for WADs in: ");
 	waddir = locateWad();
+	I_OutputMsg("\n");
 
-	if(waddir) // change to the directory where we found srb2.srb
-#if (defined(_WIN32) && !defined(_WIN32_WCE)) || defined(_WIN64)
-		SetCurrentDirectory(waddir);
+	if(waddir)
+	{
+		// change to the directory where we found srb2.srb
+#if ((defined(_WIN32) && !defined(_WIN32_WCE)) || defined(_WIN64)) && !defined(_XBOX)
+		SetCurrentDirectoryA(waddir);
 #elif !defined(_WIN32_WCE)
 		chdir(waddir);
-#else
-		return;
 #endif
+	}
+	return waddir;
 }
 
 #ifdef LINUX
@@ -1993,7 +2182,12 @@ void I_LocateWad(void)
 // quick fix for compil
 ULONG I_GetFreeMem(ULONG *total)
 {
-#if defined(LINUX) && !defined(_arch_dreamcast)
+#if defined(_arch_dreamcast)
+	//Dreamcast!
+	if(total)
+		*total = 16<<20;
+	return 8<<20;
+#elif defined(LINUX)
 	/* LINUX covers all the unix OS's.*/
 #ifdef FREEBSD
 	struct  vmmeter sum;
@@ -2033,7 +2227,7 @@ ULONG I_GetFreeMem(ULONG *total)
 	return   32 << 20;
 #else
 	/* Linux */
-	char buf[1024];    
+	char buf[1024];
 	char *memTag;
 	ULONG freeKBytes;
 	ULONG totalKBytes;
@@ -2077,7 +2271,7 @@ ULONG I_GetFreeMem(ULONG *total)
 	return freeKBytes << 10;
 #endif /* SOLARIS */
 #endif /* FREEBSD */
-#elif defined(_WIN32) || (defined(_WIN32_WCE) && !defined(__GNUC__)) || defined(_WIN64)
+#elif (defined(_WIN32) || (defined(_WIN32_WCE) && !defined(__GNUC__)) || defined(_WIN64)) && !defined(_XBOX)
 	MEMORYSTATUS info;
 
 	info.dwLength = sizeof(MEMORYSTATUS);
@@ -2098,8 +2292,8 @@ ULONG I_GetFreeMem(ULONG *total)
 #else
 	/*  Not Linux.*/
 	if(total)
-		*total = 16<<20;
-	return 16<<20;
+		*total = 48<<20;
+	return 48<<20;
 #endif /* LINUX */
 }
 
@@ -2116,8 +2310,8 @@ const CPUInfoFlags *I_CPUInfo(void)
 	SDL_CPUInfo.SSE         = SDL_HasSSE();
 	SDL_CPUInfo.SSE2        = SDL_HasSSE2();
 	SDL_CPUInfo.AltiVec     = SDL_HasAltiVec();
+	return &SDL_CPUInfo;
 #else
 	return NULL; /// \todo CPUID asm
 #endif
-	return &SDL_CPUInfo;
 }

@@ -28,7 +28,11 @@
 #endif
 
 #ifdef SDLMAIN
+#if defined(_XBOX) && defined(_MSC_VER)	
+#include <SDL_main.h>
+#else
 #include <SDL/SDL_main.h>
+#endif
 #endif
 
 #ifdef LOGMESSAGES
@@ -62,7 +66,13 @@ int logstream = INVALID_HANDLE_VALUE;
 
 #ifdef _arch_dreamcast
 #include <arch/arch.h>
-KOS_INIT_FLAGS(INIT_DEFAULT);
+KOS_INIT_FLAGS(INIT_DEFAULT
+//| INIT_NET
+//| INIT_MALLOCSTATS
+//| INIT_QUIET
+//| INIT_OCRAM
+//| INIT_NO_DCLOAD
+);
 #endif
 
 /**	\brief	The main function
@@ -74,11 +84,20 @@ KOS_INIT_FLAGS(INIT_DEFAULT);
 
 	
 */
+FUNCNORETURN
+#if defined(_XBOX) && defined(__GNUC__)
+void XBoxStartup()
+{
+	const char* logdir = NULL;
+	myargc = -1;
+	myargv = NULL;
+#else
 int main(int argc, char **argv)
 {
 	const char* logdir = NULL;
 	myargc = argc;
 	myargv = argv; /// TODO pull out path to exe from this string
+#endif
 
 	logdir = D_Home();
 #ifdef LOGMESSAGES
@@ -86,17 +105,29 @@ int main(int argc, char **argv)
 #ifdef _WIN32_WCE
 	logstream = SDL_RWFromFile("/Storage Card/SRB2DEMO/srb2log.txt", "a+");
 #else
+#ifdef DEFAULTDIR
 	if(logdir)
 	{
-		logstream = SDL_RWFromFile(va("%s"/DEFAULTDIR"/srb2log.txt",logdir), "a+");
+		logstream = SDL_RWFromFile(va("%s/"DEFAULTDIR"/srb2log.txt",logdir), "a+");
 	}
 	else
+#endif
+#ifdef _arch_dreamcast
+		logstream = SDL_RWFromFile("/pc/tmp/srb2log.txt", "a+");
+#else
 		logstream = SDL_RWFromFile("./srb2log.txt", "a+");
+#endif
 #endif	
 #else
 	//unlink("./srb2log.txt"); //Alam: poo! why can't open TRUNC the log file?
 	//Hurdler: only write log if we have the permission in the current directory
+#ifndef _XBOX
+#ifdef _arch_dreamcast
+	//logstream = open("/pc/tmp/srb2log.txt", O_WRONLY|(0?O_APPEND:O_TRUNC)|O_CREAT|O_SEQUENTIAL|O_TEXT,0666);
+#else
 	logstream = open("./srb2log.txt", O_WRONLY|(0?O_APPEND:O_TRUNC)|O_CREAT|O_SEQUENTIAL|O_TEXT,0666);
+#endif
+#endif
 	if (logstream < 0)
 	{
 		logstream = INVALID_HANDLE_VALUE; // so we haven't to change the current source code
@@ -106,8 +137,18 @@ int main(int argc, char **argv)
 	//CONS_Printf ("I_StartupSystem() ...\n");
 	I_StartupSystem();
 #if defined(_WIN32) || defined(_WIN64) || defined(__CYGWIN__)
+#ifndef _XBOX
+	if(M_CheckParm("-detachconsole"))
+		FreeConsole();
+#ifdef SDLMAIN
+	if(M_CheckParm("-console"))
+#else
+	if(!M_CheckParm("-noconsole"))
+#endif
+		AllocConsole();
 #if defined(__MINGW32__) || defined(__MINGW64__)
 	LoadLibrary("exchndl.dll");
+#endif
 #endif
 #ifdef USEASM
 	{
@@ -130,5 +171,7 @@ int main(int argc, char **argv)
 	D_SRB2Loop();
 
 	// return to OS
+#ifndef __GNUC__
 	return 0;
+#endif
 }

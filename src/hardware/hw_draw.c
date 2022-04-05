@@ -55,16 +55,16 @@ float gr_patch_scaley;
 #endif
 typedef struct
 {
-	char id_field_length  /*ATTRPACK*/; // 1
-	char color_map_type     ATTRPACK;   // 2
-	char image_type       /*ATTRPACK*/; // 3
-	char dummy[5]           ATTRPACK;   // 4,  8
-	short x_origin        /*ATTRPACK*/; // 9, 10
-	short y_origin        /*ATTRPACK*/; //11, 12
-	short width           /*ATTRPACK*/; //13, 14
-	short height          /*ATTRPACK*/; //15, 16
-	char image_pix_size   /*ATTRPACK*/; //17
-	char image_descriptor   ATTRPACK;   //18
+	char id_field_length  ATTRPACK; // 1
+	char color_map_type   ATTRPACK; // 2
+	char image_type       ATTRPACK; // 3
+	char dummy[5]         ATTRPACK; // 4,  8
+	short x_origin        ATTRPACK; // 9, 10
+	short y_origin        ATTRPACK; //11, 12
+	short width           ATTRPACK; //13, 14
+	short height          ATTRPACK; //15, 16
+	char image_pix_size   ATTRPACK; //17
+	char image_descriptor ATTRPACK; //18
 } TGAHeader, *PTGAHeader; // sizeof is 18
 #ifndef __GNUC__
 #pragma pack()

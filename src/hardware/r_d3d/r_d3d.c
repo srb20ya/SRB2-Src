@@ -145,10 +145,10 @@ static I_Error_t I_Error_GL = NULL;
 //                  : else do nothing
 // Returns          :
 // -----------------+
-void DBG_Printf( LPCTSTR lpFmt, ... )
+void DBG_Printf(const char *lpFmt, ... )
 {
 #ifdef DEBUG_TO_FILE
-    char    str[4096];
+    char    str[4096] = "";
     va_list arglist;
     DWORD   bytesWritten;
 
@@ -631,7 +631,7 @@ EXPORT void HWRAPI( SetTexture ) ( FTextureInfo *pTexInfo )
     else
     {
         // Download a mipmap
-        static RGBA_t   tex[256*256];
+        static RGBA_t   tex[512*512];
         RGBA_t          *ptex = tex;
         int             w, h;
 

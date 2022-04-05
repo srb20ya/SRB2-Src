@@ -50,7 +50,8 @@
 /*
  * Set the x86 FPU control word to less precision for more speed:
  */
-/*#if defined(__linux__) && defined(__i386__) && defined(FAST_MATH)
+/*
+#if defined(__linux__) && defined(__i386__) && defined(FAST_MATH)
 #include <i386/fpu_control.h>
 #define START_FAST_MATH  __setfpucw(_FPU_SINGLE | _FPU_MASK_IM | _FPU_MASK_DM \
             | _FPU_MASK_ZM | _FPU_MASK_OM | _FPU_MASK_UM | _FPU_MASK_PM);

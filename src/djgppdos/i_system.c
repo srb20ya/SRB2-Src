@@ -316,12 +316,12 @@ static void I_DetectOS (void)
 
 ULONG I_GetFreeMem(ULONG *total)
 {
-	_go32_dpmi_meminfo     info;
+	__dpmi_free_mem_info     info;
 
-	_go32_dpmi_get_free_memory_information(&info);
+	__dpmi_get_free_memory_information(&info);
 	if( total )
-		*total = info.total_physical_pages<<12; // <<12 for convert page to byte
-	return info.available_physical_pages<<12;
+		*total = info.total_number_of_physical_pages<<12; // <<12 for convert page to byte
+	return info.total_number_of_free_pages<<12;
 }
 
 
@@ -1466,7 +1466,7 @@ int I_GetKey (void)
 		for ( ; eventtail != eventhead ; eventtail = (eventtail+1)&(MAXEVENTS-1) )
 		{
 			ev = &events[eventtail];
-			if(ev->type == ev_keydown)
+			if(ev->type == ev_keydown || ev->type == ev_console)
 			{
 				rc = ev->data1;
 				continue;

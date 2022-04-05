@@ -119,26 +119,26 @@ loadfunc_t hwsFuncTable[] = {
 #endif
 
 #ifdef HWRENDER
-BOOL Init3DDriver (const char* dllName)
+BOOL Init3DDriver (LPCSTR dllName)
 {
 	hwdInstance = LoadDLL (dllName, hwdFuncTable);
 	return (hwdInstance != NULL);
 }
 
-void Shutdown3DDriver (void)
+VOID Shutdown3DDriver (VOID)
 {
 	UnloadDLL (&hwdInstance);
 }
 #endif
 
 #ifdef HW3SOUND
-BOOL Init3DSDriver(const char *dllName)
+BOOL Init3DSDriver(LPCSTR dllName)
 {
 	hwsInstance = LoadDLL (dllName, hwsFuncTable);
 	return (hwsInstance != NULL);
 }
 
-void Shutdown3DSDriver (void)
+VOID Shutdown3DSDriver (VOID)
 {
 	UnloadDLL (&hwsInstance);
 }
@@ -147,13 +147,13 @@ void Shutdown3DSDriver (void)
 // --------------------------------------------------------------------------
 // Load a DLL, returns the HINSTANCE handle or NULL
 // --------------------------------------------------------------------------
-HINSTANCE LoadDLL (const char* dllName, loadfunc_t* funcTable)
+HINSTANCE LoadDLL (LPCSTR dllName, loadfunc_t* funcTable)
 {
-	void*       funcPtr;
+	LPVOID      funcPtr;
 	loadfunc_t* loadfunc;
 	HINSTANCE   hInstance;
 
-	if ((hInstance = LoadLibrary (dllName)) != NULL)
+	if ((hInstance = LoadLibraryA (dllName)) != NULL)
 	{
 		// get function pointers for all functions we use
 		for (loadfunc = funcTable; loadfunc->fnName!=NULL; loadfunc++)
@@ -161,18 +161,18 @@ HINSTANCE LoadDLL (const char* dllName, loadfunc_t* funcTable)
 			funcPtr = GetProcAddress (hInstance, loadfunc->fnName);
 			if (!funcPtr) {
 				//I_GetLastErrorMsgBox ();
-				MessageBox( NULL, va("The '%s' haven't the good specification (function %s missing)\n\n"
+				MessageBoxA( NULL, va("The '%s' haven't the good specification (function %s missing)\n\n"
 				           "You must use dll from the same zip of this exe\n", dllName, loadfunc->fnName),
 				           "Error", MB_OK|MB_ICONINFORMATION );
 				return FALSE;
 			}
 			// store function address
-			*((void**)loadfunc->fnPointer) = funcPtr;
+			*((LPVOID*)loadfunc->fnPointer) = funcPtr;
 		}
 	}
 	else
 	{
-		MessageBox( NULL, va("LoadLibrary() FAILED : couldn't load '%s'\r\n", dllName), "Warning", MB_OK|MB_ICONINFORMATION );
+		MessageBoxA( NULL, va("LoadLibrary() FAILED : couldn't load '%s'\r\n", dllName), "Warning", MB_OK|MB_ICONINFORMATION );
 		//I_GetLastErrorMsgBox ();
 	}
 
@@ -183,7 +183,7 @@ HINSTANCE LoadDLL (const char* dllName, loadfunc_t* funcTable)
 // --------------------------------------------------------------------------
 // Unload the DLL
 // --------------------------------------------------------------------------
-void UnloadDLL (HINSTANCE* pInstance)
+VOID UnloadDLL (HINSTANCE* pInstance)
 {
 	if (FreeLibrary (*pInstance))
 		*pInstance = NULL;

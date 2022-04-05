@@ -18,7 +18,11 @@
 
 #include <stdio.h>
 #ifdef SDLIO
+#if defined(_XBOX) && defined(_MSC_VER)
+#include <SDL_rwops.h>
+#else
 #include <SDL/SDL_rwops.h>
+#endif
 #else
 #ifndef _WIN32_WCE
 #include <fcntl.h>
@@ -35,10 +39,10 @@
 #include <time.h>
 #endif
 
-#if (defined(_WIN32) && !defined(_WIN32_WCE)) || defined(_WIN64) || defined(__DJGPP__)
+#if ((defined(_WIN32) && !defined(_WIN32_WCE)) || defined(_WIN64) || defined(__DJGPP__)) && !defined(_XBOX)
 #include <io.h>
 #include <direct.h>
-#elif !defined (_WIN32_WCE)
+#elif !defined(_WIN32_WCE) && !(defined(_XBOX) && !defined(__GNUC__))
 #include <sys/types.h>
 #include <dirent.h>
 #include <utime.h>
@@ -69,9 +73,7 @@
 #include "p_setup.h"
 #include "m_misc.h"
 #include "m_menu.h"
-#ifndef NOMD5
 #include "md5.h"
-#endif
 #include "filesrch.h"
 
 // sender structure
@@ -109,10 +111,9 @@ char downloaddir[256] = "DOWNLOAD";
 char* PutFileNeeded(void)
 {
 	int i, count = 0;
-	char* p;
+	char* p = (char *)&netbuffer->u.serverinfo.fileneeded;
 	char wadfilename[MAX_WADPATH];
 
-	p = (char *)&netbuffer->u.serverinfo.fileneeded;
 	for(i = 0; i < numwadfiles; i++)
 	{
 		// if it has only music/sound lumps, mark it as unimportant
@@ -180,8 +181,7 @@ boolean SendRequestFile(void)
 	boolean candownloadfiles = true;
 	char* p;
 	int i;
-	ULONG totalfreespaceneeded = 0;
-	INT64 availablefreespace;
+	INT64 totalfreespaceneeded = 0, availablefreespace;
 
 	if(M_CheckParm("-nodownload"))
 		candownloadfiles = false;
@@ -386,10 +386,11 @@ void SendFile(int node, char* filename, char fileid)
 	q = &transfer[node].txlist;
 	while(*q)
 		q = &((*q)->next);
-	*q=(filetx_t*)malloc(sizeof(filetx_t));
-	if(!*q)
+	p = *q=(filetx_t*)malloc(sizeof(filetx_t));
+	if(p)
+		memset(p, 0, sizeof(filetx_t));
+	else
 		I_Error("SendFile: No more ram\n");
-	p = *q;
 	p->filename = (char*)malloc(MAX_WADPATH);
 	if(!p->filename)
 		I_Error("SendFile: No more ram\n");
@@ -451,10 +452,11 @@ void SendRam(int node, byte* data, size_t size, freemethod_t freemethod, char fi
 	q = &transfer[node].txlist;
 	while(*q)
 		q = &((*q)->next);
-	*q = (filetx_t*)malloc(sizeof(filetx_t));
-	if(!*q)
+	p = *q = (filetx_t*)malloc(sizeof(filetx_t));
+	if(p)
+		memset(p, 0, sizeof(filetx_t));
+	else
 		I_Error("SendRam : No more ram\n");
-	p = *q;
 	p->ram = freemethod;
 	p->filename = (char *)data;
 	p->size = (ULONG)size;
@@ -675,12 +677,18 @@ void CloseNetFile(void)
 
 void nameonly(char* s)
 {
-	size_t j;
+	size_t j, len;
+	void *ns;
 
 	for(j=strlen(s);j != (size_t)-1;j--)
 		if( (s[j]=='\\') || (s[j]==':') || (s[j]=='/') )
 		{
-			memcpy(s, &(s[j+1]), strlen(&(s[j+1]))+1 );
+			ns = &(s[j+1]);
+			len = strlen(ns);
+			if(false)
+				memcpy(s, ns, len+1 );
+			else
+				memmove(s, ns, len+1 );
 			return;
 		}
 }
@@ -721,7 +729,9 @@ boolean fileexist(char* filename, time_t time)
 
 filestatus_t checkfilemd5(char* filename, const unsigned char* wantedmd5sum)
 {
-#ifndef NOMD5
+#if defined(NOMD5) || defined(_arch_dreamcast)
+	wantedmd5sum = filename = NULL;
+#else
 	FILE* fhandle;
 	unsigned char md5sum[16];
 
@@ -746,10 +756,16 @@ filestatus_t checkfilemd5(char* filename, const unsigned char* wantedmd5sum)
 filestatus_t findfile(char* filename, const unsigned char* wantedmd5sum, boolean completepath)
 {
 	filestatus_t homecheck = filesearch(filename, srb2home, wantedmd5sum, false, 10);
-	//FIXME: implement wadpath-search
-	//just for the start... recursive 10 levels from current dir should bring back old behaviour
-
 	if(homecheck == FS_FOUND)
 		return filesearch(filename, srb2home, wantedmd5sum, completepath, 10);
+	
+	homecheck = filesearch(filename, srb2path, wantedmd5sum, false, 10);
+	if(homecheck == FS_FOUND)
+		return filesearch(filename, srb2path, wantedmd5sum, completepath, 10);
+
+#ifdef _arch_dreamcast
+	return filesearch(filename, "/cd", wantedmd5sum, completepath, 10);
+#else
 	return filesearch(filename, ".", wantedmd5sum, completepath, 10);
+#endif
 }

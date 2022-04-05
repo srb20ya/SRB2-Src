@@ -64,7 +64,7 @@ LIB32=link.exe -lib
 # PROP Intermediate_Dir "..\..\..\..\objs\VC\Debug\r_d3d\Mesa"
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_MBCS" /D "_LIB" /YX /FD /GZ /c
-# ADD CPP /G5 /Zp4 /MTd /Z7 /Od /D "_WIN32" /D "WIN32" /D "_WINDOWS" /D "__WIN32__" /D "__MSC__" /D "MESAD3D" /D "NOCRYPT" /D "FAST_MATH" /D "_DEBUG" /D "D3D_DEBUG" /GM /TP /Yd /c
+# ADD CPP /G5 /Zp4 /MTd /Z7 /Od /D "_WIN32" /D "WIN32" /D "_WINDOWS" /D "__WIN32__" /D "__MSC__" /D "MESAD3D" /D "NOCRYPT" /D "FAST_MATH" /D "_DEBUG" /D "D3D_DEBUG" /FR /GM /TP /Yd /c
 # ADD BASE RSC /l 0x409 /d "_DEBUG"
 # ADD RSC /l 0x409 /d "_DEBUG"
 BSC32=bscmake.exe

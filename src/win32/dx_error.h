@@ -38,10 +38,10 @@ extern "C" {
 #endif
 
 // Displays a message box containing the given formatted string.
-//void __cdecl DXErrorMessageBox (LPSTR fmt, ... );
+//VOID DXErrorMessageBox (LPSTR fmt, ... );
 
 // Returns a pointer to a string describing the given DD, D3D or D3DRM error code.
-const char* DXErrorToString (HRESULT error);
+LPCSTR DXErrorToString (HRESULT error);
 
 #ifdef __cplusplus
 };

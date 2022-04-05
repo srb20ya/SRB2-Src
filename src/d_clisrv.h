@@ -23,12 +23,8 @@
 #include "d_netcmd.h"
 #include "tables.h"
 
-#ifdef _MSC_VER
-#pragma warning(disable :  4200)
-#endif
-
 // more precise version number to compare in network
-#define SUBVERSION 000
+#define SUBVERSION 001
 
 // Network play related stuff.
 // There is a data struct that stores network
@@ -105,6 +101,11 @@ typedef struct
 	ticcmd_t cmds[45]; // normally [BACKUPTIC][MAXPLAYERS] but too large
 } servertics_pak;
 
+
+#ifdef _MSC_VER
+#pragma warning(disable :  4200)
+#endif
+
 typedef struct
 {
 	byte version; // different versions don't work
@@ -122,6 +123,10 @@ typedef struct
 	byte modifiedgame;
 	byte netcvarstates[0];
 } serverconfig_pak;
+
+#ifdef _MSC_VER
+#pragma warning(default : 4200)
+#endif
 
 typedef struct
 {

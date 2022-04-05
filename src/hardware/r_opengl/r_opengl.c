@@ -205,6 +205,8 @@
 #include <math.h>
 #include "r_opengl.h"
 
+// for KOS: GL_TEXTURE_ENV, glAlphaFunc, glColorMask, glPolygonOffset, glReadPixels, GL_ALPHA_TEST, GL_POLYGON_OFFSET_FILL
+
 // ==========================================================================
 //                                                                  CONSTANTS
 // ==========================================================================
@@ -263,7 +265,7 @@ static GLint       viewport[4];
 #endif
 
 // shortcut for ((float)1/i)
-static const GLfloat    byte2float[256] = {
+static const GLfloat byte2float[256] = {
 	0.000000f, 0.003922f, 0.007843f, 0.011765f, 0.015686f, 0.019608f, 0.023529f, 0.027451f,
 	0.031373f, 0.035294f, 0.039216f, 0.043137f, 0.047059f, 0.050980f, 0.054902f, 0.058824f,
 	0.062745f, 0.066667f, 0.070588f, 0.074510f, 0.078431f, 0.082353f, 0.086275f, 0.090196f,
@@ -315,7 +317,7 @@ static I_Error_t I_Error_GL = NULL;
 FUNCPRINTF void DBG_Printf(const char* lpFmt, ... )
 {
 #ifdef DEBUG_TO_FILE
-	char    str[4096];
+	char    str[4096] = "";
 	va_list arglist;
 
 	va_start (arglist, lpFmt);
@@ -491,7 +493,7 @@ void Flush( void )
 // isExtAvailable   : Look if an OpenGL extension is available
 // Returns          : true if extension available
 // -----------------+
-int isExtAvailable(char *extension)
+int isExtAvailable(const char *extension)
 {
 	const GLubyte   *start;
 	GLubyte         *where, *terminator;
@@ -553,10 +555,12 @@ EXPORT void HWRAPI( ReadRect ) (int x, int y, int width, int height,
 	int i, j;
 
 	dst_stride = 0;
+#ifdef KOS_GL_COMPATIBILITY
+	x = y = width = height = i = j = 0;
+	image = dst_data = NULL;
+#else
 	image = (GLubyte *) malloc(width*height*3*sizeof(GLubyte));
-#ifndef KOS_GL_COMPATIBILITY
 	glReadPixels(x, y, width, height, GL_RGB, GL_UNSIGNED_BYTE, image);
-#endif
 	for (i=height-1; i>=0; i--)
 		for (j=0; j<width; j++)
 			dst_data[(height-1-i)*width+j] = (unsigned short)(
@@ -564,6 +568,7 @@ EXPORT void HWRAPI( ReadRect ) (int x, int y, int width, int height,
 			                ((image[(i*width+j)*3+1]>>2)<<5) |
 			                ((image[(i*width+j)*3+2]>>3)));
 	free(image);
+#endif
 }
 
 
@@ -752,7 +757,10 @@ EXPORT void HWRAPI( SetBlend ) ( FBITFIELD PolyFlags )
 			else
 				glDepthFunc(GL_LEQUAL); //glEnable( GL_DEPTH_TEST );
 		}
-#ifndef KOS_GL_COMPATIBILITY
+#ifdef KOS_GL_COMPATIBILITY
+		if ( Xor&PF_Modulated && !(PolyFlags & PF_Modulated) )
+			glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+#else
 		if( Xor&PF_Modulated )
 		{
 #ifdef LINUX
@@ -952,6 +960,7 @@ EXPORT void HWRAPI( SetTexture ) ( FTextureInfo *pTexInfo )
 				glTexImage2D( GL_TEXTURE_2D, 0, textureformatGL, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, ptex );
 		}
 #endif
+#endif
 
 		if( pTexInfo->flags & TF_WRAPX )
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
@@ -963,9 +972,8 @@ EXPORT void HWRAPI( SetTexture ) ( FTextureInfo *pTexInfo )
 		else
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
 
-		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, (GLfloat)mag_filter);
-		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, (GLfloat)min_filter);
-#endif
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, mag_filter);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, min_filter);
 
 		pTexInfo->nextmipmap = NULL;
 		if (gr_cachetail)
@@ -976,7 +984,7 @@ EXPORT void HWRAPI( SetTexture ) ( FTextureInfo *pTexInfo )
 		else // initialisation de la liste
 			gr_cachetail = gr_cachehead =  pTexInfo;
 	}
-#if defined (MINI_GL_COMPATIBILITY) && !defined(KOS_GL_COMPATIBILITY)
+#if defined (MINI_GL_COMPATIBILITY)
 	switch(pTexInfo->flags)
 	{
 		case 0 :
@@ -1085,7 +1093,7 @@ EXPORT void HWRAPI( DrawPolygon ) ( FSurfaceInfo  *pSurf,
 		scalef /= 64;
 		//DBG_Printf("Scale factor: %f\n", scalef);
 
-		if (scalef < 0.05f) // ça sert à rien de tracer la light
+		if (scalef < 0.05f)
 			return;
 
 		c.alpha *= scalef; // change the alpha value (it seems better than changing the size of the corona)
@@ -1172,7 +1180,7 @@ EXPORT void HWRAPI( SetSpecialState ) (hwdspecialstate_t IdState, int Value)
 				glDisable(GL_FOG);
 			break;
 
-#ifndef KOS_GL_COMPATIBILITY
+#ifndef KOS_GL_COMPATIBILITY // GL_FILTER_BILINEAR?
 		case HWD_SET_POLYGON_SMOOTH:
 			if (Value)
 				glEnable(GL_POLYGON_SMOOTH);

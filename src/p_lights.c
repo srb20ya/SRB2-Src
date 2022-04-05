@@ -81,7 +81,7 @@ void P_SpawnFireFlicker(sector_t* sector)
 	sector->special &= ~31; // Clear non-generalized sector type
 
 	P_RemoveLighting(sector); // out with the old, in with the new
-	flick = Z_Malloc(sizeof(*flick), PU_LEVSPEC, 0);
+	flick = Z_Malloc(sizeof(*flick), PU_LEVSPEC, NULL);
 
 	P_AddThinker(&flick->thinker);
 
@@ -106,7 +106,7 @@ fireflicker_t* P_SpawnAdjustableFireFlicker(sector_t* minsector, sector_t* maxse
 	fireflicker_t* flick;
 
 	P_RemoveLighting(maxsector); // out with the old, in with the new
-	flick = Z_Malloc(sizeof(*flick), PU_LEVSPEC, 0);
+	flick = Z_Malloc(sizeof(*flick), PU_LEVSPEC, NULL);
 
 	P_AddThinker(&flick->thinker);
 
@@ -185,7 +185,7 @@ void P_SpawnLightningFlash(sector_t* sector)
 
 	sector->lightingdata = NULL;
 
-	flash = Z_Malloc(sizeof(*flash), PU_LEVSPEC, 0);
+	flash = Z_Malloc(sizeof(*flash), PU_LEVSPEC, NULL);
 
 	P_AddThinker(&flash->thinker);
 
@@ -241,7 +241,7 @@ void P_SpawnStrobeFlash(sector_t* sector, int fastOrSlow, int inSync)
 	strobe_t* flash;
 
 	P_RemoveLighting(sector); // out with the old, in with the new
-	flash = Z_Malloc(sizeof(*flash), PU_LEVSPEC, 0);
+	flash = Z_Malloc(sizeof(*flash), PU_LEVSPEC, NULL);
 
 	P_AddThinker(&flash->thinker);
 
@@ -307,7 +307,7 @@ void P_SpawnGlowingLight(sector_t* sector)
 	glow_t* g;
 
 	P_RemoveLighting(sector); // out with the old, in with the new
-	g = Z_Malloc(sizeof(*g), PU_LEVSPEC, 0);
+	g = Z_Malloc(sizeof(*g), PU_LEVSPEC, NULL);
 
 	P_AddThinker(&g->thinker);
 
@@ -335,7 +335,7 @@ glow_t* P_SpawnAdjustableGlowingLight(sector_t* minsector, sector_t* maxsector, 
 	glow_t* g;
 
 	P_RemoveLighting(maxsector); // out with the old, in with the new
-	g = Z_Malloc(sizeof(*g), PU_LEVSPEC, 0);
+	g = Z_Malloc(sizeof(*g), PU_LEVSPEC, NULL);
 
 	P_AddThinker(&g->thinker);
 
@@ -393,7 +393,7 @@ void P_FadeLight(int tag, int destvalue, int speed)
 		sector_t* sector = &sectors[i];
 
 		P_RemoveLighting(sector); // remove the old lighting effect first
-		ll = Z_Malloc(sizeof(*ll), PU_LEVSPEC, 0);
+		ll = Z_Malloc(sizeof(*ll), PU_LEVSPEC, NULL);
 		ll->thinker.function.acp1 = (actionf_p1)T_LightFade;
 		sector->lightingdata = ll; // set it to the lightlevel_t
 

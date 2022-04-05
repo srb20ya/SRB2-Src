@@ -116,7 +116,7 @@ typedef struct snddev_s
 	int     bps;
 
 // Windows specific data
-#if defined(_WIN32) || defined(_WIN64)
+#if (defined(_WIN32) || defined(_WIN64)) && !defined(_XBOX)
 	int     cooplevel;
 	HWND    hWnd;
 #endif

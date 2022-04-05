@@ -209,6 +209,7 @@ void P_CameraLineOpening(line_t* linedef)
 {
 	sector_t* front;
 	sector_t* back;
+	fixed_t frontfloor, frontceiling, backfloor, backceiling;
 
 	if(linedef->sidenum[1] == -1)
 	{
@@ -220,26 +221,49 @@ void P_CameraLineOpening(line_t* linedef)
 	front = linedef->frontsector;
 	back = linedef->backsector;
 
+	// Cameras use the heightsec's heights rather then the actual sector heights.
+	// If you can see through it, why not move the camera through it too?
+	if(front->heightsec >= 0)
+	{
+		frontfloor = sectors[front->heightsec].floorheight;
+		frontceiling = sectors[front->heightsec].ceilingheight;
+	}
+	else
+	{
+		frontfloor = front->floorheight;
+		frontceiling = front->ceilingheight;
+	}
+	if(back->heightsec >= 0)
+	{
+		backfloor = sectors[back->heightsec].floorheight;
+		backceiling = sectors[back->heightsec].ceilingheight;
+	}
+	else
+	{
+		backfloor = back->floorheight;
+		backceiling = back->ceilingheight;
+	}
+
 	{
 		fixed_t thingbot, thingtop;
 
 		thingbot = camera.z;
 		thingtop = thingbot + camera.height;
 
-		if(front->ceilingheight < back->ceilingheight)
-			opentop = front->ceilingheight;
+		if(frontceiling < backceiling)
+			opentop = frontceiling;
 		else
-			opentop = back->ceilingheight;
+			opentop = backceiling;
 
-		if(front->floorheight > back->floorheight)
+		if(frontfloor > backfloor)
 		{
-			openbottom = front->floorheight;
-			lowfloor = back->floorheight;
+			openbottom = frontfloor;
+			lowfloor = backfloor;
 		}
 		else
 		{
-			openbottom = back->floorheight;
-			lowfloor = front->floorheight;
+			openbottom = backfloor;
+			lowfloor = frontfloor;
 		}
 
 		// Check for fake floors in the sector.
@@ -257,7 +281,7 @@ void P_CameraLineOpening(line_t* linedef)
 			if(front->ffloors)
 				for(rover = front->ffloors; rover; rover = rover->next)
 				{
-					if(!(rover->flags & FF_SOLID))
+					if(!(rover->flags & FF_SOLID) || !(rover->flags & FF_RENDERALL) || !(rover->flags & FF_EXISTS))
 						continue;
 
 					delta1 = abs(camera.z - ((*rover->bottomheight + *rover->topheight) / 2));
@@ -275,7 +299,7 @@ void P_CameraLineOpening(line_t* linedef)
 			if(back->ffloors)
 				for(rover = back->ffloors; rover; rover = rover->next)
 				{
-					if(!(rover->flags & FF_SOLID))
+					if(!(rover->flags & FF_SOLID) || !(rover->flags & FF_RENDERALL) || !(rover->flags & FF_EXISTS))
 						continue;
 
 					delta1 = abs(camera.z - ((*rover->bottomheight + *rover->topheight) / 2));
@@ -1065,13 +1089,13 @@ boolean P_PathTraverse ( fixed_t       x1,
     if(xt2 > xt1)
     {
         mapxstep = 1;
-        partial = FRACUNIT - ((x1>>MAPBTOFRAC)&(FRACUNIT-1));
+        partial = FRACUNIT - ((x1>>MAPBTOFRAC)&FRACMASK);
         ystep = FixedDiv (y2-y1,abs(x2-x1));
     }
     else if(xt2 < xt1)
     {
         mapxstep = -1;
-        partial = (x1>>MAPBTOFRAC)&(FRACUNIT-1);
+        partial = (x1>>MAPBTOFRAC)&FRACMASK;
         ystep = FixedDiv (y2-y1,abs(x2-x1));
     }
     else
@@ -1087,13 +1111,13 @@ boolean P_PathTraverse ( fixed_t       x1,
     if(yt2 > yt1)
     {
         mapystep = 1;
-        partial = FRACUNIT - ((y1>>MAPBTOFRAC)&(FRACUNIT-1));
+        partial = FRACUNIT - ((y1>>MAPBTOFRAC)&FRACMASK);
         xstep = FixedDiv (x2-x1,abs(y2-y1));
     }
     else if(yt2 < yt1)
     {
         mapystep = -1;
-        partial = (y1>>MAPBTOFRAC)&(FRACUNIT-1);
+        partial = (y1>>MAPBTOFRAC)&FRACMASK;
         xstep = FixedDiv (x2-x1,abs(y2-y1));
     }
     else

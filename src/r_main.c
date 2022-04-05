@@ -107,6 +107,7 @@ static CV_PossibleValue_t viewsize_cons_t[] = {{3, "MIN"}, {12, "MAX"}, {0, NULL
 
 static void Homing_OnChange(void);
 static void LightDash_OnChange(void);
+static void SonicCD_OnChange(void);
 static void TimeAttacked_OnChange(void);
 static void SplitScreen_OnChange(void);
 
@@ -121,7 +122,7 @@ consvar_t cv_raindensity = {"raindensity", "Heavy", CV_SAVE, precipdensity_cons_
 consvar_t cv_storm = {"storm", "Off", CV_NOSHOWHELP, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_rain = {"rain", "Off", CV_NOSHOWHELP, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_snow = {"snow", "Off", CV_NOSHOWHELP, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_soniccd = {"soniccd", "Off", CV_NETVAR, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_soniccd = {"soniccd", "Off", CV_NETVAR, CV_OnOff, SonicCD_OnChange, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_timeattacked = {"timeattacked", "Off", CV_NETVAR, CV_OnOff, TimeAttacked_OnChange, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_allowmlook = {"allowmlook", "Yes", CV_NETVAR, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_precipdist = {"precipdist", "1024", CV_SAVE, CV_Unsigned, NULL, 0, NULL, NULL, 0, 0, NULL};
@@ -133,9 +134,12 @@ consvar_t cv_splitscreen = {"splitscreen", "Off", CV_CALL, CV_OnOff, SplitScreen
 static void Homing_OnChange(void)
 {
 	if(maptol & TOL_ADVENTURE)
+	{
+		CV_StealthSetValue(&cv_homing, 1);
 		return;
+	}
 
-	if(!(server || admin))
+	if(server || admin)
 		return;
 
 	if(cv_debug)
@@ -148,9 +152,12 @@ static void Homing_OnChange(void)
 static void LightDash_OnChange(void)
 {
 	if(maptol & TOL_ADVENTURE)
+	{
+		CV_StealthSetValue(&cv_lightdash, 1);
 		return;
+	}
 
-	if(!(server || admin))
+	if(server || admin)
 		return;
 
 	if(cv_debug)
@@ -160,8 +167,23 @@ static void LightDash_OnChange(void)
 		CV_SetValue(&cv_lightdash, false);
 }
 
+static void SonicCD_OnChange(void)
+{
+	if(!(server || admin))
+	{
+		CV_StealthSetValue(&cv_soniccd, 0);
+		return;
+	}
+}
+
 static void TimeAttacked_OnChange(void)
 {
+	if(!(server || admin))
+	{
+		CV_StealthSetValue(&cv_timeattacked, 0);
+		return;
+	}
+
 	if(!modifiedgame || savemoddata)
 	{
 		modifiedgame = true;
@@ -173,6 +195,13 @@ static void TimeAttacked_OnChange(void)
 
 static void SplitScreen_OnChange(void)
 {
+	if(!cv_debug && netgame)
+	{
+		CONS_Printf("Splitscreen not supported in netplay, sorry!\n");
+		cv_splitscreen.value = 0;
+		return;
+	}
+
 	// recompute screen size
 	R_ExecuteSetViewSize();
 
@@ -643,6 +672,12 @@ boolean         setsizeneeded;
 void R_SetViewSize (void)
 {
     setsizeneeded = true;
+
+	// Not sure WHY this has to be the thing to catch it...
+	if(cv_viewsize.value < 3)
+		cv_viewsize.value = 3;
+	else if(cv_viewsize.value > 12)
+		cv_viewsize.value = 12;
 }
 
 

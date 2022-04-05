@@ -30,6 +30,7 @@
 #include "f_finale.h"
 #include "dehacked.h"
 #include "st_stuff.h"
+#include "i_system.h"
 
 #ifdef HWRENDER
 #include "hardware/hw_light.h"
@@ -47,6 +48,7 @@ static char* strup1(char* n)
 {
 	int i;
 	char* upr = n;
+	if(!n) return NULL;
 	for(i = 0; n[i]; i++)
 		upr[i] = toupper(n[i]);
 	return upr;
@@ -120,13 +122,14 @@ FUNCPRINTF static void deh_error(const char* first, ...)
 
 	if(devparm || cv_debug)
 	{
-		char buf[1000];
+		char *buf = malloc(1000);
 
 		va_start(argptr, first);
 		vsprintf(buf, first, argptr);
 		va_end(argptr);
 
 		CONS_Printf("%s\n", buf);
+		free(buf);
 	}
 
 	deh_num_error++;
@@ -231,14 +234,29 @@ static void readAnimTex(MYFILE* f,int num)
 }
 */
 
+static inline boolean findFreeSlot(int *num)
+{
+	// Send the character select entry to a free slot.
+	while(*num < 15 && PlayerMenu[*num].status != IT_DISABLED)
+		*num++;
+
+	// No more free slots. :(
+	if(*num >= 15)
+		return false;
+
+	// Found one! ^_^
+	return true;
+}
+
 // Reads a player.
 // For modifying the character select screen
 static void readPlayer(MYFILE* f, int num)
 {
-	char s[MAXLINELEN];
+	XBOXSTATIC char s[MAXLINELEN];
 	char* word;
 	char* word2;
 	int i;
+	boolean slotfound = false;
 
 	do
 	{
@@ -252,26 +270,40 @@ static void readPlayer(MYFILE* f, int num)
 			if(!strcmp(word, "PLAYERTEXT"))
 			{
 				char* playertext = NULL;
-				for(i = 0; i < MAXLINELEN; i++)
+
+				if(!slotfound && !(slotfound = findFreeSlot(&num)))
+					return;
+
+				for(i = 0; i < MAXLINELEN-3; i++)
+				{
 					if(s[i] == '=')
 					{
 						playertext = &s[i+2];
 						break;
 					}
-				for(i = 0; i < MAXLINELEN; i++)
-				{
-					if(s[i] == '\0')
-					{
-						s[i] = '\n';
-						s[i+1] = '\0';
-						break;
-					}
 				}
+				if(playertext == NULL)
+					continue;
 
 				strcpy(description[num].info, playertext);
-				strcat(description[num].info,
-					myhashfgets(playertext, sizeof(description[num].info), f));
-				continue;
+				strcat(description[num].info, myhashfgets(playertext, sizeof(description[num].info), f));
+
+				// For some reason, cutting the string did not work above. Most likely due to strcpy or strcat...
+				// It works down here, though.
+				{
+					int numlines = 0;
+					for(i = 0; i < MAXLINELEN-1; i++)
+					{
+						if(numlines < 7 && description[num].info[i] == '\n')
+							numlines++;
+
+						if(numlines >= 7 || description[num].info[i] == '\0' || description[num].info[i] == '#')
+							break;
+					}
+				}
+					description[num].info[strlen(description[num].info)-1] = '\0';
+					description[num].info[i] = '\0';
+					continue;
 			}
 
 			word2 = strupr(strtok(NULL, " = "));
@@ -280,18 +312,46 @@ static void readPlayer(MYFILE* f, int num)
 
 			if(!strcmp(word, "PLAYERNAME"))
 			{
-				strncpy(&description[num].text[0], word2, 64);
-				PlayerMenu[num].text = &description[num].text[0];
+				if(!slotfound && !(slotfound = findFreeSlot(&num)))
+					return;
+				strncpy(description[num].text, word2, 63);
+				PlayerMenu[num].text = description[num].text;
 			}
 			else if(!strcmp(word, "MENUPOSITION"))
-				PlayerMenu[num].alphaKey = (byte)i;
+				; // NO SCREWING UP MY MENU, FOOL!
 			else if(!strcmp(word, "PICNAME"))
+			{
+				if(!slotfound && !(slotfound = findFreeSlot(&num)))
+					return;
 				strncpy(&description[num].picname[0], word2, 9);
+			}
 			else if(!strcmp(word, "STATUS"))
-				PlayerMenu[num].status = (short)i;
-			else if(!strcmp(word, "SKINNAME"))
-				strcpy(&description[num].skinname[0], word2);
+			{
+				// Limit the status to only IT_DISABLED and IT_CALL|IT_STRING
+				if(i != IT_STRING)
+					i = IT_DISABLED;
+				else
+					i = IT_STRING;
 
+				/*
+					You MAY disable previous entrys if you so desire...
+					But try to enable something that's already enabled and you will be sent to a free slot.
+
+					Because of this, you are allowed to edit any previous entrys you like, but only if you
+					signal that you are purposely doing so by disabling and then reenabling the slot.
+				*/
+				if(i != IT_DISABLED && !slotfound && !(slotfound = findFreeSlot(&num)))
+					return;
+
+				PlayerMenu[num].status = (short)i;
+			}
+			else if(!strcmp(word, "SKINNAME"))
+			{
+				// Send to free slot.			{
+				if(!slotfound && !(slotfound = findFreeSlot(&num)))
+					return;
+				strcpy(description[num].skinname, word2);
+			}
 			else
 				deh_error("readPlayer %d: unknown word '%s'\n", num, word);
 		}
@@ -300,7 +360,7 @@ static void readPlayer(MYFILE* f, int num)
 
 static void readthing(MYFILE* f, int num)
 {
-	char s[MAXLINELEN];
+	XBOXSTATIC char s[MAXLINELEN];
 	char* word;
 	int value;
 
@@ -345,7 +405,7 @@ static void readthing(MYFILE* f, int num)
 #ifdef HWRENDER
 static void readlight(MYFILE* f, int num)
 {
-	char s[MAXLINELEN];
+	XBOXSTATIC char s[MAXLINELEN];
 	char* word;
 	int value;
 	float fvalue;
@@ -381,7 +441,7 @@ static void readlight(MYFILE* f, int num)
 
 static void readspritelight(MYFILE* f, int num)
 {
-	char s[MAXLINELEN];
+	XBOXSTATIC char s[MAXLINELEN];
 	char* word;
 	int value;
 
@@ -404,11 +464,20 @@ static void readspritelight(MYFILE* f, int num)
 
 static void readlevelheader(MYFILE* f, int num)
 {
-	char s[MAXLINELEN];
+	XBOXSTATIC char s[MAXLINELEN];
 	char* word;
 	char* word2;
 	char* tmp;
 	int i;
+	static boolean setred = false;
+
+	if(num == 0x10)
+	{
+		if(!setred)
+			setred = true;
+		else
+			modred = true;
+	}
 
 	do
 	{
@@ -464,7 +533,7 @@ static void readlevelheader(MYFILE* f, int num)
 
 static void readcutscenescene(MYFILE* f, int num, int scenenum)
 {
-	char s[MAXLINELEN];
+	XBOXSTATIC char s[MAXLINELEN] = "";
 	char* word;
 	char* word2;
 	int i;
@@ -482,7 +551,7 @@ static void readcutscenescene(MYFILE* f, int num, int scenenum)
 			if(!strcmp(word, "SCENETEXT"))
 			{
 				char* scenetext = NULL;
-				char buffer[1024];
+				XBOXSTATIC char buffer[4096] = "";
 				for(i = 0; i < MAXLINELEN; i++)
 				{
 					if(s[i] == '=')
@@ -511,9 +580,7 @@ static void readcutscenescene(MYFILE* f, int num, int scenenum)
 				if(cutscenes[num].scene[scenenum].text != NULL)
 					Z_Free(cutscenes[num].scene[scenenum].text);
 
-				cutscenes[num].scene[scenenum].text = Z_Malloc(strlen(buffer), PU_STATIC, NULL);
-
-				strcpy(cutscenes[num].scene[scenenum].text, buffer);
+				cutscenes[num].scene[scenenum].text = Z_Strdup(buffer, PU_STATIC, NULL);
 
 				continue;
 			}
@@ -575,7 +642,7 @@ static void readcutscenescene(MYFILE* f, int num, int scenenum)
 
 static void readcutscene(MYFILE* f, int num)
 {
-	char s[MAXLINELEN];
+	XBOXSTATIC char s[MAXLINELEN];
 	char* word;
 	char* word2;
 	int value;
@@ -613,7 +680,7 @@ static void readcutscene(MYFILE* f, int num)
 
 static void readhuditem(MYFILE* f, int num)
 {
-	char s[MAXLINELEN];
+	XBOXSTATIC char s[MAXLINELEN];
 	char* word;
 	char* word2;
 	char* tmp;
@@ -743,7 +810,7 @@ static actionpointer_t actionpointers[] =
 
 static void readframe(MYFILE* f, int num)
 {
-	char s[MAXLINELEN];
+	XBOXSTATIC char s[MAXLINELEN];
 	char* word1;
 	char* word2;
 	int i, j;
@@ -772,12 +839,12 @@ static void readframe(MYFILE* f, int num)
 			if(!strcmp(word1, "SPRITENUMBER"))         states[num].sprite = i;
 			else if(!strcmp(word1, "SPRITESUBNUMBER")) states[num].frame = i;
 			else if(!strcmp(word1, "DURATION"))        states[num].tics = i;
-			else if(!strcmp(word1, "NEXT"))            states[num].nextstate = i+1;
+			else if(!strcmp(word1, "NEXT"))            states[num].nextstate = i;
 			else if(!strcmp(word1, "ACTION"))
 			{
 				unsigned int z;
 				boolean found = false;
-				char actiontocompare[32];
+				XBOXSTATIC char actiontocompare[32];
 
 				strncpy(actiontocompare, word2, 31);
 
@@ -815,7 +882,7 @@ static void readframe(MYFILE* f, int num)
 
 static void readsound(MYFILE* f, int num, const char* savesfxnames[])
 {
-	char s[MAXLINELEN];
+	XBOXSTATIC char s[MAXLINELEN];
 	char* word;
 	int value;
 
@@ -853,7 +920,7 @@ static void readsound(MYFILE* f, int num, const char* savesfxnames[])
 
 static void readmaincfg(MYFILE* f)
 {
-	char s[MAXLINELEN];
+	XBOXSTATIC char s[MAXLINELEN];
 	char* word;
 	char* word2;
 	char* tmp;
@@ -924,7 +991,7 @@ static void readmaincfg(MYFILE* f)
 
 static void reademblemdata(MYFILE* f, int num)
 {
-	char s[MAXLINELEN];
+	XBOXSTATIC char s[MAXLINELEN];
 	char* word;
 	char* word2;
 	int value;
@@ -952,14 +1019,14 @@ static void reademblemdata(MYFILE* f, int num)
 
 static void DEH_LoadDehackedFile(MYFILE* f)
 {
-	char s[1000];
+	XBOXSTATIC char s[1000];
 	char* word;
 	char* word2;
 	int i;
 	// do a copy of this for cross references probleme
-	actionf_t saveactions[NUMSTATES];
-	const char* savesprnames[NUMSPRITES];
-	const char* savesfxnames[NUMSFX];
+	XBOXSTATIC actionf_t saveactions[NUMSTATES];
+	XBOXSTATIC const char* savesprnames[NUMSPRITES];
+	XBOXSTATIC const char* savesfxnames[NUMSFX];
 
 	deh_num_error = 0;
 	// save values for cross reference
@@ -973,7 +1040,7 @@ static void DEH_LoadDehackedFile(MYFILE* f)
 	// it doesn't test the version of SRB2 and version of dehacked file
 	while(!myfeof(f))
 	{
-		char origpos[32];
+		XBOXSTATIC char origpos[32];
 		int size = 0;
 		char* traverse;
 
@@ -1005,16 +1072,21 @@ static void DEH_LoadDehackedFile(MYFILE* f)
 				if(!strcmp(word, "THING"))
 				{
 					if(i < NUMMOBJTYPES && i >= 0)
+					{
 						readthing(f, i);
+						if(!modred && i == 231)
+							modred = true;
+					}
 					else
 						deh_error("Thing %d doesn't exist\n", i);
 				}
 				else if(!strcmp(word, "MODBY"))
 				{
-					strcpy(credits[18].fakenames[0], origpos+3);
-					strcpy(credits[18].realnames[0], origpos+3);
-					credits[18].numnames = 1;
-					strcpy(&credits[18].header[0], "Modification By\n");
+					const int mod = 18;
+					strcpy(credits[mod].fakenames[0], origpos+3);
+					strcpy(credits[mod].realnames[0], origpos+3);
+					credits[mod].numnames = 1;
+					strcpy(&credits[mod].header[0], "Modification By\n");
 					modcredits = true;
 				}
 /*				else if(!strcmp(word, "ANIMTEX"))
@@ -1023,7 +1095,7 @@ static void DEH_LoadDehackedFile(MYFILE* f)
 				}*/
 				else if(!strcmp(word, "CHARACTER"))
 				{
-					if(i < 8)
+					if(i < 15)
 						readPlayer(f, i);
 					else
 						deh_error("Character %d out of range\n", i);
@@ -1063,7 +1135,11 @@ static void DEH_LoadDehackedFile(MYFILE* f)
 				else if(!strcmp(word, "FRAME"))
 				{
 					if(i < NUMSTATES && i >= 0)
+					{
 						readframe(f, i);
+						if(!modred && i == 1291)
+							modred = true;
+					}
 					else
 						deh_error("Frame %d doesn't exist\n", i);
 				}
@@ -1146,7 +1222,8 @@ static void DEH_LoadDehackedFile(MYFILE* f)
 		CONS_Printf("%d warning%s in the dehacked file\n", deh_num_error,
 			deh_num_error == 1 ? "" : "s");
 		if(devparm)
-			I_GetKey(); //getchar(); Alam: no getchar!
+			while(!I_GetKey())
+				I_OsPolling();
 	}
 
 	deh_loaded = true;
@@ -1159,7 +1236,7 @@ void DEH_LoadDehackedLump(int lump)
 	MYFILE f;
 
 	f.size = W_LumpLength(lump);
-	f.data = Z_Malloc(f.size + 1, PU_STATIC, 0);
+	f.data = Z_Malloc(f.size + 1, PU_STATIC, NULL);
 	W_ReadLump(lump, f.data);
 	f.curpos = f.data;
 	f.data[f.size] = 0;

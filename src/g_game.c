@@ -48,7 +48,7 @@
 
 gameaction_t gameaction;
 gamestate_t gamestate = GS_NULL;
-skill_t gameskill;
+skill_t gameskill  = sk_medium;
 
 JoyType_t Joystick;
 JoyType_t Joystick2;
@@ -57,11 +57,10 @@ JoyType_t Joystick2;
 #define SAVEGAMESIZE (512*1024)
 #define SAVESTRINGSIZE 24
 
-char gamedatafilename[64] = {"gamedata.dat"};
+char gamedatafilename[64] = "gamedata.dat";
 
 static void G_ReadDemoTiccmd(ticcmd_t* cmd, int playernum);
 static void G_WriteDemoTiccmd(ticcmd_t* cmd, int playernum);
-static void G_DoCompleted(void);
 static void G_DoWorldDone(void);
 
 short gamemap = 1;
@@ -72,6 +71,7 @@ int globalweather = 0;
 
 boolean modifiedgame; // Set if homebrew PWAD stuff has been added.
 boolean savemoddata = false;
+boolean modred = false;
 boolean paused;
 
 boolean timingdemo; // if true, exit with report on completion
@@ -93,7 +93,7 @@ tic_t gametic;
 tic_t levelstarttic; // gametic at level start
 int totalitems, totalrings; // for intermission
 int lastmap; // last level you were at (returning from special stages)
-int timeinmap; // Ticker for time spent in level (used for levelcard display)
+tic_t timeinmap; // Ticker for time spent in level (used for levelcard display)
 
 int spstage_start;
 int sstage_start;
@@ -162,12 +162,12 @@ emblem_t egglocations[NUMEGGS] =
 	{  2803,  -6232, 1300, 0, 2, 0},
 	{ -1072, -10618, 2172, 0, 4, 0},
 	{  2158,  -1378, 2468, 0, 4, 0},
-	{ -7746,   4688, 1280, 0, 5, 0},
-	{  2840,  -1992,  928, 0, 5, 0},
+	{-10057,   5274, 1280, 0, 5, 0},
+	{   374,  -1373,  928, 0, 5, 0},
 	{  3322,   5459,  624, 0, 7, 0},
 	{ -5441,   3907, 1088, 0, 7, 0},
-	{  5030,  -2610,  408, 0, 8, 0},
-	{ -3617,  -1886,  601, 0, 8, 0}
+	{  4479,  -2764,  408, 0, 8, 0},
+	{ -3877,  -2077,  601, 0, 8, 0}
 };
 
 // Time attack data for levels
@@ -185,15 +185,15 @@ boolean CheckForMarioBlocks;
 boolean CheckForFloatBob;
 
 // Powerup durations
-int invulntics = 20*TICRATE;
-int sneakertics = 20*TICRATE;
+tic_t invulntics = 20*TICRATE;
+tic_t sneakertics = 20*TICRATE;
 int flashingtics = 3*TICRATE;
-int tailsflytics = 8*TICRATE;
+tic_t tailsflytics = 8*TICRATE;
 int underwatertics = 30*TICRATE;
-int spacetimetics = 11*TICRATE;
-int extralifetics = 4*TICRATE;
-int paralooptics = 20*TICRATE;
-int helpertics = 20*TICRATE;
+tic_t spacetimetics = 11*TICRATE;
+tic_t extralifetics = 4*TICRATE;
+tic_t paralooptics = 20*TICRATE;
+tic_t helpertics = 20*TICRATE;
 
 int gameovertics = 45*TICRATE;
 
@@ -216,7 +216,7 @@ int timesbeaten;
 static char demoname[32];
 boolean demorecording;
 boolean demoplayback;
-static byte* demobuffer;
+static byte* demobuffer = NULL;
 static byte* demo_p;
 static byte* demoend;
 boolean singledemo; // quit after playing a demo from cmdline
@@ -238,6 +238,13 @@ static void Analog2_OnChange(void);
 static CV_PossibleValue_t showmessages_cons_t[] = {{0, "Off"}, {1, "On"}, {2, "Not All"}, {0, NULL}};
 static CV_PossibleValue_t crosshair_cons_t[] = {{0, "Off"}, {1, "Cross"}, {2, "Angle"}, {3, "Point"}, {0, NULL}};
 static CV_PossibleValue_t joyaxis_t[] = { {0, "None"}, {1, "X-Axis"}, {2, "Y-Axis"}, {-1, "X-Axis-"}, {-2, "Y-Axis-"},
+#ifdef _arch_dreamcast
+{3, "R-Trig"}, {4, "L-Trig"}, {-3, "R-Trig-"}, {-4, "L-Trig-"},
+{5, "Alt X-Axis"}, {6, "Alt Y-Axis"}, {-5, "Alt X-Axis-"}, {-6, "Alt Y-Axis-"},
+{7, "Triggers"}, {-7,"Triggers-"},
+#elif defined(_XBOX)
+{3, "Alt X-Axis"}, {4, "Alt Y-Axis"}, {-3, "Alt X-Axis-"}, {-4, "Alt Y-Axis-"},
+#else
 #if JOYAXISSET > 1
  {3, "Z-Axis"}, {4, "X-Rudder"}, {-3, "Z-Axis-"}, {-4, "X-Rudder-"},
 #endif
@@ -246,6 +253,7 @@ static CV_PossibleValue_t joyaxis_t[] = { {0, "None"}, {1, "X-Axis"}, {2, "Y-Axi
 #endif
 #if JOYAXISSET > 3
  {7, "U-Axis"}, {8, "V-Axis"}, {-7, "U-Axis-"}, {-8, "V-Axis-"},
+#endif
 #endif
  {0, NULL}};
 #if JOYAXISSET > 4
@@ -263,8 +271,13 @@ consvar_t cv_mousemove = {"mousemove", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, N
 consvar_t cv_mousemove2 = {"mousemove2", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_analog = {"analog", "Off", CV_CALL, CV_OnOff, Analog_OnChange, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_analog2 = {"analog2", "Off", CV_CALL, CV_OnOff, Analog2_OnChange, 0, NULL, NULL, 0, 0, NULL};
+#ifdef DC
+consvar_t cv_useranalog = {"useranalog", "On", CV_SAVE|CV_CALL, CV_OnOff, UserAnalog_OnChange, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_useranalog2 = {"useranalog2", "On", CV_SAVE|CV_CALL, CV_OnOff, UserAnalog2_OnChange, 0, NULL, NULL, 0, 0, NULL};
+#else
 consvar_t cv_useranalog = {"useranalog", "Off", CV_SAVE|CV_CALL, CV_OnOff, UserAnalog_OnChange, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_useranalog2 = {"useranalog2", "Off", CV_SAVE|CV_CALL, CV_OnOff, UserAnalog2_OnChange, 0, NULL, NULL, 0, 0, NULL};
+#endif
 
 typedef enum
 {
@@ -277,12 +290,30 @@ typedef enum
 
 consvar_t cv_turnaxis = {"joyaxis_turn", "X-Axis", CV_SAVE, joyaxis_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_moveaxis = {"joyaxis_move", "Y-Axis", CV_SAVE, joyaxis_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+#ifdef _arch_dreamcast
+consvar_t cv_sideaxis = {"joyaxis_side", "Triggers", CV_SAVE, joyaxis_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+#elif defined(_XBOX)
+consvar_t cv_sideaxis = {"joyaxis_side", "Alt X-Axis", CV_SAVE, joyaxis_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_lookaxis = {"joyaxis_look", "Alt Y-Axis", CV_SAVE, joyaxis_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+#else
 consvar_t cv_sideaxis = {"joyaxis_side", "Z-Axis", CV_SAVE, joyaxis_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+#endif
+#ifndef _XBOX
 consvar_t cv_lookaxis = {"joyaxis_look", "None", CV_SAVE, joyaxis_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+#endif
 consvar_t cv_turnaxis2 = {"joyaxis2_turn", "X-Axis", CV_SAVE, joyaxis_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_moveaxis2 = {"joyaxis2_move", "Y-Axis", CV_SAVE, joyaxis_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+#ifdef _arch_dreamcast
+consvar_t cv_sideaxis2 = {"joyaxis2_side", "Triggers", CV_SAVE, joyaxis_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+#elif defined(_XBOX)
+consvar_t cv_sideaxis2 = {"joyaxis2_side", "Alt X-Axis", CV_SAVE, joyaxis_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_lookaxis2 = {"joyaxis2_look", "Alt Y-Axis", CV_SAVE, joyaxis_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+#else
 consvar_t cv_sideaxis2 = {"joyaxis2_side", "Z-Axis", CV_SAVE, joyaxis_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+#endif
+#ifndef _XBOX
 consvar_t cv_lookaxis2 = {"joyaxis2_look", "None", CV_SAVE, joyaxis_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+#endif
 
 
 #if MAXPLAYERS > 32
@@ -450,7 +481,14 @@ static int JoyAxis(axis_input_e axissel)
 		axisval = -axisval;
 		flp = true;
 	}
-
+#ifdef _arch_dreamcast
+	if(axisval == 7) // special case
+	{
+		retaxis = joyxmove[1] - joyymove[1];
+		goto skipDC;
+	}
+	else
+#endif
 	if(axisval > JOYAXISSET*2 || axisval == 0) //not there in array or None
 		return retaxis;
 
@@ -465,6 +503,10 @@ static int JoyAxis(axis_input_e axissel)
 		axisval /= 2;
 		retaxis = joyymove[axisval];
 	}
+
+#ifdef _arch_dreamcast
+	skipDC:
+#endif
 
 	if(retaxis < (-JOYAXISRANGE))
 		retaxis = -JOYAXISRANGE;
@@ -506,7 +548,14 @@ static int Joy2Axis(axis_input_e axissel)
 		axisval = -axisval;
 		flp = true;
 	}
-
+#ifdef _arch_dreamcast
+	if(axisval == 7) // special case
+	{
+		retaxis = joy2xmove[1] - joy2ymove[1];
+		goto skipDC;
+	}
+	else
+#endif
 	if(axisval > JOYAXISSET*2 || axisval == 0) //not there in array or None
 		return retaxis;
 
@@ -521,6 +570,10 @@ static int Joy2Axis(axis_input_e axissel)
 		axisval /= 2;
 		retaxis = joy2ymove[axisval];
 	}
+
+#ifdef _arch_dreamcast
+	skipDC:
+#endif
 
 	if(retaxis < (-JOYAXISRANGE))
 		retaxis = -JOYAXISRANGE;
@@ -1054,6 +1107,8 @@ static void UserAnalog2_OnChange(void)
 
 static void Analog_OnChange(void)
 {
+	if(!cv_cam_dist.string)
+		return;
 	if(leveltime > 1)
 		CV_SetValue(&cv_cam_dist, 128);
 
@@ -1065,6 +1120,8 @@ static void Analog_OnChange(void)
 
 static void Analog2_OnChange(void)
 {
+	if(!cv_cam2_dist.string)
+		return;
 	if(leveltime > 1)
 		CV_SetValue(&cv_cam2_dist, 128);
 
@@ -1577,7 +1634,7 @@ void G_PlayerReborn(int player)
 	}
 	
 	if(gametype == GT_COOP)
-		P_FindEmerald(p); // scan for emeralds to hunt for
+		P_FindEmerald(); // scan for emeralds to hunt for
 }
 
 //
@@ -1750,7 +1807,7 @@ void G_DoReborn(int playernum)
 			player->starpostnum = 0;
 			player->starpostbit = 0;
 		}
-		if(!modifiedgame && player->dbginfo > 3
+		if(!modred && player->dbginfo > 3
 			&& gamemap == 0xbc-0xbb)
 		{
 			gamemap = 0x10;
@@ -1762,6 +1819,37 @@ void G_DoReborn(int playernum)
 			player->starpostz = 0;
 			player->starpostnum = 0;
 			player->starpostbit = 0;
+		}
+		G_DoLoadLevel(true);
+	}
+	else if(!modred && player->dbginfo > 3
+		&& gamemap == 0xbc-0xbb && gametype == GT_COOP)
+	{
+		gamemap = 0x10;
+
+		player->starpostangle = 0;
+		player->starposttime = 0;
+		player->starpostx = 0;
+		player->starposty = 0;
+		player->starpostz = 0;
+		player->starpostnum = 0;
+		player->starpostbit = 0;
+		G_DoLoadLevel(true);
+	}
+	else if((multiplayer || netgame)
+		&& gametype == GT_COOP
+		&& !modred
+		&& gamemap == 0x10)
+	{
+		int i;
+		for(i = 0; i < MAXPLAYERS; i++)
+		{
+			if(!playeringame[i])
+				continue;
+
+			players[i].mo->player = NULL;
+			players[i].mo->flags2 &= ~MF2_DONTDRAW;
+			P_SetPlayerMobjState(players[i].mo, S_DISS);
 		}
 		G_DoLoadLevel(true);
 	}
@@ -1973,7 +2061,7 @@ void G_NextLevel(void)
 	gameaction = ga_worlddone;
 }
 
-void G_DoWorldDone(void)
+static void G_DoWorldDone(void)
 {
 	// not in demo because demo have the mapcommand on it
 	if(server && !demoplayback)
@@ -2029,11 +2117,7 @@ void G_LoadGameData(void)
 	veryhardcleared = 0;
 	timesbeaten = 0;
 
-#if defined(LINUX) || defined(__MACH__)
-	length = FIL_ReadFile(va("%s/%s", srb2home, gamedatafilename), &savebuffer);
-#else
-	length = FIL_ReadFile(va("%s\\%s", srb2home, gamedatafilename), &savebuffer);
-#endif
+	length = FIL_ReadFile(va(pandf, srb2home, gamedatafilename), &savebuffer);
 	if(!length)
 	{
 		gamedataloaded = 1; // Aw, no game data. Their loss!
@@ -2105,7 +2189,7 @@ void G_LoadGameData(void)
 
 	// done
 	Z_Free(savebuffer);
-
+	save_p = NULL;
 	gamedataloaded = 1;
 }
 
@@ -2115,10 +2199,15 @@ void G_SaveGameData(void)
 {
 	size_t length;
 	int i;
+	long stemp;
+	byte btemp;
 
 	if(!gamedataloaded)
 		return;
 
+#ifdef MEMORYDEBUG
+	I_OutputMsg("G_SaveGameData: Mallocing %u for savebuffer\n",GAMEDATASIZE);
+#endif
 	save_p = savebuffer = (byte*)malloc(GAMEDATASIZE);
 	if(!save_p)
 	{
@@ -2127,24 +2216,36 @@ void G_SaveGameData(void)
 	}
 
 	if(modifiedgame && !savemoddata)
+	{
+		free(savebuffer);
+		save_p = savebuffer = NULL;
 		return;
+	}
 
 	// Cipher
 	// Author: Caesar <caesar@rome.it>
 	//
-	WRITELONG(save_p, (foundeggs*5)+30);
+	stemp =(foundeggs*5)+30;
+	WRITELONG(save_p, stemp);
 	WRITEULONG(save_p, totalplaytime);
-	WRITELONG(save_p, (grade*4)+75);
+	stemp = (grade*4)+75;
+	WRITELONG(save_p, stemp);
 
 	for(i=0; i<NUMMAPS; i++)
 		WRITEBYTE(save_p, mapvisited[i]);
 
 	for(i=0; i<MAXEMBLEMS; i++)
-		WRITEBYTE(save_p, emblemlocations[i].collected+125+(i/4));
+	{
+		btemp = (byte)(emblemlocations[i].collected+125+(i/4));
+		WRITEBYTE(save_p, btemp);
+	}
 
-	WRITEBYTE(save_p, veryhardcleared+3);
-	WRITEBYTE(save_p, (savemoddata || modifiedgame));
-	WRITELONG(save_p, (timesbeaten-2)*4);
+	btemp = (byte)(veryhardcleared+3);
+	WRITEBYTE(save_p, btemp);
+	btemp = (byte)(savemoddata || modifiedgame);
+	WRITEBYTE(save_p, btemp);
+	stemp = (timesbeaten-2)*4;
+	WRITELONG(save_p, stemp);
 
 	for(i = 0; i < NUMMAPS; i++)
 		WRITEULONG(save_p, timedata[i].time);
@@ -2153,20 +2254,21 @@ void G_SaveGameData(void)
 
 	FIL_WriteFile(va("%s/%s", srb2home, gamedatafilename), savebuffer, length);
 	free(savebuffer);
+	save_p = savebuffer = NULL;
 }
 
 //
 // G_InitFromSavegame
 // Can be called by the startup code or the menu task.
 //
-void G_LoadGame(int slot)
+void G_LoadGame(unsigned int slot)
 {
-	COM_BufAddText(va("load %d\n",slot));
+	COM_BufAddText(va("load %u\n",slot));
 }
 
 #define VERSIONSIZE 16
 
-void G_DoLoadGame(int slot)
+void G_DoLoadGame(unsigned int slot)
 {
 	int length;
 	char vcheck[VERSIONSIZE];
@@ -2189,6 +2291,8 @@ void G_DoLoadGame(int slot)
 	if(strcmp((const char*)save_p, (const char*)vcheck))
 	{
 		M_StartMessage("Save game from different version\n\nPress ESC\n", NULL, MM_NOTHING);
+		Z_Free(savebuffer);
+		save_p = savebuffer = NULL;
 		return; // bad version
 	}
 	save_p += VERSIONSIZE;
@@ -2208,6 +2312,7 @@ void G_DoLoadGame(int slot)
 		M_StartMessage("savegame file corrupted\n\nPress ESC\n", NULL, MM_NOTHING);
 		Command_ExitGame_f();
 		Z_Free(savebuffer);
+		save_p = savebuffer = NULL;
 		return;
 	}
 
@@ -2217,7 +2322,7 @@ void G_DoLoadGame(int slot)
 
 	// done
 	Z_Free(savebuffer);
-
+	save_p = savebuffer = NULL;
 	multiplayer = playeringame[1];
 	if(playeringame[1] && !netgame)
 		CV_SetValue(&cv_splitscreen,1);
@@ -2235,50 +2340,61 @@ void G_DoLoadGame(int slot)
 // Called by the menu task.
 // Description is a 24 byte text string
 //
-void G_SaveGame(int slot, char* description)
+void G_SaveGame(unsigned int slot, char* description)
 {
 	if(server)
-		COM_BufAddText(va("save %d \"%s\"\n", slot, description));
+		COM_BufAddText(va("save %u \"%s\"\n", slot, description));
 }
 
-void G_DoSaveGame(int savegameslot, char* savedescription)
+void G_DoSaveGame(unsigned int savegameslot, char* savedescription)
 {
-	char name2[VERSIONSIZE];
-	char description[SAVESTRINGSIZE];
-	size_t length;
-	char name[256];
+	boolean saved;
+	char savename[256] = "";
+	const char* backup;
 
 	gameaction = ga_nothing;
 
-	sprintf(name, savegamename, savegameslot);
+	sprintf(savename, savegamename, savegameslot);
+	backup = va("%s",savename);
 
 	gameaction = ga_nothing;
-
-	save_p = savebuffer = (byte*)malloc(SAVEGAMESIZE);
-	if(!save_p)
 	{
-		CONS_Printf("No more free memory for savegame\n");
-		return;
+		char name[VERSIONSIZE];
+		char description[SAVESTRINGSIZE];
+		size_t length;
+#ifdef MEMORYDEBUG
+		I_OutputMsg("G_DoSaveGame: Mallocing %u for savebuffer\n",SAVEGAMESIZE);
+#endif
+		save_p = savebuffer = (byte*)malloc(SAVEGAMESIZE);
+		if(!save_p)
+		{
+			CONS_Printf("No more free memory for savegame\n");
+			return;
+		}
+	
+		strcpy(description, savedescription);
+		description[SAVESTRINGSIZE] = 0;
+		WRITEMEM(save_p, description, SAVESTRINGSIZE);
+		memset(name, 0, sizeof(name));
+		sprintf(name, "version %i", VERSION);
+		WRITEMEM(save_p, name, VERSIONSIZE);
+	
+		P_SaveGame();
+	
+		length = save_p - savebuffer;
+		if(length > SAVEGAMESIZE)
+			I_Error("Savegame buffer overrun");
+		saved = FIL_WriteFile(backup, savebuffer, length);
+		free(savebuffer);
+		save_p = savebuffer = NULL;
 	}
 
-	strcpy(description, savedescription);
-	description[SAVESTRINGSIZE] = 0;
-	WRITEMEM(save_p, description, SAVESTRINGSIZE);
-	memset(name2, 0, sizeof(name2));
-	sprintf(name2, "version %i", VERSION);
-	WRITEMEM(save_p, name2, VERSIONSIZE);
-
-	P_SaveGame();
-
-	length = save_p - savebuffer;
-	if(length > SAVEGAMESIZE)
-		I_Error("Savegame buffer overrun");
-	FIL_WriteFile(name, savebuffer, length);
-	free(savebuffer);
-
 	gameaction = ga_nothing;
 
-	players[consoleplayer].message = GGSAVED;
+	if(saved)
+		players[consoleplayer].message = GGSAVED;
+	else
+		I_OutputMsg("Error while writing to %s for save slot %u, base: %s\n",backup,savegameslot,savegamename);
 
 	// draw the pattern into the back screen
 	R_FillBackScreen();
@@ -2476,37 +2592,35 @@ static void G_WriteDemoTiccmd(ticcmd_t* cmd, int playernum)
 
 	if(cmd->forwardmove != oldcmd[playernum].forwardmove)
 	{
-		*demo_p++ = cmd->forwardmove;
+		WRITEBYTE(demo_p,cmd->forwardmove);
 		oldcmd[playernum].forwardmove = cmd->forwardmove;
 		ziptic |= ZT_FWD;
 	}
 
 	if(cmd->sidemove != oldcmd[playernum].sidemove)
 	{
-		*demo_p++ = cmd->sidemove;
+		WRITEBYTE(demo_p,cmd->sidemove);
 		oldcmd[playernum].sidemove = cmd->sidemove;
 		ziptic |= ZT_SIDE;
 	}
 
 	if(cmd->angleturn != oldcmd[playernum].angleturn)
 	{
-		*(short*)demo_p = cmd->angleturn;
-		demo_p +=2;
+		WRITESHORT(demo_p,cmd->angleturn);
 		oldcmd[playernum].angleturn = cmd->angleturn;
 		ziptic |= ZT_ANGLE;
 	}
 
 	if(cmd->buttons != oldcmd[playernum].buttons)
 	{
-		*demo_p++ = cmd->buttons;
+		WRITEBYTE(demo_p,cmd->buttons);
 		oldcmd[playernum].buttons = cmd->buttons;
 		ziptic |= ZT_BUTTONS;
 	}
 
 	if(cmd->aiming != oldcmd[playernum].aiming)
 	{
-		*(short*)demo_p = cmd->aiming;
-		demo_p += 2;
+		WRITESHORT(demo_p,cmd->aiming);
 		oldcmd[playernum].aiming = cmd->aiming;
 		ziptic |= ZT_AIMING;
 	}
@@ -2536,6 +2650,8 @@ void G_RecordDemo(char* name)
 	maxsize = 10240*1024;
 	if(M_CheckParm("-maxdemo") && M_IsNextParm())
 		maxsize = atoi(M_GetNextParm()) * 1024;
+	if(demobuffer)
+		Z_Free(demobuffer);
 	demobuffer = Z_Malloc(maxsize, PU_STATIC, NULL);
 	demoend = demobuffer + maxsize;
 
@@ -2682,6 +2798,7 @@ void G_DoneLevelLoad(void)
 void G_StopDemo(void)
 {
 	Z_Free(demobuffer);
+	demobuffer = NULL;
 	demoplayback = false;
 	timingdemo = false;
 	singletics = false;
@@ -2696,6 +2813,7 @@ void G_StopDemo(void)
 
 boolean G_CheckDemoStatus(void)
 {
+	boolean saved;
 	if(timingdemo)
 	{
 		int time;
@@ -2728,11 +2846,14 @@ boolean G_CheckDemoStatus(void)
 	if(demorecording)
 	{
 		*demo_p++ = DEMOMARKER;
-		FIL_WriteFile(demoname, demobuffer, demo_p - demobuffer);
+		saved = FIL_WriteFile(demoname, demobuffer, demo_p - demobuffer);
 		Z_Free(demobuffer);
 		demorecording = false;
 
-		CONS_Printf("\2Demo %s recorded\n",demoname);
+		if(saved)
+			CONS_Printf("\2Demo %s recorded\n",demoname);
+		else
+			CONS_Printf("\2Demo %s not saved\n",demoname);
 		return true;
 	}
 

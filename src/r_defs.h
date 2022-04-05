@@ -30,10 +30,6 @@
 
 #include "screen.h" // MAXVIDWIDTH, MAXVIDHEIGHT
 
-#ifdef _MSC_VER
-#pragma warning(disable :  4200)
-#endif
-
 //
 // ClipWallSegment
 // Clips the given range of columns
@@ -571,6 +567,10 @@ typedef enum
 	RGBA32          = 4,  // 32 bit rgba
 } pic_mode_t;
 
+#ifdef _MSC_VER
+#pragma warning(disable :  4200)
+#endif
+
 // a pic is an unmasked block of pixels, stored in horizontal way
 typedef struct
 {
@@ -583,6 +583,9 @@ typedef struct
 	byte data[0];
 } pic_t;
 
+#ifdef _MSC_VER
+#pragma warning(default : 4200)
+#endif
 
 typedef enum
 {

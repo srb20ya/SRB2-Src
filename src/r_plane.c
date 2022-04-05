@@ -245,7 +245,7 @@ void R_ClearPlanes (player_t *player)
 
 	//SoM: 3/23/2000
 	for(i = 0; i < MAXVISPLANES; i++)
-		for(*freehead = visplanes[i], visplanes[i] = NULL; *freehead; )
+		for(*freehead = visplanes[i], visplanes[i] = NULL; freehead && *freehead; )
 			freehead = &(*freehead)->next;
 
     lastopening = openings;

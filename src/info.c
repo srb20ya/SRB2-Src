@@ -1786,7 +1786,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] =
 		S_EGGMOBILE_STND,  // seestate
 		0,                 // seesound
 		8,                 // reactiontime
-		sfx_telept,        // attacksound
+		0,                 // attacksound
 		S_EGGMOBILE_PAIN,  // painstate
 		MT_THOK,           // painchance
 		sfx_dmpain,        // painsound
@@ -1800,7 +1800,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] =
 		48*FRACUNIT,       // height
 		0,                 // mass
 		2,                 // damage
-		0,                 // activesound
+		sfx_telept,        // activesound
 		MF_SPECIAL|MF_SHOOTABLE|MF_FLOAT|MF_NOGRAVITY|MF_BOSS, // flags
 		S_EGGMOBILE_PANIC1 // raisestate
 	},
@@ -3057,7 +3057,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] =
 		S_NULL,         // deathstate
 		S_NULL,         // xdeathstate
 		sfx_None,       // deathsound
-		0,              // speed
+		3*FRACUNIT,     // speed
 		8*FRACUNIT,     // radius
 		8*FRACUNIT,     // height
 		100,            // mass
@@ -3084,7 +3084,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] =
 		S_NULL,         // deathstate
 		S_NULL,         // xdeathstate
 		sfx_None,       // deathsound
-		0,              // speed
+		3*FRACUNIT,     // speed
 		8*FRACUNIT,     // radius
 		8*FRACUNIT,     // height
 		100,            // mass
@@ -3111,7 +3111,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] =
 		S_NULL,         // deathstate
 		S_NULL,         // xdeathstate
 		sfx_None,       // deathsound
-		0,              // speed
+		3*FRACUNIT,     // speed
 		8*FRACUNIT,     // radius
 		8*FRACUNIT,     // height
 		100,            // mass
@@ -3565,7 +3565,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] =
 		sfx_None,       // deathsound
 		0,              // speed
 		6*FRACUNIT,     // radius
-		FRACUNIT,       // height
+		1*FRACUNIT,     // height
 		100,            // mass
 		1,              // damage
 		sfx_None,       // activesound
@@ -3746,7 +3746,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] =
 		S_NULL,         // xdeathstate
 		sfx_None,       // deathsound
 		8,              // speed
-		16*FRACUNIT,     // radius
+		24*FRACUNIT,     // radius
 		64*FRACUNIT,    // height
 		16,             // mass
 		0,              // damage
@@ -3772,7 +3772,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] =
 		S_NULL,         // xdeathstate
 		sfx_None,       // deathsound
 		8,              // speed
-		16*FRACUNIT,     // radius
+		24*FRACUNIT,     // radius
 		64*FRACUNIT,    // height
 		16,             // mass
 		0,              // damage
@@ -5783,7 +5783,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] =
 		sfx_None,       // deathsound
 		10,             // speed
 		1024*FRACUNIT,  // radius
-		FRACUNIT,       // height
+		1*FRACUNIT,     // height
 		100,            // mass
 		0,              // damage
 		sfx_None,       // activesound
@@ -5809,7 +5809,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] =
 		sfx_None,       // deathsound
 		20,             // speed
 		512*FRACUNIT,   // radius
-		FRACUNIT,       // height
+		1*FRACUNIT,     // height
 		100,            // mass
 		0,              // damage
 		sfx_None,       // activesound
@@ -5835,7 +5835,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] =
 		sfx_None,       // deathsound
 		5,              // speed
 		2048*FRACUNIT,  // radius
-		FRACUNIT,       // height
+		1*FRACUNIT,     // height
 		100,            // mass
 		0,              // damage
 		sfx_None,       // activesound
@@ -5861,7 +5861,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] =
 		sfx_None,       // deathsound
 		10,             // speed
 		1024*FRACUNIT,  // radius
-		FRACUNIT,       // height
+		1*FRACUNIT,     // height
 		100,            // mass
 		0,              // damage
 		sfx_None,       // activesound
@@ -5887,7 +5887,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] =
 		sfx_None,       // deathsound
 		20,             // speed
 		512*FRACUNIT,   // radius
-		FRACUNIT,       // height
+		1*FRACUNIT,     // height
 		100,            // mass
 		0,              // damage
 		sfx_None,       // activesound
@@ -5913,7 +5913,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] =
 		sfx_None,       // deathsound
 		5,              // speed
 		2048*FRACUNIT,  // radius
-		FRACUNIT,       // height
+		1*FRACUNIT,     // height
 		100,            // mass
 		0,              // damage
 		sfx_None,       // activesound

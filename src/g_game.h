@@ -53,8 +53,9 @@ extern boolean singledemo;
 extern tic_t levelstarttic;
 
 // for modding?
+extern int prevmap, nextmap;
 extern int gameovertics;
-extern int timeinmap; // Ticker for time spent in level (used for levelcard display)
+extern tic_t timeinmap; // Ticker for time spent in level (used for levelcard display)
 
 // used in game menu
 extern consvar_t cv_crosshair, cv_crosshair2;
@@ -81,7 +82,7 @@ void G_DoReborn(int playernum);
 void G_DeathMatchSpawnPlayer(int playernum);
 void G_CoopSpawnPlayer(int playernum, boolean starpost);
 void G_PlayerReborn(int player);
-
+void G_DoCompleted(void);
 void G_InitNew(skill_t skill, char* mapname, boolean resetplayer, boolean skipprecutscene);
 
 // Can be called by the startup code or M_Responder.
@@ -92,14 +93,14 @@ void G_DoLoadLevel(boolean resetplayer);
 void G_DeferedPlayDemo(char* demo);
 
 // Can be called by the startup code or M_Responder, calls P_SetupLevel.
-void G_LoadGame(int slot);
-void G_DoLoadGame(int slot);
+void G_LoadGame(unsigned int slot);
+void G_DoLoadGame(unsigned int slot);
 
 void G_SaveGameData(void);
 
 // Called by M_Responder.
-void G_DoSaveGame(int slot, char* description);
-void G_SaveGame(int slot, char* description);
+void G_DoSaveGame(unsigned int slot, char* description);
+void G_SaveGame(unsigned int slot, char* description);
 
 // Only called by startup code.
 void G_RecordDemo(char* name);

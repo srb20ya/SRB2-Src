@@ -217,7 +217,7 @@ BOOL WINAPI DllMain( HANDLE hModule,      // handle to DLL module
 void DBG_Printf (const LPCTSTR lpFmt, ...)
 {
 #ifdef DEBUG_TO_FILE
-	char    str[1999];
+	char    str[1999] = "";
 	va_list arglist;
 	DWORD   bytesWritten;
 

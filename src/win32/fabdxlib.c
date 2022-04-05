@@ -181,21 +181,24 @@ BOOL EnumDirectDrawDisplayModes (APPENUMMODESCALLBACK appFunc)
 //
 // Create the DirectDraw object for later
 //
-BOOL CreateDirectDrawInstance (void)
+BOOL CreateDirectDrawInstance (VOID)
 {
 	HRESULT hr;
 	IDirectDraw* DDr;
+	IDirectDraw** rp = &DDr;
+	IDirectDraw2** rp2 = &DDr2;
+	LPVOID *tp = (LPVOID *)rp2;
 
 	//
 	// create an instance of DirectDraw object
 	//
-	if (FAILED(hr = DirectDrawCreate(NULL, &DDr, NULL)))
+	if (FAILED(hr = DirectDrawCreate(NULL, rp, NULL)))
 		I_Error ("DirectDrawCreate FAILED: %s", DXErrorToString(hr));
-	
+
 	// change interface to IDirectDraw2
-	if (FAILED(hr = DDr->lpVtbl->QueryInterface (DDr, &IID_IDirectDraw2, (LPVOID*)&DDr2)))
+	if (FAILED(hr = DDr->lpVtbl->QueryInterface (DDr, &IID_IDirectDraw2, tp)))
 		I_Error("Failed to query DirectDraw2 interface: %s", DXErrorToString(hr));
-	
+
 	// release the interface we don't need
 	DDr->lpVtbl->Release (DDr);
 	return TRUE;
@@ -374,7 +377,7 @@ int  InitDirectDrawe (HWND appWin, int width, int height, int bpp, int fullScr)
 //
 // Free all memory
 //
-void    CloseDirectDraw (void)
+VOID CloseDirectDraw (VOID)
 {
 	if (DDr2 != NULL)
 	{
@@ -398,7 +401,7 @@ void    CloseDirectDraw (void)
 //
 // Release DirectDraw stuff before display mode change
 //
-void ReleaseChtuff (void)
+VOID ReleaseChtuff (VOID)
 {
 	if (DDr2 != NULL)
 	{
@@ -420,7 +423,7 @@ void ReleaseChtuff (void)
 //
 // Clear the surface to color
 //
-void ClearSurface (IDirectDrawSurface* surface, int color)
+VOID ClearSurface (IDirectDrawSurface* surface, int color)
 {
 	DDBLTFX             ddbltfx;
 	
@@ -498,7 +501,7 @@ BOOL ScreenFlip (int waitflip)
 //
 // Print a text to the surface
 //
-void TextPrint (int x, int y, char* message)
+VOID TextPrint (int x, int y, LPCSTR message)
 {
 	HRESULT hr;
 	HDC     hdc = NULL;
@@ -511,7 +514,7 @@ void TextPrint (int x, int y, char* message)
 	// Write the message.
 	SetBkMode(hdc, TRANSPARENT);
 	SetTextColor(hdc, RGB(255, 255, 255));
-	TextOut(hdc, x, y, message, (int)strlen(message));
+	TextOutA(hdc, x, y, message, (int)strlen(message));
 	
 	// Release the device context.
 	hr = ScreenVirtual->lpVtbl->ReleaseDC(ScreenVirtual,hdc);
@@ -521,7 +524,7 @@ void TextPrint (int x, int y, char* message)
 //
 // Lock surface before multiple drawings by hand, for speed
 //
-boolean LockScreen(void)
+boolean LockScreen(VOID)
 {
 	DDSURFACEDESC  ddsd;
 	HRESULT        ddrval;
@@ -568,7 +571,7 @@ boolean LockScreen(void)
 //
 // Unlock surface
 //
-void UnlockScreen(void)
+VOID UnlockScreen(VOID)
 {
 	if (DD_OK != ScreenVirtual->lpVtbl->Unlock(ScreenVirtual,NULL))
 		I_Error ("Couldn't UnLock the renderer!");
@@ -583,7 +586,7 @@ void UnlockScreen(void)
 //faB: note: testing 14/03/1999, see if it is faster than memcopy of virtual to 
 /*
 static    LPDIRECTDRAWSURFACE lpDDS = NULL;
-void BlitScreen (void)
+VOID BlitScreen (VOID)
 {
 	HRESULT hr;
 
@@ -600,7 +603,7 @@ void BlitScreen (void)
 }
 
 
-void MakeScreen (int width, int height, BYTE* lpSurface)
+VOID MakeScreen (int width, int height, BYTE* lpSurface)
 {
 	HRESULT hr;
 	DDSURFACEDESC    ddsd;
@@ -639,7 +642,7 @@ void MakeScreen (int width, int height, BYTE* lpSurface)
 //
 // Create a palette object
 // 
-void CreateDDPalette (PALETTEENTRY* colorTable)
+VOID CreateDDPalette (PALETTEENTRY* colorTable)
 {
 	HRESULT  ddrval;
 	ddrval = DDr2->lpVtbl->CreatePalette(DDr2,DDPCAPS_8BIT|DDPCAPS_ALLOW256, colorTable, &DDPalette, NULL);
@@ -651,7 +654,7 @@ void CreateDDPalette (PALETTEENTRY* colorTable)
 //
 // Free the palette object
 //
-void DestroyDDPalette (void)
+VOID DestroyDDPalette (VOID)
 {
 	SAFE_RELEASE(DDPalette);
 }
@@ -660,7 +663,7 @@ void DestroyDDPalette (void)
 //
 // Set a a full palette of 256 PALETTEENTRY entries
 //
-void SetDDPalette (PALETTEENTRY* pal)
+VOID SetDDPalette (PALETTEENTRY* pal)
 {
 	// create palette first time
 	if (DDPalette==NULL)
@@ -676,7 +679,7 @@ void SetDDPalette (PALETTEENTRY* pal)
 //
 // Wait for vsync, gross
 //
-void WaitVbl (void)
+VOID WaitVbl (VOID)
 {
 	DDr2->lpVtbl->WaitForVerticalBlank (DDr2,DDWAITVB_BLOCKBEGIN, NULL);
 }

@@ -56,6 +56,4 @@ void CONS_Error(const char *msg); // print out error msg, and wait a key
 // force console to move out
 void CON_ToggleOff(void);
 
-#ifdef LOGMESSAGES
 void CON_LogMessage(const char* msg);
-#endif

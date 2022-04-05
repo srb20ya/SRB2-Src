@@ -69,7 +69,6 @@
 ?>
 <HR>
 <H2>Info:</H2>
-<A HREF="http://www.sepwich.com/ssntails/mb/viewtopic.php?p=9603#9603">HOW-TO to set SRB2 to use this masterserver</A><BR>
 <A HREF="http://fanmade.emulationzone.org/gregorsoft/launcher.htm">Win32 SRB2MSLauncher</A> Great job, "Gregor Dick"/Oogaland of <A HREF="http://fanmade.emulationzone.org/gregorsoft/">Gregorsoft Software</A>
 <BR>
 <HR><BR>
@@ -79,7 +78,7 @@ srb2.exe    (Windows/DirectX/FMOD version)<BR>
 srb2sdl.exe (Windows/SDL/SDL_mixer version)<BR>
 lsdlsrb2    (GNU/Linux/SDL/SDL_mixer version)<BR>
 <BR>
-<A HREF="http://sepwich.com/ssntails/mb/viewtopic.php?t=711">Srb2win.exe</A> ver1.08FD   v1.42.20 (use Listserv command)<BR>
-<A HREF="http://jte.rose-manor.net/spmoves.htm">Srb2spmoves.exe</A>          Mod         v1.08.14 (use Internet search menu)<BR>
+<A HREF="http://www.sepwich.com/ssntails/srb2/download.htm">Srb2win.exe</A> v1.09.00 (use Internet search menu)<BR>
+<A HREF="about:blank">Srb2JTE.exe</A>                                       v1.69.03 (use Internet search menu)<BR>
 </BODY>
 </HTML>

@@ -46,6 +46,7 @@
 ///	this source file contains the exception handler for recording error
 ///	information after crashes.
 
+#include <tchar.h>
 #include "win_main.h"
 #include "../doomdef.h" //just for VERSION
 #include "win_dbg.h"
@@ -65,14 +66,14 @@
 // --------------------------------------------------------------------------
 // return a description for an ExceptionCode
 // --------------------------------------------------------------------------
-static const char* GetExceptionDescription (DWORD ExceptionCode)
+static LPCSTR GetExceptionDescription (DWORD ExceptionCode)
 {
 	unsigned int i;
 
 	struct ExceptionNames
 	{
 		DWORD   ExceptionCode;
-		const char*   ExceptionName;
+		LPCSTR  ExceptionName;
 	};
 	
 	struct ExceptionNames ExceptionMap[] =
@@ -118,9 +119,9 @@ static const char* GetExceptionDescription (DWORD ExceptionCode)
 // --------------------------------------------------------------------------
 // Directly output a formatted string to the errorlog file, using win32 funcs
 // --------------------------------------------------------------------------
-void FPrintf (HANDLE fileHandle, LPCTSTR lpFmt, ...)
+VOID FPrintf (HANDLE fileHandle, LPCSTR lpFmt, ...)
 {
-	char    str[1999];
+	CHAR    str[1999];
 	va_list arglist;
 	DWORD   bytesWritten;
 
@@ -131,7 +132,7 @@ void FPrintf (HANDLE fileHandle, LPCTSTR lpFmt, ...)
 	WriteFile (fileHandle, str, (DWORD)strlen(str), &bytesWritten, NULL);
 }
 
-void FPutChar(HANDLE fileHandle, const char *c)
+VOID FPutChar(HANDLE fileHandle, LPCSTR c)
 {
 	static DWORD bytesWritten;
 	WriteFile(fileHandle, c, 1, &bytesWritten, NULL);
@@ -141,14 +142,14 @@ void FPutChar(HANDLE fileHandle, const char *c)
 // Print the specified FILETIME to output in a human readable format,
 // without using the C run time.
 // --------------------------------------------------------------------------
-static void PrintTime (char *output, FILETIME TimeToPrint)
+static VOID PrintTime (LPSTR output, FILETIME TimeToPrint)
 {
 	WORD Date, Time;
 	if (FileTimeToLocalFileTime (&TimeToPrint, &TimeToPrint) &&
 	    FileTimeToDosDateTime (&TimeToPrint, &Date, &Time))
 	{
 		// What a silly way to print out the file date/time.
-		wsprintf( output, "%d/%d/%d %02d:%02d:%02d",
+		wsprintfA( output, "%d/%d/%d %02d:%02d:%02d",
 		   (Date / 32) & 15, Date & 31, (Date / 512) + 1980,
 		   (Time / 2048), (Time / 32) & 63, (Time & 31) * 2);
 	}
@@ -157,9 +158,9 @@ static void PrintTime (char *output, FILETIME TimeToPrint)
 }
 
 
-static char* GetFilePart(char *source)
+static LPTSTR GetFilePart(LPTSTR source)
 {
-	char *result = strrchr(source, '\\');
+	LPTSTR result = _tcsrchr(source, '\\');
 	if (result)
 		result++;
 	else
@@ -171,13 +172,13 @@ static char* GetFilePart(char *source)
 // Print information about a code module (DLL or EXE) such as its size,
 // location, time stamp, etc.
 // --------------------------------------------------------------------------
-static void ShowModuleInfo(HANDLE LogFile, HINSTANCE ModuleHandle)
+static VOID ShowModuleInfo(HANDLE LogFile, HINSTANCE ModuleHandle)
 {
-	char ModName[MAX_PATH];
+	CHAR ModName[MAX_PATH];
 	IMAGE_DOS_HEADER *DosHeader;
 	IMAGE_NT_HEADERS *NTHeader;
 	HANDLE ModuleFile;
-	char TimeBuffer[100] = "";
+	CHAR TimeBuffer[100] = "";
 	DWORD FileSize = 0;
 #ifdef NO_SEH_MINGW
 	__try1(EXCEPTION_EXECUTE_HANDLER)
@@ -185,7 +186,7 @@ static void ShowModuleInfo(HANDLE LogFile, HINSTANCE ModuleHandle)
 	__try
 #endif
 	{
-		if (GetModuleFileName(ModuleHandle, ModName, sizeof(ModName)) > 0)
+		if (GetModuleFileNameA(ModuleHandle, ModName, sizeof(ModName)) > 0)
 		{
 			// If GetModuleFileName returns greater than zero then this must
 			// be a valid code module address. Therefore we can try to walk
@@ -199,7 +200,7 @@ static void ShowModuleInfo(HANDLE LogFile, HINSTANCE ModuleHandle)
 				return;
 			// Open the code module file so that we can get its file date
 			// and size.
-			ModuleFile = CreateFile(ModName, GENERIC_READ,
+			ModuleFile = CreateFileA(ModName, GENERIC_READ,
 				FILE_SHARE_READ, 0, OPEN_EXISTING,
 				FILE_ATTRIBUTE_NORMAL, 0);
 			if (ModuleFile != (HANDLE)(-1))
@@ -208,8 +209,8 @@ static void ShowModuleInfo(HANDLE LogFile, HINSTANCE ModuleHandle)
 				FileSize = GetFileSize(ModuleFile, 0);
 				if (GetFileTime(ModuleFile, 0, 0, &LastWriteTime))
 				{
-					wsprintf(TimeBuffer, " - file date is ");
-					PrintTime(TimeBuffer + lstrlen(TimeBuffer), LastWriteTime);
+					wsprintfA(TimeBuffer, " - file date is ");
+					PrintTime(TimeBuffer + strlen(TimeBuffer), LastWriteTime);
 				}
 				CloseHandle(ModuleFile);
 			}
@@ -234,13 +235,13 @@ static void ShowModuleInfo(HANDLE LogFile, HINSTANCE ModuleHandle)
 // and ShowModuleInfo will display module information if they are code
 // modules.
 // --------------------------------------------------------------------------
-static void RecordModuleList(HANDLE LogFile)
+static VOID RecordModuleList(HANDLE LogFile)
 {
 	SYSTEM_INFO     SystemInfo;
 	size_t PageSize;
 	size_t NumPages;
 	size_t pageNum = 0;
-	void *LastAllocationBase = 0;
+	LPVOID LastAllocationBase = 0;
 	
 	FPrintf (LogFile, "\r\n"
 		"\tModule list: names, addresses, sizes, time stamps "
@@ -254,7 +255,7 @@ static void RecordModuleList(HANDLE LogFile)
 	while (pageNum < NumPages)
 	{
 		MEMORY_BASIC_INFORMATION        MemInfo;
-		if (VirtualQuery((void *)(pageNum * PageSize), &MemInfo,
+		if (VirtualQuery((LPVOID)(pageNum * PageSize), &MemInfo,
 			sizeof(MemInfo)))
 		{
 			if (MemInfo.RegionSize > 0)
@@ -286,12 +287,12 @@ static void RecordModuleList(HANDLE LogFile)
 // Record information about the user's system, such as processor type, amount
 // of memory, etc.
 // --------------------------------------------------------------------------
-static void RecordSystemInformation(HANDLE fileHandle)
+static VOID RecordSystemInformation(HANDLE fileHandle)
 {
 	FILETIME     CurrentTime;
-	char         TimeBuffer[100];
-	char         ModuleName[MAX_PATH];
-	char         UserName[200];
+	CHAR         TimeBuffer[100];
+	CHAR         ModuleName[MAX_PATH];
+	CHAR         UserName[200];
 	DWORD        UserNameSize;
 	SYSTEM_INFO  SystemInfo;
 	MEMORYSTATUS MemInfo;
@@ -300,11 +301,11 @@ static void RecordSystemInformation(HANDLE fileHandle)
 	PrintTime (TimeBuffer, CurrentTime);
 	FPrintf(fileHandle, "Error occurred at %s.\r\n", TimeBuffer);
 	
-	if (GetModuleFileName (NULL, ModuleName, sizeof(ModuleName)) <= 0)
-		lstrcpy (ModuleName, "Unknown");
+	if (GetModuleFileNameA(NULL, ModuleName, sizeof(ModuleName)) <= 0)
+		strcpy (ModuleName, "Unknown");
 	UserNameSize = sizeof(UserName);
-	if (!GetUserName (UserName, &UserNameSize))
-		lstrcpy (UserName, "Unknown");
+	if (!GetUserNameA(UserName, &UserNameSize))
+		strcpy (UserName, "Unknown");
 	FPrintf(fileHandle, "%s, run by %s.\r\n", ModuleName, UserName);
 	
 	GetSystemInfo (&SystemInfo);
@@ -332,15 +333,15 @@ static void RecordSystemInformation(HANDLE fileHandle)
 // the debugger will hopefully coexist peacefully with the structured exception
 // handler.
 // --------------------------------------------------------------------------
-int __cdecl RecordExceptionInfo (PEXCEPTION_POINTERS data/*, const char *Message, LPSTR lpCmdLine*/)
+int __cdecl RecordExceptionInfo (PEXCEPTION_POINTERS data/*, LPCSTR Message, LPSTR lpCmdLine*/)
 {
 	PEXCEPTION_RECORD   Exception;
 	PCONTEXT            Context;
-	char                ModuleName[MAX_PATH];
-	char                FileName[MAX_PATH] = "Unknown";
-	char*               FilePart, *lastperiod;
-	char                CrashModulePathName[MAX_PATH];
-	const char*         CrashModuleFileName = "Unknown";
+	TCHAR               ModuleName[MAX_PATH];
+	TCHAR               FileName[MAX_PATH] = TEXT("Unknown");
+	LPTSTR              FilePart, lastperiod;
+	TCHAR               CrashModulePathName[MAX_PATH];
+	LPCTSTR             CrashModuleFileName = TEXT("Unknown");
 	MEMORY_BASIC_INFORMATION    MemInfo;
 	static int          BeenHere=false;
 	HANDLE              fileHandle;
@@ -370,16 +371,16 @@ int __cdecl RecordExceptionInfo (PEXCEPTION_POINTERS data/*, const char *Message
 	// Extract the file name portion and remove it's file extension. We'll
 	// use that name shortly.
 	lstrcpy (FileName, FilePart);
-	lastperiod = strrchr (FileName, '.');
+	lastperiod = _tcsrchr (FileName, '.');
 	if (lastperiod)
 		lastperiod[0] = 0;
 	// Replace the executable filename with our error log file name.
-	lstrcpy (FilePart, "errorlog.txt");
+	lstrcpy (FilePart, TEXT("errorlog.txt"));
 	fileHandle = CreateFile (ModuleName, GENERIC_WRITE, 0, NULL, OPEN_ALWAYS,
 		FILE_ATTRIBUTE_NORMAL | FILE_FLAG_WRITE_THROUGH, NULL);
 	if (fileHandle == (HANDLE)(-1))
 	{
-		OutputDebugString ("Error creating exception report");
+		OutputDebugString (TEXT("Error creating exception report"));
 		return EXCEPTION_CONTINUE_SEARCH;
 	}
 	
@@ -395,7 +396,7 @@ int __cdecl RecordExceptionInfo (PEXCEPTION_POINTERS data/*, const char *Message
 	// VirtualQuery can be used to get the allocation base associated with a
 	// code address, which is the same as the ModuleHandle. This can be used
 	// to get the filename of the module that the crash happened in.
-	if ( VirtualQuery ((void*)(size_t)Context->Eip, &MemInfo, sizeof(MemInfo)) &&
+	if ( VirtualQuery ((LPVOID)(size_t)Context->Eip, &MemInfo, sizeof(MemInfo)) &&
 	     GetModuleFileName ((HINSTANCE)MemInfo.AllocationBase,
 	                        CrashModulePathName,
 	                        sizeof(CrashModulePathName)) > 0)
@@ -418,17 +419,17 @@ int __cdecl RecordExceptionInfo (PEXCEPTION_POINTERS data/*, const char *Message
 	if (Exception->ExceptionCode == STATUS_ACCESS_VIOLATION &&
 		Exception->NumberParameters >= 2)
 	{
-		char DebugMessage[1000];
-		const char* readwrite = "Read from";
+		TCHAR DebugMessage[1000];
+		LPCTSTR readwrite = TEXT("Read from");
 		if (Exception->ExceptionInformation[0])
-			readwrite = "Write to";
-		wsprintf(DebugMessage, "%s location %08x caused an access violation.\r\n",
+			readwrite = TEXT("Write to");
+		wsprintf(DebugMessage, TEXT("%s location %08x caused an access violation.\r\n"),
 			readwrite, Exception->ExceptionInformation[1]);
 #ifdef  _DEBUG
 		// The VisualC++ debugger doesn't actually tell you whether a read
 		// or a write caused the access violation, nor does it tell what
 		// address was being read or written. So I fixed that.
-		OutputDebugString("Exception handler: ");
+		OutputDebugString(TEXT("Exception handler: "));
 		OutputDebugString(DebugMessage);
 #endif
 		FPrintf(fileHandle, "%s", DebugMessage);
@@ -495,14 +496,14 @@ int __cdecl RecordExceptionInfo (PEXCEPTION_POINTERS data/*, const char *Message
 	{
 		// Esp contains the bottom of the stack, or at least the bottom of
 		// the currently used area.
-		DWORD* pStack = (DWORD *)(size_t)Context->Esp;
-		DWORD* pStackTop = NULL;
-		int Count = 0;
-		char    buffer[1000] = "";
+		DWORD*    pStack = (DWORD *)(size_t)Context->Esp;
+		DWORD*    pStackTop = NULL;
+		size_t    Count = 0;
+		TCHAR     buffer[1000] = TEXT("");
 		const int safetyzone = 50;
-		char*   nearend = buffer + sizeof(buffer) - safetyzone;
-		char*   output = buffer;
-		const char *Suffix;
+		LPTSTR    nearend = buffer + sizeof(buffer) - safetyzone*sizeof(TCHAR);
+		LPTSTR    output = buffer;
+		const void *Suffix;
 
 		// Load the top (highest address) of the stack from the
 		// thread information block. It will be found there in
@@ -527,12 +528,12 @@ int __cdecl RecordExceptionInfo (PEXCEPTION_POINTERS data/*, const char *Message
 		while (pStack + 1 <= pStackTop)
 		{
 			if ((Count % StackColumns) == 0)
-				output += wsprintf(output, "%08x: ", pStack);
+				output += wsprintf(output, TEXT("%08x: "), pStack);
 			if ((++Count % StackColumns) == 0 || pStack + 2 > pStackTop)
-				Suffix = "\r\n";
+				Suffix = TEXT("\r\n");
 			else
-				Suffix = " ";
-			output += wsprintf(output, "%08x%s", *pStack, Suffix);
+				Suffix = TEXT(" ");
+			output += wsprintf(output, TEXT("%08x%s"), *pStack, Suffix);
 			pStack++;
 			// Check for when the buffer is almost full, and flush it to disk.
 			if (output > nearend)
@@ -567,9 +568,9 @@ int __cdecl RecordExceptionInfo (PEXCEPTION_POINTERS data/*, const char *Message
 }
 
 #ifdef NO_SEH_MINGW
-struct _EXCEPTION_POINTERS *GetExceptionInformation(void)
+struct _EXCEPTION_POINTERS *GetExceptionInformation(VOID)
 {
-	void *SEHINFO = NULL;
+	LPVOID SEHINFO = NULL;
 	//__asm__("movl -20(%%ebp), %%eax": "=a"(SEHINFO)); //Alam: FIXME!
 	return SEHINFO;
 }
@@ -658,7 +659,7 @@ struct _EXCEPTION_POINTERS *GetExceptionInformation(void)
 		for (loadfunc = hwdFuncTable, i=0; loadfunc->fnName!=NULL; loadfunc++,i++)
 		{
 			FPrintf ("hwdFuncTable[%d]: %s loaded at %.8x\r\n", i, loadfunc->fnName,
-													(unsigned long) *((void**)loadfunc->fnPointer) );
+													(unsigned long) *((LPVOID*)loadfunc->fnPointer) );
 		}
 
 	}

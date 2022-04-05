@@ -21,7 +21,7 @@
 
 #include "command.h"
 
-#if (defined (_WIN32) || defined(_WIN64) || defined(_WIN32_WCE)) && !defined(__CYGWIN__)
+#if (defined (_WIN32) || defined(_WIN64) || defined(_WIN32_WCE)) && !defined(__CYGWIN__) && !defined(_XBOX)
 #define RPC_NO_WINDOWS_H
 #include <windows.h>
 #define DNWH HWND
@@ -30,7 +30,11 @@
 #endif
 
 // quickhack for V_Init()... to be cleaned up
+#if defined(DC) || defined(_WIN32_WCE)
+#define NUMSCREENS 2
+#else
 #define NUMSCREENS 4
+#endif
 
 // Size of statusbar.
 #define ST_HEIGHT 32

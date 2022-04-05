@@ -26,7 +26,11 @@
 typedef void GlidePatch_t;
 #endif
 #ifdef SDLIO
+#if defined(_XBOX) && defined(_MSC_VER)
+#include <SDL_rwops.h>
+#else
 #include <SDL/SDL_rwops.h>
+#endif
 #endif
 
 #ifdef __GNUG__
@@ -109,7 +113,8 @@ int W_LoadWadFile(char* filename);
 // W_InitMultipleFiles returns 1 if all is okay, 0 otherwise,
 // so that it stops with a message if a file was not found, but not if all is okay.
 int W_InitMultipleFiles(char** filenames);
-
+const char* W_CheckNameForNumPwad(int wadid, int lumpnum);
+const char* W_CheckNameForNum(int lumpnum);
 int W_CheckNumForName(const char* name);
 int W_CheckNumForNamePwad(const char* name, int wadid, int startlump); // checks only in one pwad
 int W_GetNumForName(const char* name);
@@ -130,7 +135,15 @@ void* W_CachePatchNum(int lump, int tag); // return a patch_t
 #endif
 
 void W_VerifyFileMD5(int wadfilenum, const char* matchmd5);
+
+typedef struct
+{
+	const char *name;
+	size_t len;
+} lumpchecklist_t;
+
 int W_VerifyNMUSlumps(const char* filename);
+int W_VerifyFile(const char* filename, lumpchecklist_t* checklist, boolean status);
 
 // Store lists of lumps for F_START/F_END etc.
 typedef struct

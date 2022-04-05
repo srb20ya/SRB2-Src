@@ -22,20 +22,34 @@
 #include <errno.h>
 #endif
 
+#if defined(NOMSERV) && !defined(NONET)
+#define NONET
+#endif
+
 #ifndef NONET
-#if defined(_WIN32) || defined(_WIN32_WCE) || defined(_WIN64)
+#if (defined(_WIN32) || defined(_WIN32_WCE) || defined(_WIN64)) && !defined(_XBOX)
 #define RPC_NO_WINDOWS_H
 #include <winsock.h>     // socket(),...
 #else
 #ifdef __OS2__
 #include <sys/types.h>
 #endif // __OS2__
+
+#ifdef _arch_dreamcast
+#include <lwip/inet.h>
+#include <kos/net.h> 
+#include <lwip/lwip.h>
+#define ioctl lwip_ioctl
+#include "sdl/SRB2DC/dchelp.h"
+#else
+#include <arpa/inet.h>
 #include <sys/socket.h> // socket(),...
-#include <sys/time.h> // timeval,... (TIMEOUT)
 #include <netinet/in.h> // sockaddr_in
-#include <arpa/inet.h> // inet_addr(),...
 #include <netdb.h> // gethostbyname(),...
 #include <sys/ioctl.h>
+#endif
+
+#include <sys/time.h> // timeval,... (TIMEOUT)
 #include <errno.h>
 #endif // _WIN32/_WIN64/_WIN32_WCE
 
@@ -262,7 +276,7 @@ static inline int GetServersList(void)
 static inline int MS_GetIP(const char* hostname)
 {
 	struct hostent* host_ent;
-	if(!inet_aton(hostname, &addr.sin_addr))
+	if(!inet_aton(hostname, (void *)&addr.sin_addr))
 	{
 		/// \todo only when we are connected to the Internet, or use a non blocking call
 		host_ent = gethostbyname(hostname);
@@ -429,7 +443,7 @@ static int AddToMasterServer(void)
 #if defined(__APPLE_CC__) || defined(WATTCP) || defined(_WIN32) || defined(_WIN64)
 	int j;
 #else
-	size_t j;
+	socklen_t j;
 #endif
 	msg_t msg;
 	msg_server_t* info = (msg_server_t*)msg.buffer;
@@ -450,7 +464,7 @@ static int AddToMasterServer(void)
 	retry = 0;
 	if(res == ERRSOCKET)
 	{
-		CONS_Printf("Error on select: %s\n", strerror(errno));
+		CONS_Printf("Mastserver error on select #%d: %s\n", errno, strerror(errno));
 		return ConnectionFailed();
 	}
 
@@ -460,7 +474,7 @@ static int AddToMasterServer(void)
 	getsockopt(socket_fd, SOL_SOCKET, SO_ERROR, (char*)&i, &j);
 	if(i) // it was bad
 	{
-		CONS_Printf("getsockopt: %s\n", strerror(errno));
+		CONS_Printf("Masterserver getsockopt error #%d: %s\n", errno, strerror(errno));
 		return ConnectionFailed();
 	}
 
@@ -548,7 +562,13 @@ static inline void openUdpSocket(void)
 	{
 		char hostname[24];
 
-		sprintf(hostname, "%s:%d", inet_ntoa(addr.sin_addr), atoi(GetMasterServerPort())+1);
+		sprintf(hostname, "%s:%d",
+#ifdef _arch_dreamcast
+			inet_ntoa(*(unsigned int*)&addr.sin_addr),
+#else
+			inet_ntoa(addr.sin_addr),
+#endif
+			atoi(GetMasterServerPort())+1);
 		msnode = I_NetMakeNode(hostname);
 	}
 	else
@@ -580,7 +600,9 @@ void SendPingToMasterServer(void)
 	tic_t cur_time;
 
 	cur_time = I_GetTime();
-	if(cur_time > next_time) // ping every 2 second if possible
+	if(!netgame)
+		UnregisterServer();
+	else if(cur_time > next_time) // ping every 2 second if possible
 	{
 		next_time = cur_time+2*TICRATE;
 

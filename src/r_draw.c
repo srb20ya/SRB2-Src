@@ -66,7 +66,7 @@ int columnofs[MAXVIDWIDTH];
 // =========================================================================
 
 lighttable_t* dc_colormap;
-int dc_x, dc_yl, dc_yh;
+int dc_x = 0, dc_yl = 0, dc_yh = 0;
 
 fixed_t dc_iscale, dc_texturemid;
 boolean dc_hires;
@@ -160,7 +160,7 @@ void R_LoadSkinTable(void)
 	int i;
 
 	for(i=0; i<MAXSKINS; i++)
-		translationtables[i] = Z_MallocAlign (256*(MAXSKINCOLORS-1), PU_STATIC, 0, 16);
+		translationtables[i] = Z_MallocAlign (256*(MAXSKINCOLORS-1), PU_STATIC, NULL, 16);
 }
 
 /**	\brief The R_InitTranslationTables
@@ -175,7 +175,7 @@ void R_InitTranslationTables (void)
     //added:11-01-98: load here the transparency lookup tables 'TINTTAB'
     // NOTE: the TINTTAB resource MUST BE aligned on 64k for the asm optimised
     //       (in other words, transtables pointer low word is 0)
-    transtables = Z_MallocAlign (NUMTRANSTABLES*0x10000, PU_STATIC, 0, 16);
+    transtables = Z_MallocAlign (NUMTRANSTABLES*0x10000, PU_STATIC, NULL, 16);
 
     W_ReadLump( W_GetNumForName("TRANSMED"), transtables );
     W_ReadLump( W_GetNumForName("TRANSMOR"), transtables+0x10000 );
@@ -184,7 +184,7 @@ void R_InitTranslationTables (void)
     W_ReadLump( W_GetNumForName("TRANSFX1"), transtables+0x40000 );
 
 	// The old "default" transtable for thok mobjs and such Tails 08-20-2002
-	defaulttranslationtables = Z_MallocAlign (256*(MAXSKINCOLORS), PU_STATIC, 0, 16);
+	defaulttranslationtables = Z_MallocAlign (256*(MAXSKINCOLORS), PU_STATIC, NULL, 16);
 
     // Translate the colors specified by the skin information.
     for (i=0 ; i<256 ; i++)
@@ -345,7 +345,7 @@ void R_InitTranslationTables (void)
         }
     }
 
-	bosstranslationtables = Z_MallocAlign (256*(1), PU_STATIC, 0, 16);
+	bosstranslationtables = Z_MallocAlign (256*(1), PU_STATIC, NULL, 16);
 
 	for (i=0 ; i<256 ; i++)
     {
@@ -566,6 +566,10 @@ void R_InitViewBuffer(int width, int height)
 {
 	int i, bytesperpixel = vid.bpp;
 
+	if(width > MAXVIDWIDTH)
+		width = MAXVIDWIDTH;
+	if(height > MAXVIDHEIGHT)
+		height = MAXVIDHEIGHT;
 	if(bytesperpixel < 1 || bytesperpixel > 4)
 		I_Error("R_InitViewBuffer: wrong bytesperpixel value %d\n", bytesperpixel);
 

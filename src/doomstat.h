@@ -46,6 +46,7 @@ extern int globalweather;
 // Set if homebrew PWAD stuff has been added.
 extern boolean modifiedgame;
 extern boolean savemoddata; // This mod saves time/emblem data.
+extern boolean modred;
 
 // Netgame? only true in a netgame
 extern boolean netgame;
@@ -250,16 +251,16 @@ extern boolean CheckForMarioBlocks;
 extern boolean CheckForFloatBob;
 
 // Powerup durations
-extern int invulntics;
-extern int sneakertics;
+extern tic_t invulntics;
+extern tic_t sneakertics;
 extern int flashingtics;
-extern int tailsflytics;
+extern tic_t tailsflytics;
 extern int underwatertics;
-extern int spacetimetics;
-extern int extralifetics;
+extern tic_t spacetimetics;
+extern tic_t extralifetics;
 // NiGHTS Powerups
-extern int paralooptics;
-extern int helpertics;
+extern tic_t paralooptics;
+extern tic_t helpertics;
 
 extern byte introtoplay;
 

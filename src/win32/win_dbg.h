@@ -32,7 +32,7 @@
 
 // called in the exception filter of the __try block, writes all useful debugging information
 // to a file, using only win32 functions in case the C runtime is in a bad state.
-int __cdecl RecordExceptionInfo (PEXCEPTION_POINTERS data/*, const char *Message, LPSTR lpCmdLine*/);
+int __cdecl RecordExceptionInfo (PEXCEPTION_POINTERS data/*, LPCSTR Message, LPSTR lpCmdLine*/);
 
 #ifdef __MINGW32__
 
@@ -41,7 +41,7 @@ int __cdecl RecordExceptionInfo (PEXCEPTION_POINTERS data/*, const char *Message
 #ifndef TRYLEVEL_NONE
 
 #define NO_SEH_MINGW //Alam:?
-struct _EXCEPTION_POINTERS *GetExceptionInformation(void);
+struct _EXCEPTION_POINTERS *GetExceptionInformation(VOID);
 
 //Alam_GBC: use __try1( seh )
 #ifndef __try

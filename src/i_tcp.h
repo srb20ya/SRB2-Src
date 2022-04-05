@@ -27,9 +27,4 @@ boolean I_InitTcpNetwork(void);
 void I_InitTcpDriver(void);
 void I_ShutdownTcpDriver(void);
 
-boolean I_Ban(int node);
-void I_ClearBans(void);
-
-extern boolean bannednode[MAXNETNODES + 1];
-
 #endif

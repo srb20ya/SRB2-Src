@@ -54,7 +54,7 @@
 #endif
 
 #ifdef SURROUND
-static void CopyAndInvertMemory(void *dest, void *src, int bytes) FUNCNOINLINE; //Can't inline ASM that haves lables
+ATTRNOINLINE static FUNCNOINLINE void CopyAndInvertMemory(void *dest, void *src, int bytes); //Can't inline ASM that haves lables
 #endif
 
 #define FMODSOUND // comment out this to disable MOD/IT/MP3/OGG music playback
@@ -373,8 +373,6 @@ void I_FreeSfx (sfxinfo_t* sfx)
 {
 	LPDIRECTSOUNDBUFFER dsbuffer;
 
-	
-
 	if (sfx->lumpnum<0)
 		return;
 
@@ -391,7 +389,26 @@ void I_FreeSfx (sfxinfo_t* sfx)
 		// free DIRECTSOUNDBUFFER
 		dsbuffer = (LPDIRECTSOUNDBUFFER) sfx->data;
 		if( dsbuffer )
+		{
+			size_t i;
+			for (i=0; i<MAXSTACKSOUNDS; i++)
+			{
+				if(StackSounds[i].lpSndBuf == dsbuffer)
+				{
+					StackSounds[i].lpSndBuf = NULL;
+#ifdef SURROUND
+					if(StackSounds[i].lpSurround)
+					{
+						StackSounds[i].lpSurround->lpVtbl->Stop(StackSounds[i].lpSurround);
+						StackSounds[i].lpSurround->lpVtbl->Release(StackSounds[i].lpSurround);
+					}
+					StackSounds[i].lpSurround = NULL;
+#endif
+				}
+			}
+			dsbuffer->lpVtbl->Stop (dsbuffer);
 			dsbuffer->lpVtbl->Release (dsbuffer);
+		}
 	}
 	sfx->data = NULL;
 	sfx->lumpnum = -1;
@@ -878,9 +895,12 @@ void I_StartupSound(void)
 
 	sound_started = false;
 
+	if(dedicated)
+		return;
+
 	I_AddExitFunc (I_ShutdownMusic);
 
-	if (nosound)
+	if(nosound)
 		return;
 
 	// Secure and configure sound device first.
@@ -1131,8 +1151,8 @@ static void MidiErrorMessageBox(MMRESULT mmr)
 	char szTemp[256];
 
 	/*szTemp[0] = '\2';   //white text to stand out*/
-	midiOutGetErrorText (mmr, szTemp/*+1*/, sizeof(szTemp));
-	CONS_Printf (szTemp);
+	midiOutGetErrorTextA(mmr, szTemp/*+1*/, sizeof(szTemp));
+	CONS_Printf(szTemp);
 	/*MessageBox (GetActiveWindow(), szTemp+1, "LEGACY",
 				MB_OK | MB_ICONSTOP );*/
 	//wsprintf( szDebug, "Midi subsystem error: %s", szTemp );
@@ -1156,7 +1176,10 @@ void I_InitAudioMixer (void)
 // -----------
 void I_InitDigMusic(void)
 {
-	CONS_Printf("I_InitDigMusic()\n");
+	if(dedicated)
+		nofmod = true;
+	else
+		CONS_Printf("I_InitDigMusic()\n");
 
 #ifdef FMODSOUND
 	if(!nofmod)
@@ -1164,7 +1187,9 @@ void I_InitDigMusic(void)
 		// Tails 11-21-2002
 		if (FSOUND_GetVersion() < FMOD_VERSION)
 		{
-			I_Error("FMOD Error : You are using the wrong DLL version!\nYou should be using FMOD %s\n", "FMOD_VERSION");
+			//I_Error("FMOD Error : You are using the wrong DLL version!\nYou should be using FMOD %s\n", "FMOD_VERSION");
+			CONS_Printf("FMOD Error : You are using the wrong DLL version!\nYou should be using FMOD %s\n", "FMOD_VERSION");
+			nofmod = true;
 		}
 
 		/*
@@ -1181,7 +1206,9 @@ void I_InitDigMusic(void)
 
 		if(!FSOUND_Init(44100, 32, FSOUND_INIT_DONTLATENCYADJUST))
 		{
-			I_Error("FMOD(Init,FSOUND_Init): %s\n", FMOD_ErrorString(FSOUND_GetError()));
+			//I_Error("FMOD(Init,FSOUND_Init): %s\n", FMOD_ErrorString(FSOUND_GetError()));
+			CONS_Printf("FMOD(Init,FSOUND_Init): %s\n", FMOD_ErrorString(FSOUND_GetError()));
+			nofmod = true;
 		}
 	}
 #endif
@@ -1201,7 +1228,10 @@ void I_InitMIDIMusic(void)
 
 	bMusicStarted = false;
 	
-	CONS_Printf("I_InitMIDIMusic()\n");
+	if(dedicated)
+		nomusic = true;
+	else
+		CONS_Printf("I_InitMIDIMusic()\n");
 
 	if (nomusic)
 		return;
@@ -1222,7 +1252,7 @@ void I_InitMIDIMusic(void)
 	}
 #endif
 
-	if( M_CheckParm("-winmidi") )
+	if( M_CheckParm("-winmidi") && M_IsNextParm())
 		uMIDIDeviceID = atoi(M_GetNextParm());
 	else
 		uMIDIDeviceID = MIDI_MAPPER;
@@ -1271,7 +1301,7 @@ void I_InitMIDIMusic(void)
 	// create event for synch'ing the callback thread to main program thread
 	// when we will need it
 	hBufferReturnEvent = CreateEvent( NULL, FALSE, FALSE,
-	                                  "SRB2 Midi Playback: Wait For Buffer Return" );
+	                                  TEXT("SRB2 Midi Playback: Wait For Buffer Return") );
 
 	if( !hBufferReturnEvent )
 	{

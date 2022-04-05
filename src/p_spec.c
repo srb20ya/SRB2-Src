@@ -28,7 +28,7 @@
 #include "r_data.h"
 #include "m_random.h"
 #include "p_mobj.h"
-
+#include "i_system.h"
 #include "s_sound.h"
 #include "w_wad.h"
 #include "z_zone.h"
@@ -74,10 +74,10 @@ typedef struct
   */
 typedef struct
 {
-	char istexture    /*ATTRPACK*/; ///< True for a texture, false for a flat.
-	char endname[9]     ATTRPACK;   ///< Name of the last frame, null-terminated.
-	char startname[9] /*ATTRPACK*/; ///< Name of the first frame, null-terminated.
-	int speed           ATTRPACK;   ///< Number of tics for which each frame is shown.
+	char istexture     ATTRPACK; ///< True for a texture, false for a flat.
+	char endname[9]    ATTRPACK;   ///< Name of the last frame, null-terminated.
+	char startname[9]  ATTRPACK; ///< Name of the first frame, null-terminated.
+	int speed          ATTRPACK;   ///< Number of tics for which each frame is shown.
 } animdef_t;
 
 #ifndef __GNUC__
@@ -88,7 +88,7 @@ typedef struct
 
 //SoM: 3/7/2000: New sturcture without limits.
 static anim_t* lastanim;
-static anim_t* anims;
+static anim_t* anims = NULL;
 static size_t maxanims;
 
 //
@@ -116,7 +116,6 @@ static animdef_t harddefs[] =
 	{false,     "SLIME08",      "SLIME05",      4},
 	{false,     "THZBOXF4",     "THZBOXF1",     2}, // Moved up with the flats
 	{false,     "ALTBOXF4",     "ALTBOXF1",     2},
-	{false,     "CHEMG16",      "CHEMG01",      4}, // THZ Chemical gunk
 
 	{false,     "BLUE3",        "BLUE1",        4},
 	{false,     "GREY3",        "GREY1",        4},
@@ -186,6 +185,11 @@ void P_InitPicAnims(void)
 
 	for (i = 0; animdefs[i].istexture != (char)-1; i++, maxanims++);
 
+	if(anims)
+		free(anims);
+#ifdef MEMORYDEBUG
+	I_OutputMsg("P_InitPicAnims: Mallocing %u for anims\n",sizeof(anim_t)*(maxanims + 1));
+#endif
 	anims = (anim_t*)malloc(sizeof(anim_t)*(maxanims + 1));
 	if(!anims)
 		I_Error("No free memory for ANIMATED data");
@@ -978,7 +982,7 @@ static void P_AddExecutorDelay(line_t* line, mobj_t* mobj)
 	if(!line->backsector)
 		I_Error("P_AddExecutorDelay: Line has no backsector!\n");
 
-	e = Z_Malloc(sizeof *e, PU_LEVSPEC, 0);
+	e = Z_Malloc(sizeof *e, PU_LEVSPEC, NULL);
 
 	e->thinker.function.acp1 = (actionf_p1)T_ExecutorDelay;
 	e->line = line;
@@ -1602,18 +1606,24 @@ void P_ProcessLineSpecial(line_t* line, mobj_t* mo)
 			if(!mo)
 				return;
 
-			mo->x = mo->subsector->sector->soundorg.x;
-			mo->y = mo->subsector->sector->soundorg.y;
-			mo->z = mo->floorz;
+			if(line->flags & ML_NOCLIMB)
+			{
+				P_UnsetThingPosition(mo);
+				mo->x = mo->subsector->sector->soundorg.x;
+				mo->y = mo->subsector->sector->soundorg.y;
+				mo->z = mo->floorz;
+				P_SetThingPosition(mo);
+			}
 
 			mo->momx = mo->momy = mo->momz = 1;
+			mo->pmomz = 0;
 
 			if(mo->player)
 			{
-				if(cv_splitscreen.value && cv_chasecam2.value && mo->player == &players[secondarydisplayplayer])
+/*				if(cv_splitscreen.value && cv_chasecam2.value && mo->player == &players[secondarydisplayplayer])
 					P_ResetCamera(mo->player, &camera2);
 				else if(cv_chasecam.value && mo->player == &players[displayplayer])
-					P_ResetCamera(mo->player, &camera);
+					P_ResetCamera(mo->player, &camera);*/
 
 				mo->player->rmomx = mo->player->rmomy = 1;
 				mo->player->cmomx = mo->player->cmomy = 0;
@@ -1808,7 +1818,7 @@ static void P_ProcessSpecialSector(player_t* player, sector_t* sector, boolean r
 			return;
 		}
 		case 969: // Super Sonic transformer
-			if(player->charability == 0 && !player->powers[pw_super] && ALL7EMERALDS)
+			if(player->mo->health > 0 && player->charability == 0 && !player->powers[pw_super] && ALL7EMERALDS)
 				P_DoSuperTransformation(player, true);
 			return;
 		case 970: // Tells pushable things to check FOFs
@@ -2681,7 +2691,7 @@ static inline void P_AddSpikeThinker(sector_t* sec)
 	elevator_t* elevator;
 
 	// create and initialize new elevator thinker
-	elevator = Z_Malloc(sizeof(*elevator), PU_LEVSPEC, 0);
+	elevator = Z_Malloc(sizeof(*elevator), PU_LEVSPEC, NULL);
 	P_AddThinker(&elevator->thinker);
 
 	elevator->thinker.function.acp1 = (actionf_p1)T_SpikeSector;
@@ -2706,7 +2716,7 @@ static void P_AddFloatThinker(sector_t* sec, sector_t* actionsector)
 	elevator_t* elevator;
 
 	// create and initialize new elevator thinker
-	elevator = Z_Malloc(sizeof(*elevator), PU_LEVSPEC, 0);
+	elevator = Z_Malloc(sizeof(*elevator), PU_LEVSPEC, NULL);
 	P_AddThinker(&elevator->thinker);
 
 	elevator->thinker.function.acp1 = (actionf_p1)T_FloatSector;
@@ -2734,7 +2744,7 @@ static void P_AddBlockThinker(sector_t* sec, sector_t* actionsector, line_t* sou
 	elevator_t* elevator;
 
 	// create and initialize new elevator thinker
-	elevator = Z_Malloc(sizeof(*elevator), PU_LEVSPEC, 0);
+	elevator = Z_Malloc(sizeof(*elevator), PU_LEVSPEC, NULL);
 	P_AddThinker(&elevator->thinker);
 
 	elevator->thinker.function.acp1 = (actionf_p1)T_MarioBlockChecker;
@@ -2766,7 +2776,7 @@ static inline void P_AddThwompThinker(sector_t* sec, sector_t* actionsector, lin
 		return;
 
 	// create and initialize new elevator thinker
-	elevator = Z_Malloc(sizeof(*elevator), PU_LEVSPEC, 0);
+	elevator = Z_Malloc(sizeof(*elevator), PU_LEVSPEC, NULL);
 	P_AddThinker(&elevator->thinker);
 
 	elevator->thinker.function.acp1 = (actionf_p1)T_ThwompSector;
@@ -2799,7 +2809,7 @@ static inline void P_AddCameraScanner(sector_t* sourcesec, sector_t* actionsecto
 	elevator_t* elevator; // Why not? LOL
 
 	// create and initialize new elevator thinker
-	elevator = Z_Malloc(sizeof(*elevator), PU_LEVSPEC, 0);
+	elevator = Z_Malloc(sizeof(*elevator), PU_LEVSPEC, NULL);
 	P_AddThinker(&elevator->thinker);
 
 	elevator->thinker.function.acp1 = (actionf_p1)T_CameraScanner;
@@ -2808,7 +2818,7 @@ static inline void P_AddCameraScanner(sector_t* sourcesec, sector_t* actionsecto
 	// set up the fields according to the type of elevator action
 	elevator->sector = sourcesec;
 	elevator->actionsector = actionsector;
-	elevator->distance = angle;
+	elevator->distance = angle/ANGLE_1;
 	return;
 }
 
@@ -2863,7 +2873,7 @@ static inline void EV_AddLaserThinker(ffloor_t* ffloor, sector_t* sector)
 	if(!ffloor)
 		return;
 
-	flash = Z_Malloc(sizeof(*flash), PU_LEVSPEC, 0);
+	flash = Z_Malloc(sizeof(*flash), PU_LEVSPEC, NULL);
 
 	P_AddThinker(&flash->thinker);
 
@@ -3366,7 +3376,7 @@ void P_SpawnSpecials(void)
 			case 63: // Change camera info
 				sec = (int)(sides[*lines[i].sidenum].sector - sectors);
 				for(s = -1; (s = P_FindSectorFromLineTag(lines + i, s)) >= 0;)
-					P_AddCameraScanner(&sectors[sec], &sectors[s], R_PointToAngle2(lines[i].v2->x, lines[i].v2->y, lines[i].v1->x, lines[i].v1->y)/ANGLE_1);
+					P_AddCameraScanner(&sectors[sec], &sectors[s], R_PointToAngle2(lines[i].v2->x, lines[i].v2->y, lines[i].v1->x, lines[i].v1->y));
 				break;
 
 			case 64: // Definable gravity per sector
@@ -3819,7 +3829,7 @@ void T_Scroll(scroll_t* s)
   */
 static void Add_Scroller(int type, fixed_t dx, fixed_t dy, int control, int affectee, int accel)
 {
-	scroll_t* s = Z_Malloc(sizeof *s, PU_LEVSPEC, 0);
+	scroll_t* s = Z_Malloc(sizeof *s, PU_LEVSPEC, NULL);
 	s->thinker.function.acp1 = (actionf_p1)T_Scroll;
 	s->type = type;
 	s->dx = dx;
@@ -3862,7 +3872,7 @@ static void Add_WallScroller(fixed_t dx, fixed_t dy, const line_t* l, int contro
 
 // Factor to scale scrolling effect into mobj-carrying properties = 3/32.
 // (This is so scrolling floors and objects on them can move at same speed.)
-#define CARRYFACTOR ((fixed_t)(FRACUNIT*0.09375f))
+#define CARRYFACTOR ((3*FRACUNIT)/32)
 
 /** Initializes the scrollers.
   *
@@ -3982,7 +3992,7 @@ static void P_SpawnScrollers(void)
   */
 static void Add_Friction(int friction, int movefactor, int affectee, boolean roverfriction)
 {
-	friction_t* f = Z_Malloc(sizeof *f, PU_LEVSPEC, 0);
+	friction_t* f = Z_Malloc(sizeof *f, PU_LEVSPEC, NULL);
 
 	f->thinker.function.acp1 = (actionf_p1)T_Friction;
 	f->friction = friction;
@@ -4131,7 +4141,7 @@ static void P_SpawnFriction(void)
   */
 static void Add_Pusher(pushertype_e type, int x_mag, int y_mag, mobj_t* source, int affectee, int referrer)
 {
-	pusher_t* p = Z_Malloc(sizeof *p, PU_LEVSPEC, 0);
+	pusher_t* p = Z_Malloc(sizeof *p, PU_LEVSPEC, NULL);
 
 	p->thinker.function.acp1 = (actionf_p1)T_Pusher;
 	p->source = source;

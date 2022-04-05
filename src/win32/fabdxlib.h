@@ -70,25 +70,25 @@ extern unsigned char*                           ScreenPtr;                      
 extern BOOL                                     bDX0300;
 
 BOOL    EnumDirectDrawDisplayModes (APPENUMMODESCALLBACK appFunc);
-BOOL    CreateDirectDrawInstance (void);
+BOOL    CreateDirectDrawInstance (VOID);
 
 int     InitDirectDrawe (HWND appWin, int width, int height, int bpp, int fullScr);
-void    CloseDirectDraw (void);
+VOID    CloseDirectDraw (VOID);
 
-void    ReleaseChtuff (void);
+VOID    ReleaseChtuff (VOID);
 
-void    ClearSurface (IDirectDrawSurface* surface, int color);
+VOID    ClearSurface (IDirectDrawSurface* surface, int color);
 BOOL    ScreenFlip (int wait);
-void    TextPrint (int x, int y, char* message);
+VOID    TextPrint (int x, int y, LPCSTR message);
 
-void    CreateDDPalette (PALETTEENTRY* colorTable);
-void    DestroyDDPalette (void);
-void    SetDDPalette (PALETTEENTRY* pal);
+VOID    CreateDDPalette (PALETTEENTRY* colorTable);
+VOID    DestroyDDPalette (VOID);
+VOID    SetDDPalette (PALETTEENTRY* pal);
 
-void    WaitVbl (void);
+VOID    WaitVbl (VOID);
 
-boolean LockScreen (void);
-void    UnlockScreen (void);
+boolean LockScreen (VOID);
+VOID    UnlockScreen (VOID);
 
 
 #endif /* _H_FABDXLIB_ */

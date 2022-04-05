@@ -30,9 +30,18 @@
 /// \brief cd music interface
 ///
 
+#if defined(DC) || defined(_WIN32_WCE)
+#define NOSDLCD
+#endif
 
 #include <stdlib.h>
+#ifndef NOSDLCD
+#if defined(_XBOX) && defined(_MSC_VER)
+#include <SDL.h>
+#else
 #include <SDL/SDL.h>
+#endif
+#endif
 #include "../doomtype.h"
 #include "../i_sound.h"
 #include "../command.h"
@@ -41,8 +50,24 @@
 
 #define MAX_CD_TRACKS 256
 
+#ifdef _XBOX
+int  SDL_SYS_CDInit(void)
+{
+	return(0);
+}
+
+void SDL_SYS_CDQuit(void)
+{
+	return;
+}
+#endif
+
 byte   cdaudio_started      = 0;   // for system startup/shutdown
 
+consvar_t cd_volume = {"cd_volume","31",CV_SAVE,soundvolume_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cdUpdate  = {"cd_update","1",CV_SAVE, NULL, NULL, 0, NULL, NULL, 0, 0, NULL};
+
+#ifndef NOSDLCD
 static SDL_bool cdValid     = SDL_FALSE;
 static SDL_bool cdPlaying   = SDL_FALSE;
 static SDL_bool wasPlaying  = SDL_FALSE;
@@ -54,9 +79,6 @@ static Uint8    cdRemap[MAX_CD_TRACKS];
 static int      cdvolume    = -1;
 static SDL_CD  *cdrom       = NULL;
 static CDstatus cdStatus    = CD_ERROR;
-
-consvar_t cd_volume = {"cd_volume","31",CV_SAVE,soundvolume_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cdUpdate  = {"cd_update","1",CV_SAVE, NULL, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 /**************************************************************************
  *
@@ -155,14 +177,20 @@ static void Command_Cd_f (void)
 
 	if(!strncmp(command, "select", 6))
 	{
-		int newcddrive = atoi(COM_Argv(2));
+		int newcddrive;
+		newcddrive = atoi(COM_Argv(2));
+		command = SDL_CDName(newcddrive);
 		I_StopCD();
 		cdEnabled = SDL_FALSE;
 		SDL_CDClose(cdrom);
 		cdrom = SDL_CDOpen(newcddrive);
-		if(cdrom) cdEnabled = true;
+		if(cdrom) 
+		{
+			cdEnabled = true;
+			CONS_Printf("Opened CD-ROM drive %s\n", command?command:COM_Argv(2));
+		}
 		else CONS_Printf("Couldn't open CD-ROM drive %s: %s\n",
-		 SDL_CDName(newcddrive)?SDL_CDName(newcddrive):COM_Argv(2), SDL_GetError());
+		 command?command:COM_Argv(2), SDL_GetError());
 		return;
 	}
 
@@ -250,6 +278,7 @@ static void Command_Cd_f (void)
 
 	CONS_Printf("Invalid command \"cd %s\"\n", COM_Argv (1));
 }
+#endif
 
 /**************************************************************************
  *
@@ -261,6 +290,7 @@ static void Command_Cd_f (void)
  **************************************************************************/
 void I_StopCD(void)
 {
+#ifndef NOSDLCD
 	if(!cdrom || !cdEnabled)
 		return;
 
@@ -272,6 +302,7 @@ void I_StopCD(void)
 
 	wasPlaying = SDL_FALSE;
 	cdPlaying = SDL_FALSE;
+#endif
 }
 
 /**************************************************************************
@@ -284,6 +315,7 @@ void I_StopCD(void)
  **************************************************************************/
 void I_PauseCD (void)
 {
+#ifndef NOSDLCD
 	if(!cdrom || !cdEnabled)
 		return;
 
@@ -295,6 +327,7 @@ void I_PauseCD (void)
 
 	wasPlaying = cdPlaying;
 	cdPlaying = SDL_FALSE;
+#endif
 }
 
 /**************************************************************************
@@ -308,6 +341,7 @@ void I_PauseCD (void)
 // continue after a pause
 void I_ResumeCD (void)
 {
+#ifndef NOSDLCD
 	if(!cdrom || !cdEnabled)
 		return;
 
@@ -325,6 +359,7 @@ void I_ResumeCD (void)
 
 	cdPlaying = true;
 	wasPlaying = SDL_FALSE;
+#endif
 }
 
 
@@ -338,6 +373,7 @@ void I_ResumeCD (void)
  **************************************************************************/
 void I_ShutdownCD (void)
 {
+#ifndef NOSDLCD
 	if(!cdaudio_started)
 		return;
 
@@ -350,6 +386,7 @@ void I_ShutdownCD (void)
 	CONS_Printf("shut down\n");
 	SDL_QuitSubSystem(SDL_INIT_CDROM);
 	cdEnabled = SDL_FALSE;
+#endif
 }
 
 /**************************************************************************
@@ -362,6 +399,7 @@ void I_ShutdownCD (void)
  **************************************************************************/
 void I_InitCD (void)
 {
+#ifndef NOSDLCD
 	int i;
 	//char *cdName;
 
@@ -413,6 +451,7 @@ void I_InitCD (void)
 	COM_AddCommand ("cd", Command_Cd_f);
 
 	CONS_Printf("CD audio Initialized\n");
+#endif
 }
 
 
@@ -429,6 +468,7 @@ void I_InitCD (void)
  **************************************************************************/
 void I_UpdateCD (void)
 {
+#ifndef NOSDLCD
 	static Uint32 lastchk = 0;
 
 	if(!cdEnabled || !cdrom)
@@ -453,6 +493,7 @@ void I_UpdateCD (void)
 				I_PlayCD(playTrack, true);
 		}
 	}
+#endif
 }
 
 
@@ -469,6 +510,9 @@ void I_UpdateCD (void)
 
 void I_PlayCD (int track, boolean looping)
 {
+#ifdef NOSDLCD
+	track = looping = 0;
+#else
 	if(!cdrom || !cdEnabled)
 		return;
 
@@ -514,6 +558,7 @@ void I_PlayCD (int track, boolean looping)
 
 	if(cd_volume.value == 0)
 		I_PauseCD();
+#endif
 }
 
 
@@ -529,6 +574,9 @@ void I_PlayCD (int track, boolean looping)
 
 int I_SetVolumeCD (int volume)
 {
+#ifdef NOSDLCD
+	volume = 0;
+#else
 	if(volume != cdvolume)
 	{
 		if(volume > 0 && volume < 16)
@@ -544,6 +592,6 @@ int I_SetVolumeCD (int volume)
 			I_PauseCD();
 		}
 	}
-
+#endif
 	return 0;
 }

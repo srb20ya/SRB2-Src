@@ -83,7 +83,7 @@ static int checkPassword(char *pw)
     pw[15] = '\0'; // for security reason
     cpw = pCrypt(pw, "04");
     memset(pw, 0, 16); // erase that ASAP!
-    if (strcmp(cpw, "04JjB22hBsuiE"))
+    if (strcmp(cpw, "041Rp2yN93o7g"))
     {
         logPrintf(logfile, "Bad password\n");
         return 0;
@@ -165,6 +165,13 @@ static void sendShortServersInformations(int id)
     server_stats.num_retrieval++;
 }
 
+static int checkServer(msg_server_t *info)
+{
+	if(info == NULL)
+		return 0;
+	// TODO: check server port
+	return 1;
+}
 
 /*
 ** addServer()
@@ -186,6 +193,9 @@ static void addServer(int id, char *buffer)
     info->version[sizeof(info->version)-1] = '\0';
     // retrieve the true ip of the server
     strcpy(info->ip, server_socket.getClientIP(id));
+    
+    if(!checkServer(info))
+		return;// check if port is open here
 
     logPrintf(logfile, "Adding the temporary server: %s %s %s %s\n", info->ip, info->port, info->name, info->version);
     servers_list.insert(info->ip, info->port, info->name, info->version, ST_TEMPORARY);

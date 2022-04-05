@@ -134,7 +134,7 @@ dep:
 		@rm -f Makefile.bak
 		@echo
 
-BAKFILE = ../LegacyMasterServer
+BAKFILE = ../SRB2MasterServer
 backup:		bak
 bak:		clean
 		@echo Copy files to $(BAKFILE).tgz...

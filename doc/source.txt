@@ -50,7 +50,7 @@ need:
 - nasm 0.98 (or better)(http://nasm.sourceforge.net/) only with 2.95, else add CC30=1
 
 compile
-make LINUX=1 SDL=1
+make LINUX=1
 
 debug:
 gdb ?

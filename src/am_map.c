@@ -89,16 +89,16 @@ static const byte DWHITE     = (256-47);
 #define AM_NUMMARKPOINTS 10
 
 // scale on entry
-#define INITSCALEMTOF (.2f*FRACUNIT)
+#define INITSCALEMTOF (FRACUNIT/5)
 // how much the automap moves window per tic in frame-buffer coordinates
 // moves 140 pixels in 1 second
 #define F_PANINC 4
 // how much zoom-in per tic
 // goes to 2x in 1 second
-#define M_ZOOMIN ((int)(1.02f*FRACUNIT))
+#define M_ZOOMIN ((51*FRACUNIT)/50)
 // how much zoom-out per tic
 // pulls out to 0.5x in 1 second
-#define M_ZOOMOUT ((int)(FRACUNIT/1.02f))
+#define M_ZOOMOUT ((50*FRACUNIT)/51)
 
 // translates between frame-buffer and map distances
 #define FTOM(x) FixedMul(((x)<<16),scale_ftom)
@@ -170,15 +170,15 @@ static mline_t triangle_guy[] = {
 	{ { (fixed_t)       0, (fixed_t)     R }, { (fixed_t)-.867f*R, (fixed_t)-.5f*R } }
 };
 #undef R
-#endif
 #define NUMTRIANGLEGUYLINES (sizeof(triangle_guy)/sizeof(mline_t))
+#endif
 
 #define R (FRACUNIT)
 static const mline_t thintriangle_guy[] = {
-	{ { (fixed_t)(-.5f*R), (fixed_t)(-.7f*R) }, { R, 0 } },
-	{ { R, 0 }, { (fixed_t)(-.5f*R), (fixed_t)(.7f*R) } },
-	{ { (fixed_t)(-.5f*R), (fixed_t)(.7f*R) }, { (fixed_t)(-.5f*R), (fixed_t)(-.7f*R) } }
-};
+	{ { (-1*R)/2, (-7*R)/10 }, {        R, 0         } },
+	{ {        R, 0         }, { (-1*R)/2, ( 7*R)/10 } },
+	{ { (-1*R)/2, ( 7*R)/10 }, { (-1*R)/2, (-7*R)/10 } }
+};    
 #undef R
 #define NUMTHINTRIANGLEGUYLINES (sizeof(thintriangle_guy)/sizeof(mline_t))
 
@@ -473,7 +473,7 @@ static void AM_LevelInit(void)
 	AM_clearMarks();
 
 	AM_findMinMaxBoundaries();
-	scale_mtof = FixedDiv(min_scale_mtof, (fixed_t)(0.7f*FRACUNIT));
+	scale_mtof = FixedDiv(min_scale_mtof, (7*FRACUNIT)/10);
 	if(scale_mtof > max_scale_mtof)
 		scale_mtof = min_scale_mtof;
 	scale_ftom = FixedDiv(FRACUNIT, scale_mtof);

@@ -198,11 +198,11 @@ typedef struct player_s
 	int fly1; // Tails flying
 	int scoreadd; // Used for multiple enemy attack bonus
 	int gliding; // Are you gliding?
-	int glidetime; // Glide counter for thrust
+	tic_t glidetime; // Glide counter for thrust
 	int climbing; // Climbing on the wall
 	int deadtimer; // End game if game over lasts too long
 	int splish; // Don't make splish repeat tons
-	int exiting; // Exitlevel timer
+	tic_t exiting; // Exitlevel timer
 	int blackow;
 
 	boolean homing; // Are you homing?
@@ -243,32 +243,31 @@ typedef struct player_s
 	int bustercount; // Charge for Snow Buster
 
 	int weapondelay; // Delay (if any) to fire the weapon again
-	int taunttimer; // Delay before you can use the taunt again
+	tic_t taunttimer; // Delay before you can use the taunt again
 
 	// Starpost information
 	int starpostx;
 	int starposty;
 	int starpostz;
 	int starpostnum; // The number of the last starpost you hit
-	int starposttime; // Your time when you hit the starpost
+	tic_t starposttime; // Your time when you hit the starpost
 	int starpostangle; // Angle that the starpost is facing - you respawn facing this way
 	unsigned int starpostbit; // List of starposts hit
 
-	double angle_speed; // Speed for NiGHTS!
-	double angle_pos;
-	double old_angle_pos;
+	angle_t angle_pos;
+	angle_t old_angle_pos;
 	boolean nightsmode; // Is the player in NiGHTS mode?
 
 	boolean axishit;
 	boolean axistransferred;
 	boolean transfertoclosest;
 	int flyangle;
-	int drilltimer;
+	tic_t drilltimer;
 	int linkcount;
-	int linktimer;
+	tic_t linktimer;
 	int anotherflyangle;
 	int transferangle;
-	int nightstime; // How long you can fly as NiGHTS.
+	tic_t nightstime; // How long you can fly as NiGHTS.
 	boolean nightsfall; // Spill rings after falling
 	mobj_t* lastaxis;
 	int drillmeter;

@@ -201,10 +201,10 @@ static char gteMetaTrunc[] =            "Meta event truncated";
 
 // Prototypes
 //
-static BOOL             GetTrackVDWord(INTRACKSTATE* pInTrack, ULONG* lpdw);
+static BOOL             GetTrackVDWord(INTRACKSTATE* pInTrack, ULONG *lpdw);
 static BOOL             GetTrackEvent(INTRACKSTATE* pInTrack, TEMPEVENT *pMe);
 #ifdef DEBUGMIDISTREAM
-static void             ShowTrackError(INTRACKSTATE* pInTrack, char* szErr);
+static VOID             ShowTrackError(INTRACKSTATE* pInTrack, LPSTR szErr);
 #endif
 static UBYTE*           GetInFileData(LONG cbToGet);
 // either uses the local one (prints out on stderr) or Legacy's console output
@@ -214,9 +214,9 @@ static UBYTE*           GetInFileData(LONG cbToGet);
 void CONS_Printf (char *fmt, ...);
 void I_Error (char *error, ...);
 static BOOL             Init(LPSTR szInFile, LPSTR szOutFile);
-static void             Cleanup(void);
-static BOOL             WriteStreamBuffers(void);
-static BOOL             BuildNewTracks(void);
+static VOID             Cleanup(VOID);
+static BOOL             WriteStreamBuffers(VOID);
+static BOOL             BuildNewTracks(VOID);
 static BOOL             AddEventToStream(TEMPEVENT *pMe);
 static UBYTE*           GetOutStreamBytes(LONG tkNow, LONG cbNeeded, LONG cbUncompressed);
 // only for stand-alone version
@@ -270,12 +270,12 @@ void _cdecl main(int argc, char* argv[])
 // Prints its own error message if something goes wrong
 //
 // ----
-static BOOL Init(char* szInFile, char* szOutFile)
+static BOOL Init(LPSTR szInFile, LPSTR szOutFile)
 {
 	BOOL            fRet = FALSE;
 	LONG            cbRead;
-	ULONG*          pChunkID;
-	ULONG*          pChunkSize;
+	ULONG          *pChunkID;
+	ULONG          *pChunkSize;
 	LONG            iChunkSize;
 	MIDIFILEHDR*    pHeader;
 	INTRACKSTATE*   pInTrack;
@@ -289,14 +289,14 @@ static BOOL Init(char* szInFile, char* szOutFile)
 	
 	// Attempt to open the input and output files
 	//
-	hInFile = CreateFile(szInFile, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+	hInFile = CreateFileA(szInFile, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 	if (INVALID_HANDLE_VALUE == hInFile)
 	{
 		CONS_Printf ( "Could not open \"%s\" for read.\n", szInFile);
 		goto Init_Cleanup;
 	}
 	
-	hOutFile = CreateFile(szOutFile, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+	hOutFile = CreateFileA(szOutFile, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
 	if (INVALID_HANDLE_VALUE == hOutFile)
 	{
 		CONS_Printf ( "Could not open \"%s\" for write.\n", szOutFile);
@@ -464,7 +464,7 @@ static UBYTE* GetInFileData(LONG iBytesToGet)
 // Free anything we ever allocated
 // -------
 #ifndef LEGACY
-static void Cleanup(void)
+static VOID Cleanup(VOID)
 {
 	PSTREAMBUF   pCurr;
 	PSTREAMBUF   pNext;
@@ -504,7 +504,7 @@ static void Cleanup(void)
 // Return TRUE on success
 // Prints its own error message if something goes wrong
 // --------------
-static BOOL BuildNewTracks(void)
+static BOOL BuildNewTracks(VOID)
 {
 	INTRACKSTATE*   pInTrack;
 	INTRACKSTATE*   pInTrackFound;
@@ -568,16 +568,16 @@ static BOOL BuildNewTracks(void)
 #define FOURCC_fmt  mmioFOURCC('f','m','t',' ')
 #define FOURCC_data mmioFOURCC('d','a','t','a')
 
-static BOOL WriteStreamBuffers(void)
+static BOOL WriteStreamBuffers(VOID)
 {
 	LONG                   cbFmt;
 	LONG                   cbData;
 	LONG                   cbRiff;
-	PSTREAMBUF              psb;
-	FOURCC                  fcc;
-	FOURCC                  fcc2;
-	MIDSFMT                 fmt;
-	MIDSBUFFER              data;
+	PSTREAMBUF             psb;
+	FOURCC                 fcc;
+	FOURCC                 fcc2;
+	MIDSFMT                fmt;
+	MIDSBUFFER             data;
 	LONG                   cb;
 	LONG                   cBuffers;
 	
@@ -652,7 +652,7 @@ static BOOL WriteStreamBuffers(void)
 // FALSE if we hit end of track first. Sets ITS_F_ENDOFTRK
 // if we hit end of track.
 // --------------
-static BOOL GetTrackVDWord(INTRACKSTATE* pInTrack, ULONG* lpdw)
+static BOOL GetTrackVDWord(INTRACKSTATE* pInTrack, ULONG *lpdw)
 {
 	BYTE    b;
 	LONG    dw = 0;
@@ -1076,7 +1076,7 @@ static UBYTE* GetOutStreamBytes(LONG tkNow, LONG cbNeeded, LONG cbUncompressed)
 #endif
 
 #ifdef DEBUGMIDISTREAM
-static void ShowTrackError(INTRACKSTATE* pInTrack, char* szErr)
+static VOID ShowTrackError(INTRACKSTATE* pInTrack, LPSTR szErr)
 {
 	unsigned char* data;
 	int i;
@@ -1132,7 +1132,7 @@ static  DWORD   dwBufferTickLength;
 // Mid2StreamConverterCleanup
 // Free whatever was allocated before exiting program
 // --------------------------
-void Mid2StreamConverterCleanup (void)
+VOID Mid2StreamConverterCleanup (VOID)
 {
 	// hmm.. nothing to clean up.. since I made the INTRACKSTATE's static
 
@@ -1155,8 +1155,8 @@ void Mid2StreamConverterCleanup (void)
 BOOL Mid2StreamConverterInit( UBYTE* pMidiData, ULONG iMidiSize )
 {
 	BOOL            fRet = TRUE;
-	ULONG*          pChunkID;
-	ULONG*          pChunkSize;
+	ULONG           *pChunkID;
+	ULONG           *pChunkSize;
 	LONG            iChunkSize;
 	MIDIFILEHDR*    pHeader;
 	INTRACKSTATE*   pInTrack;
@@ -1416,7 +1416,7 @@ static int AddEventToStreamBuffer( PTEMPEVENT pMe, CONVERTINFO *lpciInfo )
 // resets the tracks without closing and opening the file, thus reducing the
 // time it takes to loop back to the beginning when looping.
 // -------------------------
-static BOOL Mid2StreamRewindConverter( void )
+static BOOL Mid2StreamRewindConverter( VOID )
 {
 	DWORD           iTrack;
 	PINTRACKSTATE   pInTrack;

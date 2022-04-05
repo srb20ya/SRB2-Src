@@ -723,7 +723,7 @@ static inline boolean VID_FreeAndAllocVidbuffer (viddef_t *lvid)
 		return false;
 
 	// initially clear the video buffer
-	memset (lvid->buffer, 0, vidbuffersize);
+	memset (lvid->buffer, 0x00, vidbuffersize);
 
 #ifdef DEBUG
  CONS_Printf("VID_FreeAndAllocVidbuffer done, vidbuffersize: %x\n",vidbuffersize);

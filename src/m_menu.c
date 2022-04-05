@@ -27,7 +27,11 @@
 #include <unistd.h>
 #endif
 #ifdef SDLIO
+#if defined(_XBOX) && defined(_MSC_VER)
+#include <SDL_rwops.h>
+#else
 #include <SDL/SDL_rwops.h>
+#endif
 #else
 #ifndef _WIN32_WCE
 #include <fcntl.h>
@@ -95,7 +99,7 @@ static int oldlastmapnum;
 #define MAXSTRINGLENGTH 32
 
 // Stuff for customizing the player select screen Tails 09-22-2003
-description_t description[8] =
+description_t description[15] =
 {
 	{"             Fastest\n                 Speed Thok\n             Not a good pick\nfor starters, but when\ncontrolled properly,\nSonic is the most\npowerful of the three.", "SONCCHAR", "", "SONIC"},
 	{"             Slowest\n                 Fly/Swim\n             Good for\nbeginners. Tails\nhandles the best. His\nflying and swimming\nwill come in handy.", "TAILCHAR", "", "TAILS"},
@@ -105,11 +109,18 @@ description_t description[8] =
 	{"             Unknown\n                 Unknown\n             None", "SONCCHAR", "", ""},
 	{"             Unknown\n                 Unknown\n             None", "SONCCHAR", "", ""},
 	{"             Unknown\n                 Unknown\n             None", "SONCCHAR", "", ""},
+	{"             Unknown\n                 Unknown\n             None", "SONCCHAR", "", ""},
+	{"             Unknown\n                 Unknown\n             None", "SONCCHAR", "", ""},
+	{"             Unknown\n                 Unknown\n             None", "SONCCHAR", "", ""},
+	{"             Unknown\n                 Unknown\n             None", "SONCCHAR", "", ""},
+	{"             Unknown\n                 Unknown\n             None", "SONCCHAR", "", ""},
+	{"             Unknown\n                 Unknown\n             None", "SONCCHAR", "", ""},
+	{"             Unknown\n                 Unknown\n             None", "SONCCHAR", "", ""},
 };
 
 // we are going to be entering a savegame string
 static int saveStringEnter;
-static int saveSlot; // which slot to save in
+static unsigned int saveSlot; // which slot to save in
 static int saveSlotSelected; // Slot that the cursor is currently on Tails 05-29-2003
 static size_t saveCharIndex; // which char we're editing
 // old save description before edit
@@ -133,70 +144,7 @@ typedef struct
 static saveinfo_t savegameinfo[10]; // Extra info about the save games.
 
 static char setupm_ip[16];
-static int startmap; // Mario, NiGHTS, or just a plain old normal game?
-
-// flags for items in the menu
-// menu handle (what we do when key is pressed
-#define IT_TYPE             14     // (2+4+8)
-#define IT_CALL              0     // call the function
-#define IT_ARROWS            2     // call function with 0 for left arrow and 1 for right arrow in param
-#define IT_KEYHANDLER        4     // call with the key in param
-#define IT_SUBMENU           6     // go to sub menu
-#define IT_CVAR              8     // hangdle as a cvar
-#define IT_SPACE            10     // no handling
-#define IT_MSGHANDLER       12     // same as key but with event and sometime can handle y/n key (special for message
-
-#define IT_DISPLAY  (48+64+128)    // 16+32+64
-#define IT_NOTHING           0     // space
-#define IT_PATCH            16     // a patch or a string with big font
-#define IT_STRING           32     // little string (spaced with 10)
-#define IT_WHITESTRING      48     // little string in white
-#define IT_DYBIGSPACE       64     // same as noting
-#define IT_DYLITLSPACE  (16+64)    // little space
-#define IT_STRING2      (32+64)    // a simple string
-#define IT_GRAYPATCH    (16+32+64) // grayed patch or big font string
-#define IT_BIGSLIDER     (128)     // volume sound use this
-#define IT_CENTER       (2048)     // if IT_PATCH, center it on screen
-
-//consvar specific
-#define IT_CVARTYPE   (256+512+1024)
-#define IT_CV_NORMAL         0
-#define IT_CV_SLIDER       256
-#define IT_CV_STRING       512
-#define IT_CV_NOPRINT (256+512)
-#define IT_CV_NOMOD       1024
-
-// in short for some common use
-#define IT_BIGSPACE    (IT_SPACE  +IT_DYBIGSPACE)
-#define IT_LITLSPACE   (IT_SPACE  +IT_DYLITLSPACE)
-#define IT_CONTROL     (IT_STRING2+IT_CALL)
-#define IT_CVARMAX     (IT_CVAR   +IT_CV_NOMOD)
-#define IT_DISABLED    (IT_SPACE  +IT_GRAYPATCH)
-
-typedef union
-{
-	struct menu_s *submenu;      // IT_SUBMENU
-	consvar_t *cvar;             // IT_CVAR
-	void (*routine)(int choice); // IT_CALL, IT_KEYHANDLER, IT_ARROWS
-} itemaction_t;
-
-//
-// MENU TYPEDEFS
-//
-
-typedef struct menu_s
-{
-	const char      *menutitlepic;
-	const char      *menutitle;             // title as string for display with fontb if present
-	short           numitems;               // # of menu items
-	struct menu_s*  prevMenu;               // previous menu
-	menuitem_t*     menuitems;              // menu items
-	void            (*drawroutine)(void);   // draw routine
-	short           x;
-	short           y;                      // x,y of menu
-	short           lastOn;                 // last item user was on in menu
-	boolean         (*quitroutine)(void);   // called before quit a menu return true if we can
-} menu_t;
+int startmap; // Mario, NiGHTS, or just a plain old normal game?
 
 static short itemOn = 1; // menu item skull is on, Hack by Tails 09-18-2002
 static short skullAnimCounter = 10; // skull animation counter
@@ -205,14 +153,12 @@ static short skullAnimCounter = 10; // skull animation counter
 // PROTOTYPES
 //
 static void M_DrawSaveLoadBorder(int x,int y);
-static void M_SetupNextMenu(menu_t *menudef);
 
 static void M_DrawThermo(int x,int y,consvar_t *cv);
 static void M_DrawSlider (int x, int y, int range);
 static void M_CentreText(int y, const char* string); // write text centered
 
 static void M_StopMessage(int choice);
-static void M_ClearMenus(boolean callexitmenufunc);
 static inline int M_StringHeight(const char* string);
 static void M_GameOption(int choice);
 static void M_NetOption(int choice);
@@ -226,8 +172,6 @@ static void M_CTFOptions(int choice);
 static void M_OpenGLOption(int choice);
 #endif
 
-static void M_ExitGameResponse(int ch);
-
 extern menu_t MainDef, SinglePlayerDef, MultiPlayerDef, SetupMultiPlayerDef;
 extern menu_t NewDef, OptionsDef, VidModeDef, ControlDef, SoundDef;
 extern menu_t ReadDef2, ReadDef1, SaveDef, LoadDef, ControlDef2, GameOptionDef;
@@ -238,7 +182,7 @@ extern menu_t RewardDef, LevelSelectDef, JoystickDef;
 static const char *ALREADYPLAYING = "You are already playing.\nDo you wish to end the\ncurrent game? (Y/N)\n";
 
 // current menudef
-static menu_t* currentMenu = &MainDef;
+menu_t* currentMenu = &MainDef;
 //===========================================================================
 //Generic Stuffs (more easy to create menus :))
 //===========================================================================
@@ -260,7 +204,7 @@ static void M_DrawMenuTitle(void)
 	}
 }
 
-static void M_DrawGenericMenu(void)
+void M_DrawGenericMenu(void)
 {
 	int x, y, i, cursory = 0;
 
@@ -554,7 +498,6 @@ menu_t StatsDef =
 static void M_NewGame(int choice);
 static void M_LoadGame(int choice);
 static void M_SaveGame(int choice);
-static void M_EndGame(int choice);
 static void M_Statistics(int choice);
 
 typedef enum
@@ -1839,7 +1782,7 @@ consvar_t cv_nextmap = {"nextmap", "MAP01", CV_HIDEN, map_cons_t, NULL, 0, NULL,
 CV_PossibleValue_t gametype_cons_t[] = {{GT_COOP, "Coop"}, {GT_MATCH, "Match"}, {42, "Team Match"}, {GT_RACE, "Race"},
 {43, "Time-Only Race"}, {GT_TAG, "Tag"}, {GT_CTF, "CTF"},/* {GT_CHAOS, "Chaos"},*/ {0, NULL}};
 consvar_t cv_newgametype = {"newgametype", "Coop", CV_HIDEN|CV_CALL, gametype_cons_t, Newgametype_OnChange, 0, NULL, NULL, 0, 0, NULL};
-static boolean StartSplitScreenGame;
+boolean StartSplitScreenGame;
 
 static void Newgametype_OnChange(void)
 {
@@ -1878,6 +1821,10 @@ static void M_StartServer(int choice)
 		CV_SetValue(&cv_newgametype, GT_RACE);
 		CV_SetValue(&cv_racetype, 1);
 	}
+	else if(cv_newgametype.value == GT_MATCH)
+		CV_SetValue(&cv_teamplay, 0);
+	else if(cv_newgametype.value == GT_RACE)
+		CV_SetValue(&cv_racetype, 0);
 
 	if(!StartSplitScreenGame)
 	{
@@ -1956,8 +1903,20 @@ static void M_PatchLevelNameTable(void)
 
 			if(mapheaderinfo[currentmap].actnum)
 			{
+				char actnum[3];
+				int g;
+
 				lvltable[j][i++] = ' ';
-				lvltable[j][i++] = (char)('0' + mapheaderinfo[currentmap].actnum);
+
+				sprintf(actnum, "%d", mapheaderinfo[currentmap].actnum);
+
+				for(g=0; g<3; g++)
+				{
+					if(actnum[g] == '\0')
+						break;
+
+					lvltable[j][i++] = actnum[g];
+				}
 			}
 
 			lvltable[j][i++] = '\0';
@@ -2142,7 +2101,7 @@ menu_t SetupMultiPlayerDef =
 static void M_DrawSetupChoosePlayerMenu(void);
 static boolean M_QuitChoosePlayerMenu(void);
 static void M_ChoosePlayer(int choice);
-static int skillnum;
+int skillnum;
 typedef enum
 {
 	Player1,
@@ -2153,19 +2112,33 @@ typedef enum
 	Player6,
 	Player7,
 	Player8,
+	Player9,
+	Player10,
+	Player11,
+	Player12,
+	Player13,
+	Player14,
+	Player15,
 	player_end
 } players_e;
 
 menuitem_t PlayerMenu[]=
 {
-	{IT_CALL | IT_STRING, NULL, "SONIC"   , M_ChoosePlayer,  20},
-	{IT_CALL | IT_STRING, NULL, "TAILS"   , M_ChoosePlayer,  40},
-	{IT_CALL | IT_STRING, NULL, "KNUCKLES", M_ChoosePlayer,  60},
-	{IT_DISABLED,         NULL, "PLAYER4" , M_ChoosePlayer,  80},
-	{IT_DISABLED,         NULL, "PLAYER5" , M_ChoosePlayer, 100},
-	{IT_DISABLED,         NULL, "PLAYER6" , M_ChoosePlayer, 120},
-	{IT_DISABLED,         NULL, "PLAYER7" , M_ChoosePlayer, 140},
-	{IT_DISABLED,         NULL, "PLAYER8" , M_ChoosePlayer, 160},
+	{IT_CALL | IT_STRING, NULL, "SONIC"   , M_ChoosePlayer,  0},
+	{IT_CALL | IT_STRING, NULL, "TAILS"   , M_ChoosePlayer,  0},
+	{IT_CALL | IT_STRING, NULL, "KNUCKLES", M_ChoosePlayer,  0},
+	{IT_DISABLED,         NULL, "PLAYER4" , M_ChoosePlayer,  0},
+	{IT_DISABLED,         NULL, "PLAYER5" , M_ChoosePlayer,  0},
+	{IT_DISABLED,         NULL, "PLAYER6" , M_ChoosePlayer,  0},
+	{IT_DISABLED,         NULL, "PLAYER7" , M_ChoosePlayer,  0},
+	{IT_DISABLED,         NULL, "PLAYER8" , M_ChoosePlayer,  0},
+	{IT_DISABLED,         NULL, "PLAYER9" , M_ChoosePlayer,  0},
+	{IT_DISABLED,         NULL, "PLAYER10", M_ChoosePlayer,  0},
+	{IT_DISABLED,         NULL, "PLAYER11", M_ChoosePlayer,  0},
+	{IT_DISABLED,         NULL, "PLAYER12", M_ChoosePlayer,  0},
+	{IT_DISABLED,         NULL, "PLAYER13", M_ChoosePlayer,  0},
+	{IT_DISABLED,         NULL, "PLAYER14", M_ChoosePlayer,  0},
+	{IT_DISABLED,         NULL, "PLAYER15", M_ChoosePlayer,  0},
 };
 
 menu_t PlayerDef =
@@ -2176,7 +2149,7 @@ menu_t PlayerDef =
 	&NewDef,
 	PlayerMenu,
 	M_DrawSetupChoosePlayerMenu,
-	24, 32,
+	24, 16,
 	0,
 	M_QuitChoosePlayerMenu
 };
@@ -2521,6 +2494,21 @@ static void M_DrawSetupChoosePlayerMenu(void)
 
 	// Black BG
 	V_DrawFill(0, 0, vid.width, vid.height, 0);
+
+	{
+		// Compact the menu
+		int i;
+		unsigned char alpha = 0;
+		for(i = 0; i < currentMenu->numitems; i++)
+		{
+			if(currentMenu->menuitems[i].status == 0
+			|| currentMenu->menuitems[i].status == IT_DISABLED)
+				continue;
+
+			currentMenu->menuitems[i].alphaKey = alpha;
+			alpha += 8;
+		}
+	}
 
 	// use generic drawer for cursor, items and title
 	M_DrawGenericMenu();
@@ -3383,7 +3371,7 @@ menu_t DataOptionsDef =
 static void M_TimeDataResponse(int ch)
 {
 	int i;
-	if(ch != 'y')
+	if(ch != 'y' && ch != KEY_ENTER)
 		return;
 
 	// Delete the data
@@ -3396,7 +3384,7 @@ static void M_TimeDataResponse(int ch)
 static void M_SecretsDataResponse(int ch)
 {
 	int i;
-	if(ch != 'y')
+	if(ch != 'y' && ch != KEY_ENTER)
 		return;
 
 	// Delete the data
@@ -3498,7 +3486,7 @@ static void M_OptionsMenu(int choice)
 	M_SetupNextMenu (&OptionsDef);
 }
 
-FUNCNORETURN static void M_UltimateCheat(int choice)
+FUNCNORETURN static ATTRNORETURN void M_UltimateCheat(int choice)
 {
 	choice = 0;
 	I_Quit ();
@@ -3506,7 +3494,7 @@ FUNCNORETURN static void M_UltimateCheat(int choice)
 
 static void M_DestroyRobotsResponse(int ch)
 {
-	if(ch != 'y')
+	if(ch != 'y' && ch != KEY_ENTER)
 		return;
 
 	// Destroy all robots
@@ -3596,7 +3584,7 @@ static void M_DrawUnlockChecklist(void)
 	checklist[4].unlocked = (grade & 32);
 
 	checklist[5].name = "Time Attack Bonus";
-	checklist[5].requirement = "Finish 1P\nin 6 minutes";
+	checklist[5].requirement = "Finish 1P\nin 6 1/2 minutes";
 	checklist[5].unlocked = (grade & 256);
 
 	checklist[6].name = "Easter Egg Bonus";
@@ -3936,7 +3924,7 @@ static void M_SecretsMenu(int choice)
 			break;
 	}
 
-	if((grade & 8) ||
+	if((grade & 8 && !modifiedgame) ||
 	(grade & 16) ||
 	(grade & 32) ||
 	(grade & 64) ||
@@ -4554,6 +4542,7 @@ static void M_ToggleSFX(void)
 	{
 		nosound = false;
 		I_StartupSound();
+		if(nosound) return;
 		S_Init(cv_soundvolume.value, cv_digmusicvolume.value, cv_midimusicvolume.value);
 		M_StartMessage("SFX Enabled", NULL, MM_NOTHING);
 	}
@@ -4579,6 +4568,7 @@ static void M_ToggleDigital(void)
 	{
 		nofmod = false;
 		I_InitDigMusic();
+		if(nofmod) return;
 		S_Init(cv_soundvolume.value, cv_digmusicvolume.value, cv_midimusicvolume.value);
 		S_StopMusic();
 		S_ChangeMusic(mus_lclear, false);
@@ -4606,6 +4596,7 @@ static void M_ToggleMIDI(void)
 	{
 		nomusic = false;
 		I_InitMIDIMusic();
+		if(nomusic) return;
 		S_Init(cv_soundvolume.value, cv_digmusicvolume.value, cv_midimusicvolume.value);
 		S_ChangeMusic(mus_lclear, false);
 		M_StartMessage("MIDI Music Enabled", NULL, MM_NOTHING);
@@ -5580,7 +5571,7 @@ static void M_LoadSelect(int choice)
 		return;
 	}
 	else
-		G_LoadGame(choice);
+		G_LoadGame((unsigned int)choice);
 
 	M_ClearMenus (true);
 }
@@ -5597,7 +5588,7 @@ static void M_LoadSelect(int choice)
 #endif
 // Reads the save file to list lives, level, player, etc.
 // Tails 05-29-2003
-static void M_ReadSavegameInfo(int slot)
+static void M_ReadSavegameInfo(unsigned int slot)
 {
 	int length;
 	char savename[255];
@@ -5713,7 +5704,7 @@ static void M_ReadSaveStrings(void)
 	int     handle;
 #endif
 	int     count;
-	int     i;
+	unsigned int i;
 	char    name[256];
 
 	for (i = 0;i < load_end;i++)
@@ -5842,7 +5833,7 @@ static void M_DrawSave(void)
 //
 static void M_DoSave(int slot)
 {
-	G_SaveGame (slot,savegamestrings[slot]);
+	G_SaveGame((unsigned int)slot,savegamestrings[slot]);
 	M_ClearMenus (true);
 
 	// PICK QUICKSAVE SLOT YET?
@@ -5858,7 +5849,7 @@ static void M_SaveSelect(int choice)
 	// we are going to be intercepting all chars
 	saveStringEnter = 1;
 
-	saveSlot = choice;
+	saveSlot = (unsigned int)choice;
 	strcpy(saveOldString,savegamestrings[choice]);
 	if(!strcmp(savegamestrings[choice],EMPTYSTRING))
 		savegamestrings[choice][0] = 0;
@@ -5925,9 +5916,9 @@ static char tempstring[80];
 
 static void M_QuickSaveResponse(int ch)
 {
-	if(ch == 'y')
+	if(ch == 'y' || ch == KEY_ENTER)
 	{
-		M_DoSave(quickSaveSlot);
+		M_DoSave((unsigned int)quickSaveSlot);
 // Tails        S_StartSound(NULL,sfx_swtchx);
 	}
 }
@@ -5964,7 +5955,7 @@ static inline void M_QuickSave(void)
 //
 static void M_QuickLoadResponse(int ch)
 {
-	if(ch == 'y')
+	if(ch == 'y' || ch == KEY_ENTER)
 	{
 		M_LoadSelect(quickSaveSlot);
 		// legacy used to play dsswtchx sound effect here
@@ -5998,7 +5989,7 @@ static inline void M_QuickLoad(void)
 //
 static void M_EndGameResponse(int ch)
 {
-	if(ch != 'y')
+	if(ch != 'y' && ch != KEY_ENTER)
 		return;
 
 	currentMenu->lastOn = itemOn;
@@ -6006,7 +5997,7 @@ static void M_EndGameResponse(int ch)
 	Command_ExitGame_f();
 }
 
-static void M_EndGame(int choice)
+void M_EndGame(int choice)
 {
 	choice = 0;
 	if(demoplayback || demorecording)
@@ -6043,9 +6034,9 @@ static int quitsounds2[8] =
 	sfx_chchng // Tails 11-09-99
 };
 
-static void M_ExitGameResponse(int ch)
+void M_ExitGameResponse(int ch)
 {
-	if(ch != 'y')
+	if(ch != 'y' && ch != KEY_ENTER)
 		return;
 
 	Command_ExitGame_f();
@@ -6054,7 +6045,7 @@ static void M_ExitGameResponse(int ch)
 void M_QuitResponse(int ch)
 {
 	tic_t time;
-	if(ch != 'y')
+	if(ch != 'y' && ch != KEY_ENTER)
 		return;
 	if(!(netgame || cv_debug))
 	{
@@ -6210,6 +6201,7 @@ void M_StartMessage ( const char*       string,
 	MessageDef.prevMenu = currentMenu;
 	MessageDef.menuitems[0].text     = message;
 	MessageDef.menuitems[0].alphaKey = (byte)itemtype;
+	if(!routine && itemtype != MM_NOTHING) itemtype = MM_NOTHING;
 	switch(itemtype)
 	{
 		case MM_NOTHING:
@@ -6357,7 +6349,7 @@ static void M_ChangeCvar(int choice)
 	 if(cv->flags & CV_FLOAT)
 	{
 		char s[20];
-		sprintf(s,"%f",(float)cv->value/FRACUNIT+(choice*2-1)*(1.0f/16.0f));
+		sprintf(s,"%f",FIXED_TO_FLOAT(cv->value)+(choice*2-1)*(1.0f/16.0f));
 		CV_Set(cv,s);
 	}
 	else
@@ -6404,7 +6396,8 @@ static boolean M_ChangeStringCvar(int choice)
 //
 boolean M_Responder(event_t* ev)
 {
-	int ch = -1, i;
+	int ch = -1;
+//	int i;
 	static tic_t joywait = 0, mousewait = 0;
 	static boolean shiftdown = false;
 	static int mousex = 0, mousey = 0;
@@ -6437,23 +6430,25 @@ boolean M_Responder(event_t* ev)
 				break;
 			case KEY_JOY1:
 			case KEY_JOY1 + 2:
-			case KEY_JOY1 + 3:
 				ch = KEY_ENTER;
+				break;
+			case KEY_JOY1 + 3:
+				ch = 'n';
 				break;
 			case KEY_JOY1 + 1:
 				ch = KEY_BACKSPACE;
 				break;
 			case KEY_HAT1:
-				ch = KEY_RIGHTARROW;
+				ch = KEY_UPARROW;
 				break;
 			case KEY_HAT1 + 1:
-				ch = KEY_LEFTARROW;
-				break;
-			case KEY_HAT1 + 2:
 				ch = KEY_DOWNARROW;
 				break;
+			case KEY_HAT1 + 2:
+				ch = KEY_LEFTARROW;
+				break;
 			case KEY_HAT1 + 3:
-				ch = KEY_UPARROW;
+				ch = KEY_RIGHTARROW;
 				break;
 		}
 	}
@@ -6595,10 +6590,12 @@ boolean M_Responder(event_t* ev)
 				itemOn = sfx_vol;
 				return true;
 
+#ifndef DC
 			case KEY_F5: // Video Mode
 				M_StartControlPanel();
 				M_SetupNextMenu(&VidModeDef);
 				return true;
+#endif
 
 			case KEY_F6: // Quicksave
 				M_QuickSave();
@@ -6626,7 +6623,13 @@ boolean M_Responder(event_t* ev)
 				return true;
 
 			case KEY_ESCAPE: // Pop up menu
-				M_StartControlPanel();
+				if(chat_on)
+				{
+					HU_clearChatChars();
+					chat_on = false;
+				}
+				else
+					M_StartControlPanel();
 				return true;
 		}
 		return false;
@@ -6647,7 +6650,7 @@ boolean M_Responder(event_t* ev)
 	{
 		if(currentMenu->menuitems[itemOn].alphaKey != MM_EVENTHANDLER)
 		{
-			if(ch == ' ' || ch == 'n' || ch == 'y' || ch == KEY_ESCAPE)
+			if(ch == ' ' || ch == 'n' || ch == 'y' || ch == KEY_ESCAPE || ch == KEY_ENTER)
 			{
 				if(routine)
 					routine(ch);
@@ -6787,20 +6790,20 @@ boolean M_Responder(event_t* ev)
 			return true;
 
 		default:
-			for(i = itemOn + 1; i < currentMenu->numitems; i++)
-				if(currentMenu->menuitems[i].alphaKey == ch)
+/*			for(i = itemOn + 1; i < currentMenu->numitems; i++)
+				if(currentMenu->menuitems[i].alphaKey == ch && !(currentMenu->menuitems[i].status & IT_DISABLED))
 				{
 					itemOn = (short)i;
 					S_StartSound(NULL, sfx_menu1);
 					return true;
 				}
 			for(i = 0; i <= itemOn; i++)
-				if(currentMenu->menuitems[i].alphaKey == ch)
+				if(currentMenu->menuitems[i].alphaKey == ch && !(currentMenu->menuitems[i].status & IT_DISABLED))
 				{
 					itemOn = (short)i;
 					S_StartSound(NULL, sfx_menu1);
 					return true;
-				}
+				}*/
 			break;
 	}
 
@@ -6866,7 +6869,7 @@ void M_StartControlPanel(void)
 //
 // M_ClearMenus
 //
-static void M_ClearMenus(boolean callexitmenufunc)
+void M_ClearMenus(boolean callexitmenufunc)
 {
 	if(!menuactive)
 		return;
@@ -6875,7 +6878,7 @@ static void M_ClearMenus(boolean callexitmenufunc)
 		return; // we can't quit this menu (also used to set parameter from the menu)
 
 #ifndef DC // Save the config file. I'm sick of crashing the game later and losing all my changes!
-	COM_BufAddText(va("saveconfig \"%s\"\n", configfile));
+	COM_BufAddText(va("saveconfig \"%s\" -silent\n", configfile));
 #endif //Alam: But not on the Dreamcast's VMUs
 
 	menuactive = 0;
@@ -6884,7 +6887,7 @@ static void M_ClearMenus(boolean callexitmenufunc)
 //
 // M_SetupNextMenu
 //
-static void M_SetupNextMenu(menu_t *menudef)
+void M_SetupNextMenu(menu_t *menudef)
 {
 	int i;
 

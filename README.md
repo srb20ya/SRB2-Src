@@ -56,6 +56,25 @@ Build instructions:
 cd src
 make LINUX=1 # you may optionally add DEBUGMODE=1 to build it
              # with debugging symbols
+Solaris
+~~~
+
+Dependencies:
+  SDL 1.2.5 or better (from libsdl.org)
+  SDL_Mixer 1.5 (from libsdl.org)
+  The Xiph.org libogg and libvorbis libraries
+  The OpenGL headers (from Mesa, usually shipped with your X.org or XFree
+    installation, so you needn't worry, most likely)
+  GCC 3.x toolchain and binutils
+  GNU Make
+
+  You can get all these programs/libraries from the Companion CD (except SDL_mixer and OpenGL)
+  
+Build instructions:
+
+cd src
+gmake SOLARIS=1 # you may optionally add DEBUGMODE=1 to build it
+                # with debugging symbols
 
 DJGPP/DOS
 ~~~

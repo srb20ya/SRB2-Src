@@ -39,7 +39,8 @@
 /*!
   \brief units of the fraction
 */
-#define FRACUNIT (1<<FRACBITS)
+#define FRACUNIT 65536
+#define FRACMASK (FRACUNIT -1)
 /**	\brief	Redefinition of int as fixed_t
 	unit used as fixed_t
 */

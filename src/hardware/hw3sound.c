@@ -115,7 +115,7 @@ static int           num_sources    = 0;
 int                  hws_mode       = HWS_DEFAULT_MODE;
 
 //=============================================================================
-void HW3S_SetSourcesNum()
+void HW3S_SetSourcesNum(void)
 {
 	int i;
 
@@ -194,7 +194,7 @@ void HW3S_StopSound(void *origin)
 
 
 //=============================================================================
-void HW3S_StopSounds()
+void HW3S_StopSounds(void)
 {
 	int snum;
 
@@ -822,7 +822,7 @@ void HW3S_UpdateSources(void)
 	}
 }
 
-void HW3S_Shutdown()
+void HW3S_Shutdown(void)
 {
 	HW3DS.pfnShutdown();
 }

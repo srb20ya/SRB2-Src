@@ -50,10 +50,10 @@ extern HANDLE logstream;
 extern int appActive;
 
 // the MIDI callback is another thread, and Midi volume is delayed here in window proc
-void I_SetMidiChannelVolume(DWORD dwChannel, DWORD dwVolumePercent);
+VOID I_SetMidiChannelVolume(DWORD dwChannel, DWORD dwVolumePercent);
 extern DWORD dwVolumePercent;
 
-void I_GetSysMouseEvents(int mouse_state);
+VOID I_GetSysMouseEvents(int mouse_state);
 extern unsigned int MSHWheelMessage;
 
 extern BOOL nodinput;
@@ -63,15 +63,15 @@ extern BOOL win9x;
 #define WM_MSTREAM_UPDATEVOLUME (WM_USER + 101)
 
 // defined in win_sys.c
-void I_BeginProfile(void); //for timing code
-DWORD I_EndProfile(void);
+VOID I_BeginProfile(VOID); //for timing code
+DWORD I_EndProfile(VOID);
 
-void I_GetLastErrorMsgBox(void);
-void I_LoadingScreen ( LPCSTR msg );
+VOID I_GetLastErrorMsgBox(VOID);
+VOID I_LoadingScreen ( LPCSTR msg );
 
 // output formatted string to file using win32 functions (win_dbg.c)
-void FPrintf(HANDLE fileHandle, LPCTSTR lpFmt, ...);
-void FPutChar(HANDLE fileHandle, const char *c);
+VOID FPrintf(HANDLE fileHandle, LPCSTR lpFmt, ...);
+VOID FPutChar(HANDLE fileHandle, const char *c);
 
 void I_RestartSysMouse(void);
 void I_DoStartupMouse(void);

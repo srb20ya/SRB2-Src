@@ -250,7 +250,7 @@ static void HWR_RenderPlane(sector_t* sector, extrasubsector_t* xsub, fixed_t fi
 	int             nrPlaneVerts;   //verts original define of convex flat polygon
 	int             i;
 	float           flatxref,flatyref;
-	double flatsize;
+	float flatsize;
 	int flatflag;
 	int size;
 
@@ -260,7 +260,7 @@ static void HWR_RenderPlane(sector_t* sector, extrasubsector_t* xsub, fixed_t fi
 	if (!xsub->planepoly)
 		return;
 
-	height = ((float)fixedheight) * crapmul;
+	height = FIXED_TO_FLOAT(fixedheight);
 
 	pv  = xsub->planepoly->pts;
 	nrPlaneVerts = xsub->planepoly->numpts;
@@ -324,26 +324,26 @@ static void HWR_RenderPlane(sector_t* sector, extrasubsector_t* xsub, fixed_t fi
 			// Negate the following scrollx's and scrolly's Graue 02-01-2004
 			if(fixedheight < dup_viewz) // it's a floor
 			{
-				scrollx = (float)(-FOFsector->floor_xoffs*(crapmul/flatsize));
-				scrolly = (float)(-FOFsector->floor_yoffs*(crapmul/flatsize));
+				scrollx = -FIXED_TO_FLOAT(FOFsector->floor_xoffs)/flatsize;
+				scrolly = -FIXED_TO_FLOAT(FOFsector->floor_yoffs)/flatsize;
 			}
 			else // it's a ceiling
 			{
-				scrollx = (float)(-FOFsector->ceiling_xoffs*(crapmul/flatsize));
-				scrolly = (float)(-FOFsector->ceiling_yoffs*(crapmul/flatsize));
+				scrollx = -FIXED_TO_FLOAT(FOFsector->ceiling_xoffs)/flatsize;
+				scrolly = -FIXED_TO_FLOAT(FOFsector->ceiling_yoffs)/flatsize;
 			}
 		}
 		else if (gr_frontsector)
 		{
 			if (fixedheight<dup_viewz) // it's a floor
 			{
-					scrollx = (float)(gr_frontsector->floor_xoffs*(crapmul/flatsize));
-					scrolly = (float)(gr_frontsector->floor_yoffs*(crapmul/flatsize));
+					scrollx = FIXED_TO_FLOAT(gr_frontsector->floor_xoffs)/flatsize;
+					scrolly = FIXED_TO_FLOAT(gr_frontsector->floor_yoffs)/flatsize;
 			}
 			else // it's a floor
 			{
-					scrollx = (float)(gr_frontsector->ceiling_xoffs*(crapmul/flatsize));
-					scrolly = (float)(gr_frontsector->ceiling_yoffs*(crapmul/flatsize));
+					scrollx = FIXED_TO_FLOAT(gr_frontsector->ceiling_xoffs)/flatsize;
+					scrolly = FIXED_TO_FLOAT(gr_frontsector->ceiling_yoffs)/flatsize;
 			}
 		}
 		v3d->sow = (float)((pv->x / flatsize) - flatxref + scrollx);
@@ -439,7 +439,7 @@ static void HWR_RenderSkyPlane(extrasubsector_t* xsub, fixed_t fixedheight)
 	if (!xsub->planepoly)
 		return;
 
-	height = ((float)fixedheight) * crapmul;
+	height = FIXED_TO_FLOAT(fixedheight);
 
 	pv  = xsub->planepoly->pts;
 	nrPlaneVerts = xsub->planepoly->numpts;
@@ -491,8 +491,8 @@ static void HWR_DrawSegsSplats( FSurfaceInfo * pSurf )
 	fixed_t       segbbox[4];
 
 	M_ClearBox(segbbox);
-	M_AddToBox(segbbox,(fixed_t)(((polyvertex_t *)gr_curline->v1)->x/crapmul),(fixed_t)(((polyvertex_t *)gr_curline->v1)->y/crapmul));
-	M_AddToBox(segbbox,(fixed_t)(((polyvertex_t *)gr_curline->v2)->x/crapmul),(fixed_t)(((polyvertex_t *)gr_curline->v2)->y/crapmul));
+	M_AddToBox(segbbox,(fixed_t)(((polyvertex_t *)gr_curline->v1)->x*FRACUNIT),(fixed_t)(((polyvertex_t *)gr_curline->v1)->y*FRACUNIT));
+	M_AddToBox(segbbox,(fixed_t)(((polyvertex_t *)gr_curline->v2)->x*FRACUNIT),(fixed_t)(((polyvertex_t *)gr_curline->v2)->y*FRACUNIT));
 
 	// splat are drawn by line but this func is called for eatch segs of a line
 	/* BP: DONT WORK BECAUSE Z-buffer !!!!
@@ -513,17 +513,17 @@ static void HWR_DrawSegsSplats( FSurfaceInfo * pSurf )
 		gpatch = W_CachePatchNum (splat->patch, PU_CACHE);
 		HWR_GetPatch(gpatch);
 
-		wallVerts[0].x = wallVerts[3].x = splat->v1.x*crapmul;
-		wallVerts[0].z = wallVerts[3].z = splat->v1.y*crapmul;
-		wallVerts[2].x = wallVerts[1].x = splat->v2.x*crapmul;
-		wallVerts[2].z = wallVerts[1].z = splat->v2.y*crapmul;
+		wallVerts[0].x = wallVerts[3].x = FIXED_TO_FLOAT(splat->v1.x);
+		wallVerts[0].z = wallVerts[3].z = FIXED_TO_FLOAT(splat->v1.y);
+		wallVerts[2].x = wallVerts[1].x = FIXED_TO_FLOAT(splat->v2.x);
+		wallVerts[2].z = wallVerts[1].z = FIXED_TO_FLOAT(splat->v2.y);
 
 		i = splat->top;
 		if( splat->yoffset )
 			i += *splat->yoffset;
 
-		wallVerts[2].y = wallVerts[3].y = i*crapmul+(gpatch->height>>1);
-		wallVerts[0].y = wallVerts[1].y = i*crapmul-(gpatch->height>>1);
+		wallVerts[2].y = wallVerts[3].y = FIXED_TO_FLOAT(i)+(gpatch->height>>1);
+		wallVerts[0].y = wallVerts[1].y = FIXED_TO_FLOAT(i)-(gpatch->height>>1);
 
 		wallVerts[3].s = wallVerts[3].t = wallVerts[2].s = wallVerts[0].t = 0.0f;
 		wallVerts[1].s = wallVerts[1].t = wallVerts[2].t = wallVerts[0].s = 1.0f;
@@ -661,8 +661,8 @@ static float HWR_ClipViewSegment (int x, polyvertex_t* v1, polyvertex_t* v2)
 
 	// the clipping line
 	clipangle = clipangle + dup_viewangle; //back to normal angle (non-relative)
-	v2dx = (float)finecosine[clipangle>>ANGLETOFINESHIFT] * crapmul;
-	v2dy = (float)finesine[clipangle>>ANGLETOFINESHIFT] * crapmul;
+	v2dx = FIXED_TO_FLOAT(finecosine[clipangle>>ANGLETOFINESHIFT]);
+	v2dy = FIXED_TO_FLOAT(finesine[clipangle>>ANGLETOFINESHIFT]);
 
 	den = v2dy*v1dx - v2dx*v1dy;
 	if (den == 0)
@@ -713,9 +713,9 @@ static void HWR_SplitWall(sector_t* sector, wallVert3D *wallVerts, int texnum, F
 		else
 			solid = false;
 
-		height = (float)list[i].height * crapmul;
+		height = FIXED_TO_FLOAT(list[i].height);
 		if(solid)
-			bheight = (float)*list[i].caster->bottomheight * crapmul;  
+			bheight = FIXED_TO_FLOAT(*list[i].caster->bottomheight);  
 
 		if(height >= top)
 		{
@@ -1014,8 +1014,8 @@ static void HWR_StoreWallRange (int startfrac, int endfrac)
 			}
 			
 			// set top/bottom coords
-			wallVerts[2].y = wallVerts[3].y = (float)worldtop * crapmul;
-			wallVerts[0].y = wallVerts[1].y = (float)worldhigh * crapmul;
+			wallVerts[2].y = wallVerts[3].y = FIXED_TO_FLOAT(worldtop);
+			wallVerts[0].y = wallVerts[1].y = FIXED_TO_FLOAT(worldhigh);
 
 			if(gr_frontsector->numlights)
 				HWR_SplitWall(gr_frontsector, wallVerts, texturetranslation[gr_sidedef->toptexture], &Surf, FF_CUTSOLIDS);
@@ -1050,8 +1050,8 @@ static void HWR_StoreWallRange (int startfrac, int endfrac)
 			}
 			
 			// set top/bottom coords
-			wallVerts[2].y = wallVerts[3].y = (float)worldlow * crapmul;
-			wallVerts[0].y = wallVerts[1].y = (float)worldbottom * crapmul;
+			wallVerts[2].y = wallVerts[3].y = FIXED_TO_FLOAT(worldlow);
+			wallVerts[0].y = wallVerts[1].y = FIXED_TO_FLOAT(worldbottom);
 			
 			if(gr_frontsector->numlights)
 				HWR_SplitWall(gr_frontsector, wallVerts, texturetranslation[gr_sidedef->bottomtexture], &Surf, FF_CUTSOLIDS);
@@ -1115,8 +1115,8 @@ static void HWR_StoreWallRange (int startfrac, int endfrac)
 				wallVerts[2].s = wallVerts[1].s = cliphigh * grTex->scaleX;
 			}
 			// set top/bottom coords
-			wallVerts[2].y = wallVerts[3].y = (float)h * crapmul;
-			wallVerts[0].y = wallVerts[1].y = (float)l * crapmul;
+			wallVerts[2].y = wallVerts[3].y = FIXED_TO_FLOAT(h);
+			wallVerts[0].y = wallVerts[1].y = FIXED_TO_FLOAT(l);
 	
 			// set alpha for transparent walls (new boom and legacy linedef types)
 			// ooops ! this do not work at all because render order we should render it in backtofront order
@@ -1165,8 +1165,8 @@ static void HWR_StoreWallRange (int startfrac, int endfrac)
 				wallVerts[2].s = wallVerts[1].s = cliphigh * grTex->scaleX;
 			}
 			// set top/bottom coords
-			wallVerts[2].y = wallVerts[3].y = (float)worldtop * crapmul;
-			wallVerts[0].y = wallVerts[1].y = (float)worldbottom * crapmul;
+			wallVerts[2].y = wallVerts[3].y = FIXED_TO_FLOAT(worldtop);
+			wallVerts[0].y = wallVerts[1].y = FIXED_TO_FLOAT(worldbottom);
 
 			// I don't think that solid walls can use translucent linedef types...
 			if(gr_frontsector->numlights)
@@ -1211,8 +1211,8 @@ static void HWR_StoreWallRange (int startfrac, int endfrac)
 				//Hurdler: HW code starts here
 				//FIXME: check if peging is correct
 				// set top/bottom coords
-				wallVerts[2].y = wallVerts[3].y = (float)h * crapmul;
-				wallVerts[0].y = wallVerts[1].y = (float)l * crapmul;
+				wallVerts[2].y = wallVerts[3].y = FIXED_TO_FLOAT(h);
+				wallVerts[0].y = wallVerts[1].y = FIXED_TO_FLOAT(l);
 
 				if (drawtextured)
 				{
@@ -1268,8 +1268,8 @@ static void HWR_StoreWallRange (int startfrac, int endfrac)
 				//Hurdler: HW code starts here
 				//FIXME: check if peging is correct
 				// set top/bottom coords
-				wallVerts[2].y = wallVerts[3].y = (float)h * crapmul;
-				wallVerts[0].y = wallVerts[1].y = (float)l * crapmul;
+				wallVerts[2].y = wallVerts[3].y = FIXED_TO_FLOAT(h);
+				wallVerts[0].y = wallVerts[1].y = FIXED_TO_FLOAT(l);
 
 				if (drawtextured)
 				{
@@ -2057,10 +2057,10 @@ static void HWR_Subsector( int num )
 #endif
 #endif //doplanes
 
-// Hurder ici se passe les choses intéressantes!
+// Hurder ici se passe les choses intï¿½essantes!
 // on vient de tracer le sol et le plafond
-// on trace à présent d'abord les sprites et ensuite les murs
-// hurdler: faux: on ajoute seulement les sprites, le murs sont tracés d'abord
+// on trace ï¿½prï¿½ent d'abord les sprites et ensuite les murs
+// hurdler: faux: on ajoute seulement les sprites, le murs sont tracï¿½ d'abord
 	if (line)
 	{
 		// draw sprites first , coz they are clipped to the solidsegs of
@@ -2783,8 +2783,8 @@ static void HWR_ProjectSprite (mobj_t* thing)
 		return;
 
 	// transform the origin point
-	tr_x = ((float)thing->x * crapmul) - gr_viewx;
-	tr_y = ((float)thing->y * crapmul) - gr_viewy;
+	tr_x = FIXED_TO_FLOAT(thing->x) - gr_viewx;
+	tr_y = FIXED_TO_FLOAT(thing->y) - gr_viewy;
 
 	// rotation around vertical axis
 	tz = (tr_x * gr_viewcos) + (tr_y * gr_viewsin );
@@ -2834,7 +2834,7 @@ static void HWR_ProjectSprite (mobj_t* thing)
 
 
 	// calculate edges of the shape
-	tx -= ((float)spriteoffset[lump] * crapmul );
+	tx -= FIXED_TO_FLOAT(spriteoffset[lump]);
 
 	// project x
 	x1 = gr_windowcenterx + (tx * gr_centerx / tz );
@@ -2855,7 +2855,7 @@ static void HWR_ProjectSprite (mobj_t* thing)
 
 	x1 = tx;
 
-	tx += ((float)spritewidth[lump] * crapmul );
+	tx += FIXED_TO_FLOAT(spritewidth[lump]);
 	x2 = gr_windowcenterx + (tx * gr_centerx / tz );
 
 	// BP: FOV des sprites, ici aussi
@@ -2909,7 +2909,7 @@ static void HWR_ProjectSprite (mobj_t* thing)
 		vis->colormap = colormaps;
 
 	// set top/bottom coords
-	vis->ty = (float)(thing->z + spritetopoffset[lump]) * crapmul - gr_viewz;
+	vis->ty = FIXED_TO_FLOAT(thing->z + spritetopoffset[lump]) - gr_viewz;
 
 	//CONS_Printf("------------------\nH: sprite  : %d\nH: frame   : %x\nH: type    : %d\nH: sname   : %s\n\n",
 	//            thing->sprite, thing->frame, thing->type, sprnames[thing->sprite]);
@@ -2944,8 +2944,8 @@ static void HWR_ProjectPrecipitationSprite (precipmobj_t* thing)
 	boolean             flip;
 
 	// transform the origin point
-	tr_x = ((float)thing->x * crapmul) - gr_viewx;
-	tr_y = ((float)thing->y * crapmul) - gr_viewy;
+	tr_x = FIXED_TO_FLOAT(thing->x) - gr_viewx;
+	tr_y = FIXED_TO_FLOAT(thing->y) - gr_viewy;
 
 	// rotation around vertical axis
 	tz = (tr_x * gr_viewcos) + (tr_y * gr_viewsin );
@@ -2978,7 +2978,7 @@ static void HWR_ProjectPrecipitationSprite (precipmobj_t* thing)
 	flip = (boolean)sprframe->flip[0];
 
 	// calculate edges of the shape
-	tx -= ((float)spriteoffset[lump] * crapmul );
+	tx -= FIXED_TO_FLOAT(spriteoffset[lump]);
 
 	// project x
 	x1 = gr_windowcenterx + (tx * gr_centerx / tz );
@@ -2999,7 +2999,7 @@ static void HWR_ProjectPrecipitationSprite (precipmobj_t* thing)
 
 	x1 = tx;
 
-	tx += ((float)spritewidth[lump] * crapmul );
+	tx += FIXED_TO_FLOAT(spritewidth[lump]);
 	x2 = gr_windowcenterx + (tx * gr_centerx / tz );
 
 	// BP: FOV des sprites, ici aussi
@@ -3035,7 +3035,7 @@ static void HWR_ProjectPrecipitationSprite (precipmobj_t* thing)
 	vis->colormap = colormaps;
 
 	// set top/bottom coords
-	vis->ty = (float)(thing->z + spritetopoffset[lump]) * crapmul - gr_viewz;
+	vis->ty = FIXED_TO_FLOAT(thing->z + spritetopoffset[lump]) - gr_viewz;
 
 	vis->sectorlight = 0xff;
 	vis->precip = true;
@@ -3199,27 +3199,27 @@ void HWR_RenderPlayerView(int viewnumber, player_t* player)
 	// check for new console commands.
 	NetUpdate();
 
-	gr_viewx = ((float)dup_viewx) * crapmul;
-	gr_viewy = ((float)dup_viewy) * crapmul;
-	gr_viewz = ((float)dup_viewz) * crapmul;
-	gr_viewsin = (float)FIXED_TO_FLOAT(viewsin);
-	gr_viewcos = (float)FIXED_TO_FLOAT(viewcos);
+	gr_viewx = FIXED_TO_FLOAT(dup_viewx);
+	gr_viewy = FIXED_TO_FLOAT(dup_viewy);
+	gr_viewz = FIXED_TO_FLOAT(dup_viewz);
+	gr_viewsin = FIXED_TO_FLOAT(viewsin);
+	gr_viewcos = FIXED_TO_FLOAT(viewcos);
 
-	gr_viewludsin = (float)FIXED_TO_FLOAT(finecosine[aimingangle>>ANGLETOFINESHIFT]);
-	gr_viewludcos = (float)FIXED_TO_FLOAT(-finesine[aimingangle>>ANGLETOFINESHIFT]);
+	gr_viewludsin = FIXED_TO_FLOAT(finecosine[aimingangle>>ANGLETOFINESHIFT]);
+	gr_viewludcos = FIXED_TO_FLOAT(-finesine[aimingangle>>ANGLETOFINESHIFT]);
 
 	//04/01/2000: Hurdler: added for T&L
 	//                     It should replace all other gr_viewxxx when finished
 	atransform.anglex = (float)(aimingangle>>ANGLETOFINESHIFT)*(360.0f/(float)FINEANGLES);
 	atransform.angley = (float)(viewangle>>ANGLETOFINESHIFT)*(360.0f/(float)FINEANGLES);
-	atransform.x      = gr_viewx;  // viewx * crapmul
-	atransform.y      = gr_viewy;  // viewy * crapmul
-	atransform.z      = gr_viewz;  // viewz * crapmul
+	atransform.x      = gr_viewx;  // FIXED_TO_FLOAT(viewx)
+	atransform.y      = gr_viewy;  // FIXED_TO_FLOAT(viewy)
+	atransform.z      = gr_viewz;  // FIXED_TO_FLOAT(viewz)
 	atransform.scalex = 1;
 	atransform.scaley = ORIGINAL_ASPECT;
 	atransform.scalez = 1;
-	atransform.fovxangle = ((float)cv_grfov.value)/FRACUNIT+grfovadjust; // Tails
-	atransform.fovyangle = ((float)cv_grfov.value)/FRACUNIT+grfovadjust; // Tails
+	atransform.fovxangle = FIXED_TO_FLOAT(cv_grfov.value)+grfovadjust; // Tails
+	atransform.fovyangle = FIXED_TO_FLOAT(cv_grfov.value)+grfovadjust; // Tails
 	atransform.splitscreen = cv_splitscreen.value;
 	gr_fovlud = (float)(1/tan(((cv_grfov.value>>FRACBITS) + grfovadjust)*PI/360));
 
@@ -3345,7 +3345,7 @@ static unsigned int atohex(const char* s)
 	char    cCol;
 	int i;
 
-	if (lstrlen(s)<6)
+	if (strlen(s)<6)
 		return 0;
 
 	iCol = 0;
@@ -3591,7 +3591,7 @@ static void HWR_QuickSortPlane(int low, int high)
 }
 
 
-static void HWR_Render3DWater()
+static void HWR_Render3DWater(void)
 {
 	int i;
 
@@ -3658,7 +3658,7 @@ static void HWR_AddTransparentWall( wallVert3D *wallVerts, FSurfaceInfo *pSurf, 
 
 static void HWR_RenderWall( wallVert3D   *wallVerts, FSurfaceInfo *pSurf, int blend );
 
-static void HWR_RenderTransparentWalls()
+static void HWR_RenderTransparentWalls(void)
 {
 	int i;
 

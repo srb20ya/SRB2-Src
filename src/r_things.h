@@ -55,7 +55,7 @@ void R_AddSpriteDefs(const char** namelist, int wadnum);
 
 //SoM: 6/5/2000: Light sprites correctly!
 void R_AddSprites(sector_t* sec, int lightlevel);
-void R_DrawSprite(vissprite_t* spr);
+//void R_DrawSprite(vissprite_t* spr);
 void R_InitSprites(const char** namelist);
 void R_ClearSprites(void);
 void R_DrawMasked(void);

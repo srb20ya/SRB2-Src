@@ -56,7 +56,7 @@
 // Displays a message box containing the given formatted string.
 // -----------------
 /*
-void __cdecl DXErrorMessageBox (HRESULT error) LPSTR fmt, ... )
+VOID DXErrorMessageBox (HRESULT error) LPSTR fmt, ... )
 {
 	char buff[256];
 	va_list args;
@@ -66,7 +66,7 @@ void __cdecl DXErrorMessageBox (HRESULT error) LPSTR fmt, ... )
 	va_end(args);
 	
 	lstrcat(buff, "\r\n");
-	MessageBox( NULL, buff, "DirectX Error:", MB_ICONEXCLAMATION + MB_OK );
+	MessageBoxA( NULL, buff, "DirectX Error:", MB_ICONEXCLAMATION + MB_OK );
 }*/
 
 
@@ -74,7 +74,7 @@ void __cdecl DXErrorMessageBox (HRESULT error) LPSTR fmt, ... )
 // DXErrorToString
 // Returns a pointer to a string describing the given DD, D3D or D3DRM error code.
 // ---------------
-const char* DXErrorToString (HRESULT error)
+LPCSTR DXErrorToString (HRESULT error)
 {
 	switch(error) {
 		case DD_OK:

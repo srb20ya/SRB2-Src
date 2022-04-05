@@ -733,9 +733,9 @@ void HWR_DrawMD2( gr_vissprite_t* spr )
 		frame = spr->mobj->frame % md2->model->header.numFrames;
 
 		//Hurdler: it seems there is still a small problem with mobj angle 
-		p.x = spr->mobj->x*crapmul; 
-		p.y = spr->mobj->y*crapmul+md2->offset; 
-		p.z = spr->mobj->z*crapmul; 
+		p.x = FIXED_TO_FLOAT(spr->mobj->x);
+		p.y = FIXED_TO_FLOAT(spr->mobj->y)+md2->offset;
+		p.z = FIXED_TO_FLOAT(spr->mobj->z);
 		p.angley = (float)(45*((spr->mobj->angle>>29)));
 		p.anglex = 0.0f;
 

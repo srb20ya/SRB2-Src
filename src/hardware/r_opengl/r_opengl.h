@@ -73,7 +73,11 @@
 #define _R_OPENGL_H_
 
 #ifdef SDL
+#if (defined(_XBOX) &&  defined(_MSC_VER))
+#include <SDL_opengl.h> //Alam_GBC: Simple, yes?
+#else
 #include <SDL/SDL_opengl.h> //Alam_GBC: Simple, yes?
+#endif
 #else
 #include <GL/gl.h>
 #include <GL/glu.h>
@@ -106,7 +110,7 @@
 // ==========================================================================
 
 void Flush(void);
-int  isExtAvailable(char *extension);
+int  isExtAvailable(const char *extension);
 boolean SetupPixelFormat(int WantColorBits, int WantStencilBits, int WantDepthBits);
 void SetModelView(GLint w, GLint h);
 void SetStates(void);

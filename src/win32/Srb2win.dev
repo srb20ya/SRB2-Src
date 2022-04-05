@@ -4,7 +4,7 @@ Name=Srb2win
 Ver=1
 IsCpp=0
 Type=0
-Compiler=-D_M_IX86=500_@@_-DSTDC_HEADERS_@@_-Wall_@@_-D_DEBUG_@@_-D_WINDOWS_@@_-DUSEASM_@@_-Os_@@_-fno-strict-aliasing_@@_-ffloat-store_@@_-fomit-frame-pointer_@@_
+Compiler=-D_M_IX86=500_@@_-DSTDC_HEADERS_@@_-Wall_@@_-D_DEBUG_@@_-D_WINDOWS_@@_-DUSEASM_@@_-Os_@@_-ffloat-store_@@_-fomit-frame-pointer_@@_
 CppCompiler=-Os_@@_
 Includes=
 Linker=-lddraw_@@_-ldinput_@@_-ldsound_@@_-ldxguid_@@_-lfmod_@@_-lwinmm_@@_-lwsock32_@@_

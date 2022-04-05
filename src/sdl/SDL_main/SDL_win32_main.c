@@ -49,13 +49,8 @@
 #endif
 
 #ifndef NO_STDIO_REDIRECT
-# ifdef _WIN32_WCE
-  static wchar_t stdoutPath[MAX_PATH];
-  static wchar_t stderrPath[MAX_PATH];
-# else
-  static char stdoutPath[MAX_PATH];
-  static char stderrPath[MAX_PATH];
-# endif
+  static TCHAR stdoutPath[MAX_PATH];
+  static TCHAR stderrPath[MAX_PATH];
 #endif
 
 #if defined(_WIN32_WCE) && _WIN32_WCE < 300
@@ -279,12 +274,12 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrev, LPSTR szCmdLine, int sw)
 	int Result = -1;
 	char **argv;
 	int argc;
-	char *cmdline;
+	LPSTR cmdline;
 #ifdef _WIN32_WCE
-	wchar_t *bufp;
-	int nLen;
+	size_t nLen;
+	LPTSTR bufp;
 #else
-	char *bufp;
+	LPSTR bufp;
 #endif
 #ifndef NO_STDIO_REDIRECT
 	FILE *newfp;
@@ -358,8 +353,8 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrev, LPSTR szCmdLine, int sw)
 #else
 	szCmdLine = NULL;
 	/* Grab the command line (use alloca() on Windows) */
-	bufp = GetCommandLine();
-	cmdline = (char *)alloca(strlen(bufp)+1);
+	bufp = GetCommandLineA();
+	cmdline = (LPSTR)alloca(strlen(bufp)+1);
 	if ( cmdline == NULL ) {
 		return OutOfMemory();
 	}
@@ -376,7 +371,7 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrev, LPSTR szCmdLine, int sw)
 
 	/* Run the main program (after a little SDL initialization) */
 #ifdef NO_SEH_MINGW
-	__try1(EXCEPTION_CONTINUE_SEARCH)
+	__try1(RecordExceptionInfo( GetExceptionInformation()/*, "main thread", lpCmdLine*/))
 #elif !defined(_WIN32_WCE)
 	 __try
 #endif
@@ -389,7 +384,7 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrev, LPSTR szCmdLine, int sw)
 	__except ( RecordExceptionInfo( GetExceptionInformation()/*, "main thread", lpCmdLine*/) )
 #endif
 	{
-		//Do nothing here.
+		SetUnhandledExceptionFilter(EXCEPTION_CONTINUE_SEARCH); //Do nothing here.
 	}
 	return Result;
 }

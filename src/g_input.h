@@ -31,10 +31,22 @@
 #define NUMKEYS 256
 
 
+#ifdef _arch_dreamcast
+#define MOUSEBUTTONS 5
+#define JOYBUTTONS   8 //  8 buttons
+#define JOYHATS      2  // 2 hats
+#define JOYAXISSET   3  // 3 Sets of 2 axises
+#elif defined (_XBOX)
+#define MOUSEBUTTONS 5
+#define JOYBUTTONS   12 // 12 buttons
+#define JOYHATS      1  // 1 hat
+#define JOYAXISSET   2  // 2 Sets of 2 axises
+#else
 #define MOUSEBUTTONS 8
 #define JOYBUTTONS   32 // 32 buttons
 #define JOYHATS      4  // 4 hats
 #define JOYAXISSET   4  // 4 Sets of 2 axises
+#endif
 
 //
 // mouse and joystick buttons are handled as 'virtual' keys
@@ -117,7 +129,7 @@ extern int gamecontrolbis[num_gamecontrols][2]; // secondary splitscreen player
 void G_MapEventsToControls(event_t* ev);
 
 // returns the name of a key
-char* G_KeynumToString(int keynum);
+const char* G_KeynumToString(int keynum);
 int G_KeyStringtoNum(const char* keystr);
 
 // detach any keys associated to the given game control

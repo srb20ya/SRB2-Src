@@ -52,8 +52,10 @@ extern int nummapthings;
 extern mapthing_t* mapthings;
 
 void P_SetupLevelSky(int skynum);
+void P_SpawnSecretItems(boolean loademblems);
 boolean P_SetupLevel(int map, skill_t skill, const char* mapname);
 boolean P_AddWadFile(const char* wadfilename, char** firstmapname);
+boolean P_RunSOC(const char* socfilename);
 void P_WriteThings(int lump);
 // P_PrecacheLevelFlats caches the flats.
 int P_PrecacheLevelFlats(void);

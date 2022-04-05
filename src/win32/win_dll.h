@@ -36,8 +36,8 @@
 // this is made extern so win_dbg.c can log the load address
 // of the dynamically loaded DLL functions
 typedef struct loadfunc_s {
-	const char*   fnName;
-	void*   fnPointer;
+	LPCSTR fnName;
+	LPVOID fnPointer;
 } loadfunc_t;
 #ifdef HWRENDER
 extern HINSTANCE  hwdInstance;
@@ -50,15 +50,15 @@ extern loadfunc_t hwsFuncTable[];
 #endif
 
 
-HINSTANCE LoadDLL (const char* dllName, loadfunc_t* funcTable);
-void UnloadDLL (HINSTANCE* pInstance);
+HINSTANCE LoadDLL (LPCSTR dllName, loadfunc_t* funcTable);
+VOID UnloadDLL (HINSTANCE* pInstance);
 
 #ifdef HWRENDER
-BOOL Init3DDriver (const char* dllName);
-void Shutdown3DDriver (void);
+BOOL Init3DDriver (LPCSTR dllName);
+VOID Shutdown3DDriver (VOID);
 #endif
 
 #ifdef HW3SOUND
-BOOL Init3DSDriver(const char *dllName);
-void Shutdown3DSDriver(void);
+BOOL Init3DSDriver(LPCSTR dllName);
+VOID Shutdown3DSDriver(VOID);
 #endif

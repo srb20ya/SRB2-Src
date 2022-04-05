@@ -68,20 +68,42 @@
 
 #include <stdlib.h>
 
+#if defined(_XBOX) && defined(_MSC_VER)
+#include <SDL.h>
+#else
 #include <SDL/SDL.h>
+#endif
+#if SDL_VERSION_ATLEAST(1,2,9) && defined(_arch_dreamcast)
+#define HAVE_DCSDL
+#include <SDL/SDL_dreamcast.h>
+#endif
+
 #ifdef HAVE_IMAGE
 #include <SDL/SDL_image.h>
 #endif
 
 #include "../doomdef.h"
 
-#if defined(_WIN32) || defined(_WIN64)
+#if (defined(_WIN32) || defined(_WIN64)) && !defined(_XBOX)
 #include <SDL/SDL_syswm.h>
 #endif
 
 #ifdef _arch_dreamcast
-//#include <kos.h>
 #include <conio/conio.h>
+#include <dc/maple.h>
+#include <dc/maple/vmu.h>
+//#include "SRB2DC/VMU.xbm"
+//#include <dc/pvr.h>
+//#define malloc pvr_mem_malloc
+//#define free pvr_mem_free
+#endif
+
+#if defined(_XBOX) && defined(__GNUC__)
+#include <openxdk/debug.h>
+#endif
+
+#ifdef DC
+//#define NOJOYPOLL
 #endif
 
 #include "../doomstat.h"
@@ -130,7 +152,7 @@
 
 /**	\brief
 */
-static int numVidModes = 0;
+static int numVidModes = -1;
 
 /**	\brief
 */
@@ -146,7 +168,11 @@ boolean highcolor = false;
 
 // synchronize page flipping with screen refresh
 // unused and for compatibilityy reason
+#ifdef DC
+consvar_t cv_vidwait = {"vid_wait", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+#else
 consvar_t cv_vidwait = {"vid_wait", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+#endif
 static consvar_t cv_stretch = {"stretch", "On", CV_SAVE|CV_NOSHOWHELP, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 byte graphics_started = 0; // Is used in console.c and screen.c
@@ -170,7 +196,13 @@ static       SDL_Surface *bufSurface = NULL;
 static       SDL_Surface *icoSurface = NULL;
 static       SDL_Color    localPalette[256];
 static       SDL_Rect   **modeList = NULL;
+#ifdef DC
+static       Uint8        BitsPerPixel = 15;
+#elif defined(_WIN32_WCE)
+static       Uint8        BitsPerPixel = 16;
+#else
 static       Uint8        BitsPerPixel = 8;
+#endif
 static       Uint16       realwidth = BASEVIDWIDTH;
 static       Uint16       realheight = BASEVIDHEIGHT;
 #ifdef _WIN32_WCE
@@ -181,14 +213,21 @@ static const Uint32       surfaceFlagsW = SDL_HWPALETTE|SDL_RESIZABLE;
 static const Uint32       surfaceFlagsF = SDL_HWPALETTE|SDL_FULLSCREEN;
 static       SDL_bool     mousegrabok = SDL_FALSE;
 #define HalfWarpMouse(x,y) SDL_WarpMouse((Uint16)(x/2),(Uint16)(y/2))
+#if defined(_WIN32_WCE) || defined(DC)
+static       SDL_bool     videoblitok = SDL_TRUE;
+#else
 static       SDL_bool     videoblitok = SDL_FALSE;
+#endif
 static       SDL_bool     exposevideo = SDL_FALSE;
+static       SDL_bool     consolevent = SDL_TRUE;
 
 // windowed video modes from which to choose from.
 static int windowedModes[MAXWINMODES][2] =
 {
-#if !defined (_WIN32_WCE) && !defined(DC)
-	{MAXVIDWIDTH /*1920*/, MAXVIDHEIGHT/*1200*/}, //1.60, 6.00
+#if defined (_WIN32_WCE) || defined(DC)
+	{MAXVIDWIDTH /*320*/, MAXVIDHEIGHT/*200*/}, // 1.60,1.00
+#else
+	{MAXVIDWIDTH /*1920*/, MAXVIDHEIGHT/*1200*/}, //1.60,6.00
 	{1600,1200}, // 1.33,5.00
 	{1600,1000}, // 1.60,5.00
 	{1536,1152}, // 1.33,4.80
@@ -202,15 +241,20 @@ static int windowedModes[MAXWINMODES][2] =
 	{512 , 384}, // 1.33,1.60
 	{400 , 300}, // 1.33,1.25
 	{320 , 240}, // 1.33,1.00
-#endif
 	{320 , 200}, // 1.60,1.00
+#endif
 };
 
 static void SDL_SetMode(int width, int height, int bpp, Uint32 flags)
 {
 #ifdef _WIN32_WCE
 	if(bpp < 16)
-		bpp =16; // 256 mode poo
+		bpp = 16; // 256 mode poo
+#endif
+#ifdef DC
+	if(bpp < 15)
+		bpp = 15;
+	height = 240;
 #endif
 #ifdef FILTERS
 	bpp = Setupf2x(width, height, bpp);
@@ -224,6 +268,9 @@ static void SDL_SetMode(int width, int height, int bpp, Uint32 flags)
 	else return;
 	realwidth = (Uint16)width;
 	realheight = (Uint16)height;
+#ifdef HAVE_DCSDL
+	//SDL_DC_SetWindow(320,200);
+#endif
 #ifdef FILTERS
 	if(vidSurface && preSurface && f2xSurface)
 	{
@@ -268,12 +315,16 @@ static int xlatekey(SDLKey sym)
 		case SDLK_BACKSPACE: rc = KEY_BACKSPACE;    break;
 		case SDLK_DELETE:    rc = KEY_DEL;          break;
 
+#ifndef _arch_dreamcast
 		case SDLK_KP_EQUALS: //Alam & Logan: WTF? Mac KB haves one! XD 
+#endif
 		case SDLK_PAUSE:
 			rc = KEY_PAUSE;
 			break;
 
+#ifndef _arch_dreamcast
 		case SDLK_EQUALS:
+#endif
 		case SDLK_PLUS:      rc = KEY_EQUALS;       break;
 
 		case SDLK_MINUS:     rc = KEY_MINUS;        break;
@@ -322,6 +373,7 @@ static int xlatekey(SDLKey sym)
 		case SDLK_KP_PLUS:     rc = KEY_PLUSPAD;   break;
 		case SDLK_KP_ENTER:    rc = KEY_ENTER;     break;
 
+#ifndef _arch_dreamcast
 		case SDLK_LSUPER:
 		case SDLK_LMETA:
 			rc = KEY_LEFTWIN;  break;
@@ -330,6 +382,7 @@ static int xlatekey(SDLKey sym)
 			rc = KEY_RIGHTWIN; break;
 
 		case SDLK_MENU:        rc = KEY_MENU;      break;
+#endif
 
 		default:
 			if (sym >= SDLK_SPACE && sym <= SDLK_DELETE)
@@ -483,6 +536,7 @@ static void VID_Command_Info_f (void)
 
 static void VID_Command_ModeList_f(void)
 {
+#if !defined(DC) && !defined(_WIN32_WCE)
 	int i;
 #ifdef HWRENDER
 	if(rendermode == render_opengl || M_CheckParm("-opengl"))
@@ -516,6 +570,7 @@ static void VID_Command_ModeList_f(void)
 				modeList[modeNum]->h);
 	}
 	CONS_Printf("None\n");
+#endif
 }
 
 static void VID_Command_Mode_f (void)
@@ -536,6 +591,70 @@ static void VID_Command_Mode_f (void)
 		setmodeneeded = modenum+1; // request vid mode change
 }
 
+#if defined(_XBOX) || defined(_WIN32_WCE) || defined(_arch_dreamcast)
+static inline void I_GetConsoleEvents(void) {}
+#elif  defined(_WIN32) || defined(_WIN64)
+static inline BOOL I_ReadyConsole(HANDLE ci)
+{
+	DWORD gotinput;
+	//return FALSE;
+	if(ci == (HANDLE)-1 || GetFileType(ci) != FILE_TYPE_CHAR) return FALSE;
+	return (GetNumberOfConsoleInputEvents(ci, &gotinput) && gotinput);
+}
+
+static inline VOID I_GetConsoleEvents(VOID)
+{
+	HANDLE ci = GetStdHandle(STD_INPUT_HANDLE);
+	HANDLE co = GetStdHandle(STD_OUTPUT_HANDLE);
+	event_t ev = {0,0,0,0};
+	INPUT_RECORD input;
+	DWORD gotinput;
+	while(I_ReadyConsole(ci) && ReadConsoleInput(ci, &input, 1, &gotinput) && gotinput)
+	{
+		if(input.EventType == KEY_EVENT && input.Event.KeyEvent.bKeyDown)
+		{
+			ev.type = ev_console;
+			switch (input.Event.KeyEvent.wVirtualKeyCode)
+			{
+				case VK_ESCAPE:
+					ev.data1 = KEY_ESCAPE;
+					break;
+				case VK_RETURN:
+					ev.data1 = KEY_ENTER;
+					break;
+				default:
+					ev.data1 = MapVirtualKey(input.Event.KeyEvent.wVirtualKeyCode,2); // convert in to char
+			}
+			if(co != (HANDLE)-1 && GetFileType(co) == FILE_TYPE_CHAR)
+			{
+#ifdef _UNICODE
+				WriteConsole(co, &input.Event.KeyEvent.uChar.UnicodeChar, 1, &gotinput, NULL);
+#else
+				WriteConsole(co, &input.Event.KeyEvent.uChar.AsciiChar, 1 , &gotinput, NULL);
+#endif
+			}
+			if(ev.data1) D_PostEvent(&ev);
+		}
+	}
+}
+#else
+#include "kbhit.c"
+static inline void I_GetConsoleEvents(void)
+{
+	event_t event = {ev_console,0,0,0};
+	if(set_tty_raw() == -1) return;
+	while(true)
+	{
+		if((event.data1 = kb_getc()) == 0)
+			break;
+		else if(event.data1 == '\n')
+			event.data1 = KEY_ENTER;
+		D_PostEvent(&event);
+	}
+	set_tty_cooked();
+}
+#endif
+
 void I_GetEvent(void)
 {
 	SDL_Event inputEvent;
@@ -543,22 +662,11 @@ void I_GetEvent(void)
 	event_t event = {0,0,0,0};
 
 	if(!graphics_started)
-	{
-		event.type = ev_keydown;
-		event.data1 = I_ConsoleKey();
-		I_OutputMsg("%i",event.data1);
-		if(event.data1)
-		{
-			D_PostEvent(&event);
-			event.type = ev_keyup;
-			D_PostEvent(&event);
-		}
 		return;
-	}
 
 	while(SDL_PollEvent(&inputEvent))
 	{
-		memset(&event,0,sizeof(event_t));
+		memset(&event,0x00,sizeof(event_t));
 		switch(inputEvent.type)
 		{
 			case SDL_ACTIVEEVENT:
@@ -567,12 +675,12 @@ void I_GetEvent(void)
 					// pause music when alt-tab
 					if( inputEvent.active.gain /*&& !paused */)
 					{
-                        static SDL_bool firsttimeonmouse = SDL_TRUE;
+						static SDL_bool firsttimeonmouse = SDL_TRUE;
 						if(!firsttimeonmouse)
 						{
-                               if(cv_usemouse.value) I_StartupMouse();
-                        }
-                        else firsttimeonmouse = SDL_FALSE;       
+							if(cv_usemouse.value) I_StartupMouse();
+						}
+						else firsttimeonmouse = SDL_FALSE;
 						//if(!netgame && !con_destlines) paused = false;
 						if(gamestate == GS_LEVEL || gamestate == GS_DEMOSCREEN)
 							if(!paused) I_ResumeSong(0); //resume it
@@ -668,6 +776,61 @@ void I_GetEvent(void)
 					if(event.data1) D_PostEvent(&event);
 				}
 				break;
+#ifdef NOJOYPOLL
+			case SDL_JOYAXISMOTION:
+				inputEvent.jaxis.which++;
+				inputEvent.jaxis.axis++;
+				event.data1 = event.data2 = event.data3 = MAXINT;
+				if(cv_usejoystick.value == inputEvent.jaxis.which)
+				{
+					event.type = ev_joystick;
+				}
+				else if(cv_usejoystick.value == inputEvent.jaxis.which)
+				{
+					event.type = ev_joystick2;
+				}
+				else break;
+				//axis
+				if(inputEvent.jaxis.axis > JOYAXISSET*2)
+					break;
+				//vaule
+				if(inputEvent.jaxis.axis%2)
+				{
+					event.data1 = inputEvent.jaxis.axis / 2;
+					event.data2 = inputEvent.jaxis.value/32;
+				}
+				else
+				{
+					inputEvent.jaxis.axis--;
+					event.data1 = inputEvent.jaxis.axis / 2;
+					event.data3 = inputEvent.jaxis.value/32;
+				}
+				D_PostEvent(&event);
+				break;
+			case SDL_JOYBALLMOTION:
+			case SDL_JOYHATMOTION:
+				break; //NONE
+			case SDL_JOYBUTTONDOWN:
+			case SDL_JOYBUTTONUP:
+				inputEvent.jbutton.which++;
+				if(cv_usejoystick.value == inputEvent.jbutton.which)
+					event.data1 = KEY_JOY1;
+				else if(cv_usejoystick.value == inputEvent.jbutton.which)
+					event.data1 = KEY_2JOY1;
+				else break;
+				if(inputEvent.type == SDL_JOYBUTTONUP)
+					event.type = ev_keyup;
+				else if(inputEvent.type == SDL_JOYBUTTONDOWN)
+					event.type = ev_keydown;
+				else break;
+				if(inputEvent.jbutton.button < JOYBUTTONS)
+					event.data1 += inputEvent.jbutton.button;
+				else
+					break;
+				D_PostEvent(&event);
+				break;
+#endif
+#ifndef  _WIN32_WCE
 			case SDL_QUIT:
 				if(!sdlquit)
 				{
@@ -675,6 +838,7 @@ void I_GetEvent(void)
 					M_QuitResponse('y');
 				}
 				break;
+#endif
 			case SDL_VIDEORESIZE:
 				if(gamestate == GS_LEVEL || gamestate == GS_DEMOSCREEN || gamestate == GS_TITLESCREEN || gamestate == GS_EVALUATION)
 					setmodeneeded = VID_GetModeForSize(inputEvent.resize.w,inputEvent.resize.h)+1;
@@ -693,7 +857,7 @@ void I_GetEvent(void)
 					I_Error("Could not reset vidmode: %s\n",SDL_GetError());
 				break;
 			case SDL_VIDEOEXPOSE:
-				//exposevideo = SDL_TRUE;
+				exposevideo = SDL_TRUE;
 				break;
 			default:
 				break;
@@ -725,14 +889,22 @@ void I_StartupMouse(void)
 //
 void I_OsPolling(void)
 {
-
-	if(SDL_WasInit(SDL_INIT_JOYSTICK)!=0) SDL_JoystickUpdate();
+	if(consolevent) I_GetConsoleEvents();
+#ifndef NOJOYPOLL
+	if(SDL_WasInit(SDL_INIT_JOYSTICK)==SDL_INIT_JOYSTICK) SDL_JoystickUpdate();
 	I_GetJoystickEvents();
 	I_GetJoystick2Events();
-#if defined (LMOUSE2) || defined(_WIN32) || defined(_WIN64)
+#endif
+#ifdef _arch_dreamcast 
+	//vmu_set_icon(VMU_bits);
+#endif
+#if defined (LMOUSE2) || (defined(_WIN32) || defined(_WIN64)) && !defined(_XBOX)
 	I_GetMouseEvents();
 #endif
-
+#ifdef HAVE_DCSDL
+	SDL_DC_EmulateMouse(SDL_FALSE);
+	SDL_DC_EmulateKeyboard(SDL_TRUE);
+#endif
 	I_GetEvent();
 }
 
@@ -758,7 +930,7 @@ void I_UpdateNoBlit(void)
 
 static int fpsgraph[FPSPOINTS];
 
-static void displayticrate()
+static void displayticrate(void)
 {
 	int j,l,i;
 	static tic_t lasttic;
@@ -840,12 +1012,14 @@ void I_FinishUpdate(void)
 			else if(vid.bpp == 2) bufSurface = SDL_CreateRGBSurfaceFrom(screens[0],vid.width,vid.height,15,
 				vid.rowbytes,0x00007C00,0x000003E0,0x0000001F,0x00000000); // 555 mode
 			if(bufSurface) SDL_SetColors(bufSurface, localPalette, 0, 256);
+			else CONS_Printf("No system memory for SDL buffer surface\n");
 		}
 
 #ifdef FILTERS
 		FilterBlit(bufSurface);
 		if(f2xSurface) //Alam: filter!
 		{
+			//CONS_Printf("2x Filter Code\n");
 			blited = SDL_BlitSurface(f2xSurface,NULL,vidSurface,NULL);
 		}
 		else
@@ -855,6 +1029,7 @@ void I_FinishUpdate(void)
 		 && vidformat->Rmask == 0x7C00 && vidformat->Gmask == 0x03E0 &&
 		 vidformat->Bmask == 0x001F )) && !vidformat->Amask)//Alam: DOS Way
 		{
+			//CONS_Printf("Blit Copy Code\n");
 			if(SDL_MUSTLOCK(vidSurface)) lockedsf = SDL_LockSurface(vidSurface);
 			if(lockedsf == 0 && vidSurface->pixels)
 			{
@@ -865,7 +1040,13 @@ void I_FinishUpdate(void)
 		}
 		else if(bufSurface && (videoblitok || vid.bpp != 1 || vfBPP < 8) ) //Alam: New Way to send video data
 		{
-			blited = SDL_BlitSurface(bufSurface,NULL,vidSurface,NULL);
+			SDL_Rect *dstrect = NULL;
+#ifdef DC
+			SDL_Rect rect = {0,20,0,0};
+			dstrect = &rect;
+#endif
+			//CONS_Printf("SDL Copy Code\n");
+			blited = SDL_BlitSurface(bufSurface,NULL,vidSurface,dstrect);
 		}
 		else if(vid.bpp == 1)
 		{
@@ -874,6 +1055,7 @@ void I_FinishUpdate(void)
 			Sint32 pH, pW; //Height, Width
 			bP = (Uint8 *)screens[0];
 			bW = (Uint16)(vid.rowbytes - vid.width);
+			//CONS_Printf("Old Copy Code\n");
 			if(SDL_MUSTLOCK(vidSurface)) lockedsf = SDL_LockSurface(vidSurface);
 			vP = (Uint8 *)vidSurface->pixels;
 			vW = (Uint16)(vidSurface->pitch - vidSurface->w*vidformat->BytesPerPixel);
@@ -941,7 +1123,9 @@ void I_FinishUpdate(void)
 		else if(blited != 2 && lockedsf == 0) //Alam: -2 for Win32 Direct, yea, i know
 			SDL_UpdateRect(vidSurface, 0, 0, 0, 0); //Alam: almost always
 		else if(devparm)
+		{
 			I_OutputMsg("%s\n",SDL_GetError());
+		}
 	}
 #ifdef HWRENDER
 	else
@@ -1101,9 +1285,36 @@ void VID_PrepareModeList(void)
 	allow_fullscreen = true;
 }
 
+static inline void SDLESSet(void)
+{
+#ifdef HAVE_DCSDL
+	int j;
+	SDL_DC_SetVideoDriver(SDL_DC_DIRECT_VIDEO); //SDL_DC_DMA_VIDEO
+	for(j=0;j<4;j++)
+	{
+		SDL_DC_MapKey(j,SDL_DC_START,SDLK_ESCAPE);
+		SDL_DC_MapKey(j,SDL_DC_A,SDLK_UNKNOWN);
+		SDL_DC_MapKey(j,SDL_DC_B,SDLK_UNKNOWN);
+		SDL_DC_MapKey(j,SDL_DC_X,SDLK_UNKNOWN);
+		SDL_DC_MapKey(j,SDL_DC_Y,SDLK_UNKNOWN);
+		SDL_DC_MapKey(j,SDL_DC_L,SDLK_UNKNOWN);
+		SDL_DC_MapKey(j,SDL_DC_R,SDLK_UNKNOWN);
+		//SDL_DC_MapKey(j,SDL_DC_LEFT,SDLK_UNKNOWN);
+		//SDL_DC_MapKey(j,SDL_DC_RIGHT,SDLK_UNKNOWN);
+		//SDL_DC_MapKey(j,SDL_DC_UP,SDLK_UNKNOWN);
+		//SDL_DC_MapKey(j,SDL_DC_DOWN,SDLK_UNKNOWN);
+	}
+	//SDL_DC_MapKey(0,SDL_DC_L,SDLK_LEFTBRACKET);
+	//SDL_DC_MapKey(0,SDL_DC_R,SDLK_RIGHTBRACKET);
+	//SDL_DC_MapKey(0,SDL_DC_START,SDLK_UNKNOWN);
+	//SDL_DC_MapKey(1,SDL_DC_L,SDLK_z);
+	//SDL_DC_MapKey(1,SDL_DC_R,SDLK_x);
+#endif
+}
+
 static void SDLWMSet(void)
 {
-#if defined(_WIN32) || defined(_WIN64) || defined(_WIN32_WCE)
+#ifdef RPC_NO_WINDOWS_H
 	SDL_SysWMinfo SDLWM;
 	memset(&SDLWM,0,sizeof(SDL_SysWMinfo));
 	SDL_VERSION(&SDLWM.version)
@@ -1121,6 +1332,7 @@ static void SDLWMSet(void)
 
 int VID_SetMode(int modeNum)
 {
+#ifndef _WIN32_WCE
 	doUngrabMouse();
 	vid.recalc = true;
 	BitsPerPixel = (Uint8)cv_scr_depth.value;
@@ -1211,12 +1423,13 @@ int VID_SetMode(int modeNum)
 	{
 		vid.rowbytes = vid.width*vid.bpp;
 		vid.buffer = malloc(vid.rowbytes*vid.height*NUMSCREENS);
-		if(!vid.buffer) I_Error ("Not enough memory for video buffer\n");
+		if(vid.buffer) memset(vid.buffer,0x00,vid.rowbytes*vid.height*NUMSCREENS);
+		else I_Error ("Not enough memory for video buffer\n");
 	}
 
 	if(!cv_stretch.value && (float)vid.width/vid.height != ((float)BASEVIDWIDTH/BASEVIDHEIGHT))
 		vid.height = (int)(vid.width * ((float)BASEVIDHEIGHT/BASEVIDWIDTH));// Adjust the height to match
-
+#endif
 	I_StartupMouse();
 
 	SDLWMSet();
@@ -1241,6 +1454,7 @@ void I_StartupGraphics(void)
 #ifdef FILTERS
 	CV_RegisterVar (&cv_filter);
 #endif
+	consolevent = !M_CheckParm("-noconsole");
 	disable_mouse = M_CheckParm("-nomouse");
 	if(disable_mouse)
 		putenv(SDLNOMOUSE);
@@ -1249,14 +1463,26 @@ void I_StartupGraphics(void)
 		putenv(SDLVIDEOMID);
 
 
+	keyboard_started = true;
+#ifdef _arch_dreamcast
+	conio_shutdown();
+#endif
 	// Initialize Audio as well, otherwise Win32's DirectX can not use audio
 	if(SDL_InitSubSystem(SDL_INIT_AUDIO|SDL_INIT_VIDEO) < 0)
 	{
 		CONS_Printf("Couldn't initialize SDL's Audio/Video: %s\n", SDL_GetError());
 		if(SDL_WasInit(SDL_INIT_VIDEO)==0) return;
 	}
+	else
+	{
+		char vd[100];
+		CONS_Printf("Staring up with video driver : %s\n", SDL_VideoDriverName(vd,100));
+	}
 	SDL_EnableKeyRepeat(SDL_DEFAULT_REPEAT_DELAY>>1,SDL_DEFAULT_REPEAT_INTERVAL<<2);
+#ifndef NOJOYPOLL
 	SDL_JoystickEventState(SDL_IGNORE);
+#endif
+	SDLESSet();
 	VID_Command_ModeList_f();
 	vid.buffer = NULL;  // For software mode
 	vid.width = BASEVIDWIDTH; // Default size for startup
@@ -1300,8 +1526,13 @@ void I_StartupGraphics(void)
 		// check gl renderer lib
 		if (HWD.pfnGetRenderVersion() != VERSION)
 			I_Error ("The version of the renderer doesn't match the version of the executable\nBe sure you have installed SRB2 properly.\n");
+#ifdef  _WIN32_WCE
+		vid.width = realwidth = 320;
+		vid.height = realheight = 240;
+#else
 		vid.width = realwidth = 640; // hack to make voodoo cards work in 640x480
 		vid.height = realheight = 480;
+#endif
 		/*
 		 * We want at least 1 bit R, G, and B,
 		 * and at least 16 bpp. Why 1 bit? May be more?
@@ -1315,9 +1546,6 @@ void I_StartupGraphics(void)
 				rendermode = render_soft;
 	}
 #endif
-#ifdef _arch_dreamcast
-	conio_shutdown();
-#endif
 	if(render_soft == rendermode)
 	{
 		SDL_SetMode(vid.width, vid.height, BitsPerPixel, surfaceFlagsW);
@@ -1325,12 +1553,13 @@ void I_StartupGraphics(void)
 		{
 			CONS_Printf("Could not set vidmode: %s\n",SDL_GetError());
 			mousegrabok = SDL_TRUE; //Alam: ahhh.
-			vid.rowbytes = 0; /// \todo handle no video data at startup
+			vid.rowbytes = 0;
 			return;
 		}
 		vid.rowbytes = vid.width * vid.bpp;
-		vid.buffer = malloc(vid.width * vid.height * vid.bpp * NUMSCREENS);
-		if(!vid.buffer) CONS_Printf ("Not enough memory for video buffer\n");
+		vid.buffer = malloc(vid.rowbytes*vid.height*NUMSCREENS);
+		if(vid.buffer) memset(vid.buffer,0x00,vid.rowbytes*vid.height*NUMSCREENS);
+		else CONS_Printf ("Not enough memory for video buffer\n");
 	}
 	VID_Command_Info_f();
 	if(!disable_mouse) SDL_ShowCursor(SDL_DISABLE);
@@ -1338,7 +1567,7 @@ void I_StartupGraphics(void)
 
 	SDLWMSet();
 
-	keyboard_started = graphics_started = true;
+	graphics_started = true;
 }
 
 void I_ShutdownGraphics(void)
@@ -1372,5 +1601,7 @@ void I_ShutdownGraphics(void)
 #endif
 	graphics_started = false;
 	CONS_Printf("shut down\n");
+#ifndef _arch_dreamcast
 	SDL_QuitSubSystem(SDL_INIT_VIDEO);
+#endif
 }

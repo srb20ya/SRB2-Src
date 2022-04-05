@@ -23,7 +23,7 @@
 #include "p_pspr.h" // tr_transxxx
 #include "f_finale.h"
 
-#ifdef _WIN32_WCE
+#if defined(_WIN32_WCE) || defined(DC)
 #define NOWIPE
 #endif
 

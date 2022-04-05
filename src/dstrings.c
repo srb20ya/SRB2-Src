@@ -237,11 +237,11 @@ if that explosion I saw is anything to go by."
 
 	"srb2.srb",
 
-	"c:\\srb2data\\"SAVEGAMENAME"%d.ssg",
-	SAVEGAMENAME"%d.ssg",
+	"c:\\srb2data\\"SAVEGAMENAME"%u.ssg",
+	SAVEGAMENAME"%u.ssg",
 
 	//BP: here is special dehacked handling, include centering and version
-	"Sonic Robo Blast 2: v1.09",
+	"Sonic Robo Blast 2: v1.09.1",
 };
 
 char savegamename[256];

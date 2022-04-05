@@ -47,6 +47,10 @@
 #include "y_inter.h"
 #include "r_main.h"
 
+#ifdef _XBOX
+#include "sdl/SRB2XBOX/xboxhelp.h"
+#endif
+
 //
 // NETWORKING
 //
@@ -156,6 +160,8 @@ void SendNetXCmd(netxcmd_t id, void* param, size_t nparam)
 
 	if(localtextcmd[0]+1+nparam > MAXTEXTCMD)
 	{
+		// Don't allow stupid users to fill up the command buffer.
+		if(cv_debug) // If you're not in debug, it just ain't gonna happen...
 		I_Error("No more place in the buffer for netcmd %d\nlocaltextcmd is %d\nnparam is %d",
 			id, localtextcmd, nparam);
 		return;
@@ -192,8 +198,7 @@ void SendNetXCmd2(netxcmd_t id, void* param, size_t nparam)
 static void ExtraDataTicker(void)
 {
 	int i, tic;
-	byte* curpos;
-	byte* bufferend;
+	byte *curpos, *bufferend;
 
 	tic = gametic % BACKUPTICS;
 
@@ -207,15 +212,19 @@ static void ExtraDataTicker(void)
 			{
 				if(*curpos < MAXNETXCMD && listnetxcmd[*curpos])
 				{
-					byte id = *curpos;
+					const byte id = *curpos;
+					char *rtp;
+					char **tp;
 					curpos++;
+					rtp = (char *)&curpos;
+					tp = (char**)rtp;
 					DEBFILE(va("executing x_cmd %d ply %d ", id, i));
-					(listnetxcmd[id])((char**)&curpos, i);
+					(listnetxcmd[id])(tp, i);
 					DEBFILE("done\n");
 				}
 				else
 				{
-					char buf[3];
+					XBOXSTATIC char buf[3];
 
 					buf[0] = (char)i;
 					buf[1] = KICK_MSG_CON_FAIL;
@@ -347,9 +356,9 @@ static void SV_SendServerInfo(int node, tic_t time)
 	netbuffer->u.serverinfo.modifiedgame = (byte)modifiedgame;
 	strncpy(netbuffer->u.serverinfo.servername, cv_servername.string, MAXSERVERNAME);
 	if(gamemapname[0])
-		strcpy(netbuffer->u.serverinfo.mapname, gamemapname);
+		strncpy(netbuffer->u.serverinfo.mapname, gamemapname, 7);
 	else
-		strcpy(netbuffer->u.serverinfo.mapname, G_BuildMapName(gamemap));
+		strncpy(netbuffer->u.serverinfo.mapname, G_BuildMapName(gamemap), 7);
 
 	p = (byte *)PutFileNeeded();
 
@@ -359,7 +368,7 @@ static void SV_SendServerInfo(int node, tic_t time)
 static boolean SV_SendServerConfig(int node)
 {
 	int i, playermask = 0;
-	byte* p;
+	char* p, *op;
 
 	netbuffer->packettype = PT_SERVERCFG;
 	for(i = 0; i < MAXPLAYERS; i++)
@@ -377,16 +386,16 @@ static boolean SV_SendServerConfig(int node)
 	netbuffer->u.servercfg.gamestate = (byte)gamestate;
 	netbuffer->u.servercfg.gametype = (byte)gametype;
 	netbuffer->u.servercfg.modifiedgame = (byte)modifiedgame;
-	p = netbuffer->u.servercfg.netcvarstates;
+	op = p = (char*)netbuffer->u.servercfg.netcvarstates;
 	CV_SaveNetVars((char**)&p);
 
 	return HSendPacket(node, true, 0, sizeof(serverconfig_pak)
-		+ (p - netbuffer->u.servercfg.netcvarstates));
+		+ (p - op));
 }
 
 #define JOININGAME
 #ifdef JOININGAME
-#define SAVEGAMESIZE (512*1024)
+#define SAVEGAMESIZE (768*1024)
 
 static void SV_SendSaveGame(int node)
 {
@@ -394,46 +403,9 @@ static void SV_SendSaveGame(int node)
 	byte* savebuffer;
 
 	// first save it in a malloced buffer
-	save_p = savebuffer = (byte*)malloc(SAVEGAMESIZE);
-	if(!save_p)
-	{
-		CONS_Printf("No more free memory for savegame\n");
-		return;
-	}
-
-	P_SaveNetGame();
-
-	length = save_p - savebuffer;
-	if(length > SAVEGAMESIZE)
-	{
-		free(save_p);
-		save_p = NULL;
-		I_Error ("Savegame buffer overrun");
-	}
-
-	// then send it!
-	SendRam(node, savebuffer, length, SF_RAM, 0);
-}
-
-#define TMPSAVENAME "badmath.sav"
-static consvar_t cv_dumpconsistency = {"dumpconsistency", "Off", CV_NETVAR, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
-
-static void SV_SavedGame(void)
-{
-	size_t length;
-	byte* savebuffer;
-	char tmpsave[256];
-
-	if(!cv_dumpconsistency.value)
-		return;
-	
-#if defined(LINUX) || defined(__MACH__)
-	sprintf(tmpsave, "%s/"TMPSAVENAME, srb2home);
-#else
-	sprintf(tmpsave, "%s\\"TMPSAVENAME, srb2home);
+#ifdef MEMORYDEBUG
+	I_OutputMsg("SV_SendSaveGame: Mallocing %u for savebuffer\n",SAVEGAMESIZE);
 #endif
-
-	// first save it in a malloced buffer
 	save_p = savebuffer = (byte*)malloc(SAVEGAMESIZE);
 	if(!save_p)
 	{
@@ -447,12 +419,58 @@ static void SV_SavedGame(void)
 	if(length > SAVEGAMESIZE)
 	{
 		free(savebuffer);
-		savebuffer = NULL;
+		save_p = NULL;
+		I_Error ("Savegame buffer overrun");
+	}
+
+	// then send it!
+	SendRam(node, savebuffer, length, SF_RAM, 0);
+	//free(savebuffer); //but don't free the data, we will do that later after the real send
+	save_p = NULL;
+}
+
+#define TMPSAVENAME "badmath.sav"
+static consvar_t cv_dumpconsistency = {"dumpconsistency", "Off", CV_NETVAR, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+
+static void SV_SavedGame(void)
+{
+	size_t length;
+	byte* savebuffer;
+	XBOXSTATIC char tmpsave[256];
+
+	if(!cv_dumpconsistency.value)
+		return;
+	
+#if defined(LINUX) || defined(__MACH__)
+	sprintf(tmpsave, "%s/"TMPSAVENAME, srb2home);
+#else
+	sprintf(tmpsave, "%s\\"TMPSAVENAME, srb2home);
+#endif
+
+	// first save it in a malloced buffer
+#ifdef MEMORYDEBUG
+	I_OutputMsg("SV_SendSavedGame: Mallocing %u for savebuffer\n",SAVEGAMESIZE);
+#endif
+	save_p = savebuffer = (byte*)malloc(SAVEGAMESIZE);
+	if(!save_p)
+	{
+		CONS_Printf("No more free memory for savegame\n");
+		return;
+	}
+
+	P_SaveNetGame();
+
+	length = save_p - savebuffer;
+	if(length > SAVEGAMESIZE)
+	{
+		free(savebuffer);
+		save_p = NULL;
 		I_Error ("Savegame buffer overrun");
 	}
 
 	// then save it!
-	FIL_WriteFile(tmpsave, savebuffer, length);
+	if(!FIL_WriteFile(tmpsave, savebuffer, length))
+		CONS_Printf("Didn't save %s for netgame",tmpsave);
 
 	free(savebuffer);
 	save_p = NULL;
@@ -463,9 +481,9 @@ static void SV_SavedGame(void)
 
 static void CL_LoadReceivedSavegame(void)
 {
-	byte* savebuffer;
+	byte* savebuffer = NULL;
 	int length;
-	char tmpsave[256];
+	XBOXSTATIC char tmpsave[256];
 
 #if defined(LINUX) || defined(__MACH__)
 	sprintf(tmpsave, "%s/"TMPSAVENAME, srb2home);
@@ -494,11 +512,16 @@ static void CL_LoadReceivedSavegame(void)
 	if(!P_LoadNetGame())
 	{
 		CONS_Printf("Can't load the level!\n");
+		Z_Free(savebuffer);
+		save_p = NULL;
+		if(unlink(tmpsave) == -1)
+			CONS_Printf("WARNING: Can't delete %s", tmpsave);
 		return;
 	}
 
 	// done
 	Z_Free(savebuffer);
+	save_p = NULL;
 	if(unlink(tmpsave) == -1)
 		CONS_Printf("WARNING: Can't delete %s", tmpsave);
 	consistancy[gametic%BACKUPTICS] = Consistancy();
@@ -607,7 +630,7 @@ void CL_UpdateServerList(boolean internetsearch)
 			for(i = 0; server_list[i].header[0]; i++)
 			{
 				int node;
-				char addr_str[24];
+				XBOXSTATIC char addr_str[24];
 
 				// insert ip (and optionaly port) in node list
 				sprintf(addr_str, "%s:%s", server_list[i].ip, server_list[i].port);
@@ -627,7 +650,7 @@ static void CL_ConnectToServer(void)
 	boolean waitmore;
 	tic_t asksent, oldtic;
 #ifdef JOININGAME
-	char tmpsave[256];
+	XBOXSTATIC char tmpsave[256];
 
 #if defined(LINUX) || defined(__MACH__)
 	sprintf(tmpsave, "%s/"TMPSAVENAME, srb2home);
@@ -976,7 +999,7 @@ char nametonum(const char* name)
 
 static void Command_Ban(void)
 {
-	char buf[3];
+	XBOXSTATIC char buf[3];
 
 	if(COM_Argc() != 2)
 	{
@@ -989,7 +1012,7 @@ static void Command_Ban(void)
 		buf[0] = nametonum(COM_Argv(1));
 		if(buf[0] == (char)-1)
 			return;
-		if(!I_Ban(playernode[(int)buf[0]]))
+		if(I_Ban && !I_Ban(playernode[(int)buf[0]]))
 		{
 			CONS_Printf("Too many bans! Geez, that's a lot of people you're excluding...\n");
 			buf[1] = KICK_MSG_GO_AWAY;
@@ -1005,12 +1028,12 @@ static void Command_Ban(void)
 
 static void Command_ClearBans(void)
 {
-	I_ClearBans();
+	if(I_ClearBans) I_ClearBans();
 }
 
 static void Command_Kick(void)
 {
-	char buf[3];
+	XBOXSTATIC char buf[3];
 
 	if(COM_Argc() != 2)
 	{
@@ -1288,7 +1311,7 @@ static void Got_AddPlayer(char** p, int playernum)
 		CONS_Printf("Illegal add player command received from %s\n", player_names[playernum]);
 		if(server)
 		{
-			char buf[2];
+			XBOXSTATIC char buf[2];
 
 			buf[0] = (char)playernum;
 			buf[1] = KICK_MSG_CON_FAIL;
@@ -1305,7 +1328,7 @@ static void Got_AddPlayer(char** p, int playernum)
 	playeringame[newplayernum] = true;
 	G_AddPlayer(newplayernum);
 	if( newplayernum+1>doomcom->numplayers )
-        doomcom->numplayers=(short)(newplayernum+1);
+		doomcom->numplayers=(short)(newplayernum+1);
 
 #ifdef PARANOIA
 	{
@@ -1357,7 +1380,8 @@ static void Got_AddPlayer(char** p, int playernum)
 boolean SV_AddWaitingPlayers(void)
 {
 	int node, n, newplayer = false;
-	byte buf[2], newplayernum;
+	XBOXSTATIC byte buf[2];
+	byte newplayernum;
 
 	newplayernum = 0;
 	for(node = 0; node < MAXNETNODES; node++)
@@ -1416,7 +1440,7 @@ void CL_AddSplitscreenPlayer(void)
 
 void CL_RemoveSplitscreenPlayer(void)
 {
-	char buf[2];
+	XBOXSTATIC char buf[2];
 
 	if(cl_mode != cl_connected)
 		return;
@@ -1460,6 +1484,7 @@ boolean SV_SpawnServer(void)
 void SV_StopServer(void)
 {
 	tic_t i;
+	int j;
 
 	if(gamestate == GS_INTERMISSION)
 		Y_EndIntermission();
@@ -1476,6 +1501,10 @@ void SV_StopServer(void)
 	maketic = gametic+1;
 	neededtic = maketic;
 	serverrunning = false;
+
+	// Reset the players when stopping the game.
+	for(j = 0; j < MAXPLAYERS; j++)
+		memset(&players[j], 0, sizeof(players[j]));
 }
 
 // called at singleplayer start and stopdemo
@@ -1522,21 +1551,19 @@ static size_t TotalTextCmdPerTic(tic_t tic)
   \todo  break this 300 line function into multiple functions
 */
 static void GetPackets(void)
-{
-	int netconsole;
-	signed char node;
-	tic_t realend,realstart;
+{FILESTAMP
+	XBOXSTATIC int netconsole;
+	XBOXSTATIC signed char node;
+	XBOXSTATIC tic_t realend,realstart;
+	XBOXSTATIC byte *pak, *txtpak, numtxtpak;
 	int p = maketic%BACKUPTICS;
-	byte* pak;
-	byte* txtpak;
-	byte numtxtpak;
-
+FILESTAMP
 	while(HGetPacket())
 	{
 		node = (signed char)doomcom->remotenode;
 		if(netbuffer->packettype == PT_CLIENTJOIN && server)
 		{
-			if(bannednode[node])
+			if(bannednode && bannednode[node])
 				SV_SendRefuse(node, "You have been banned from the server");
 			else if(netbuffer->u.clientcfg.version != VERSION
 				|| netbuffer->u.clientcfg.subversion != SUBVERSION)
@@ -1652,7 +1679,7 @@ static void GetPackets(void)
 				case PT_SERVERCFG: // positive response of client join request
 				{
 					int j;
-					byte* p;
+					char* p;
 
 					/// \note how would this happen? and is it doing the right thing if it does?
 					if(cl_mode != cl_waitjoinresponse)
@@ -1680,7 +1707,7 @@ static void GetPackets(void)
 					for(j = 0; j < MAXPLAYERS; j++)
 						playeringame[j] = (netbuffer->u.servercfg.playerdetected & (1<<j)) != 0;
 
-					p = netbuffer->u.servercfg.netcvarstates;
+					p = (char*)netbuffer->u.servercfg.netcvarstates;
 					CV_LoadNetVars((char**)&p);
 #ifdef JOININGAME
 					if(netbuffer->u.servercfg.gamestate == GS_LEVEL)
@@ -1766,7 +1793,7 @@ static void GetPackets(void)
 				if(realstart <= gametic && realstart > gametic - BACKUPTICS+1 &&
 					consistancy[realstart%BACKUPTICS] != netbuffer->u.clientpak.consistancy)
 				{
-					char buf[3];
+					XBOXSTATIC char buf[3];
 
 					buf[0] = (char)netconsole;
 					buf[1] = KICK_MSG_CON_FAIL;
@@ -1837,7 +1864,7 @@ static void GetPackets(void)
 				nodewaiting[node] = 0;
 				if(netconsole != -1 && playeringame[netconsole])
 				{
-					char buf[2];
+					XBOXSTATIC char buf[2];
 					buf[0] = (char)netconsole;
 					if(netbuffer->packettype == PT_NODETIMEOUT)
 						buf[1] = KICK_MSG_TIMEOUT;
@@ -2278,10 +2305,12 @@ void NetUpdate(void)
 		maketic = neededtic;
 
 	Local_Maketic(realtics); // make local tic, and call menu?
+
 	if(server && !demoplayback && !dedicated )
 		CL_SendClientCmd(); // send it
+FILESTAMP
 	GetPackets(); // get packet from client or from server
-
+FILESTAMP
 	// client send the command after a receive of the server
 	// the server send before because in single player is beter
 

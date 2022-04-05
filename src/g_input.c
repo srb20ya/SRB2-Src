@@ -112,16 +112,16 @@ void G_MapEventsToControls(event_t* ev)
 			i = ev->data1;
 			if(i >= JOYAXISSET)
 				break;
-			joyxmove[i] = ev->data2;
-			joyymove[i] = ev->data3;
+			if(ev->data2 != MAXINT) joyxmove[i] = ev->data2;
+			if(ev->data3 != MAXINT) joyymove[i] = ev->data3;
 			break;
 
 		case ev_joystick2: // buttons are virtual keys
 			i = ev->data1;
 			if(i >= JOYAXISSET)
 				break;
-			joy2xmove[i] = ev->data2;
-			joy2ymove[i] = ev->data3;
+			if(ev->data2 != MAXINT) joy2xmove[i] = ev->data2;
+			if(ev->data3 != MAXINT) joy2ymove[i] = ev->data3;
 			break;
 
 		case ev_mouse2: // buttons are virtual keys
@@ -196,7 +196,7 @@ static byte G_CheckDoubleClick(byte state, dclick_t* dt)
 typedef struct
 {
 	int keynum;
-	char name[17];
+	const char *name;
 } keyname_t;
 
 static keyname_t keynames[] =
@@ -212,11 +212,11 @@ static keyname_t keynames[] =
 	{KEY_SCROLLLOCK, "SCROLLLOCK"},
 
 	// bill gates keys
-
+#ifndef _arch_dreamcast
 	{KEY_LEFTWIN, "LEFTWIN"},
 	{KEY_RIGHTWIN, "RIGHTWIN"},
 	{KEY_MENU, "MENU"},
-
+#endif
 	// shift,ctrl,alt are not distinguished between left & right
 
 	{KEY_SHIFT, "SHIFT"},
@@ -269,34 +269,63 @@ static keyname_t keynames[] =
 	{KEY_MOUSE1, "MOUSE1"},
 	{KEY_MOUSE1+1,"MOUSE2"},
 	{KEY_MOUSE1+2,"MOUSE3"},
+#if !defined(_arch_dreamcast) && !defined(_XBOX)
 	{KEY_MOUSE1+3,"MOUSE4"},
 	{KEY_MOUSE1+4,"MOUSE5"},
 	{KEY_MOUSE1+5,"MOUSE6"},
 	{KEY_MOUSE1+6,"MOUSE7"},
 	{KEY_MOUSE1+7,"MOUSE8"},
+#endif
 	{KEY_2MOUSE1, "SEC_MOUSE2"}, // BP: sorry my mouse handler swap button 1 and 2
 	{KEY_2MOUSE1+1,"SEC_MOUSE1"},
 	{KEY_2MOUSE1+2,"SEC_MOUSE3"},
+#if !defined(_arch_dreamcast) && !defined(_XBOX)
 	{KEY_2MOUSE1+3,"SEC_MOUSE4"},
 	{KEY_2MOUSE1+4,"SEC_MOUSE5"},
 	{KEY_2MOUSE1+5,"SEC_MOUSE6"},
 	{KEY_2MOUSE1+6,"SEC_MOUSE7"},
 	{KEY_2MOUSE1+7,"SEC_MOUSE8"},
+#endif
 	{KEY_MOUSEWHEELUP, "Wheel 1 UP"},
 	{KEY_MOUSEWHEELDOWN, "Wheel 1 Down"},
 	{KEY_2MOUSEWHEELUP, "Wheel 2 UP"},
 	{KEY_2MOUSEWHEELDOWN, "Wheel 2 Down"},
 
+#ifdef DC
+	{KEY_JOY1,   "JOYC"},
+	{KEY_JOY1+1, "JOYB"},
+	{KEY_JOY1+2, "JOYA"},
+	{KEY_JOY1+3, "JOYS"},
+	{KEY_JOY1+4, "JOYZ"},
+	{KEY_JOY1+5, "JOYY"},
+	{KEY_JOY1+6, "JOYX"},
+	{KEY_JOY1+7, "JOYD"},
+#elif defined(_XBOX)
+	{KEY_JOY1,   "JOYA"},
+	{KEY_JOY1+1, "JOYB"},
+	{KEY_JOY1+2, "JOYX"},
+	{KEY_JOY1+3, "JOYY"},
+	{KEY_JOY1+4, "JOYG"},
+	{KEY_JOY1+5, "JOYW"},
+	{KEY_JOY1+6, "JOYL"},
+	{KEY_JOY1+7, "JOYR"},
+	{KEY_JOY1+8, "JOYS"},
+	{KEY_JOY1+9, "JOYN"},
+	{KEY_JOY1+10,"JOYW"},
+	{KEY_JOY1+11,"JOYE"},
+#else
 	{KEY_JOY1, "JOY1"},
 	{KEY_JOY1+1, "JOY2"},
 	{KEY_JOY1+2, "JOY3"},
 	{KEY_JOY1+3, "JOY4"},
 	{KEY_JOY1+4, "JOY5"},
 	{KEY_JOY1+5, "JOY6"},
-	// we use up to 32 buttons in DirectInput
 	{KEY_JOY1+6, "JOY7"},
 	{KEY_JOY1+7, "JOY8"},
 	{KEY_JOY1+8, "JOY9"},
+#endif
+#if !defined(_arch_dreamcast) && !defined(_XBOX)
+	// we use up to 32 buttons in DirectInput
 	{KEY_JOY1+9, "JOY10"},
 	{KEY_JOY1+10, "JOY11"},
 	{KEY_JOY1+11, "JOY12"},
@@ -320,15 +349,18 @@ static keyname_t keynames[] =
 	{KEY_JOY1+29, "JOY30"},
 	{KEY_JOY1+30, "JOY31"},
 	{KEY_JOY1+31, "JOY32"},
+#endif
 	// the DOS version uses Allegro's joystick support
 	{KEY_HAT1, "HATUP"},
 	{KEY_HAT1+1, "HATDOWN"},
 	{KEY_HAT1+2, "HATLEFT"},
 	{KEY_HAT1+3, "HATRIGHT"},
+#ifndef _XBOX
 	{KEY_HAT1+4, "HATUP2"},
 	{KEY_HAT1+5, "HATDOWN2"},
 	{KEY_HAT1+6, "HATLEFT2"},
 	{KEY_HAT1+7, "HATRIGHT2"},
+#ifndef _arch_dreamcast
 	{KEY_HAT1+8, "HATUP3"},
 	{KEY_HAT1+9, "HATDOWN3"},
 	{KEY_HAT1+10, "HATLEFT3"},
@@ -337,24 +369,53 @@ static keyname_t keynames[] =
 	{KEY_HAT1+13, "HATDOWN4"},
 	{KEY_HAT1+14, "HATLEFT4"},
 	{KEY_HAT1+15, "HATRIGHT4"},
+#endif
+#endif
 
 	{KEY_DBLMOUSE1, "DBLMOUSE1"},
 	{KEY_DBLMOUSE1+1, "DBLMOUSE2"},
 	{KEY_DBLMOUSE1+2, "DBLMOUSE3"},
+#if !defined(_arch_dreamcast) && !defined(_XBOX)
 	{KEY_DBLMOUSE1+3, "DBLMOUSE4"},
 	{KEY_DBLMOUSE1+4, "DBLMOUSE5"},
 	{KEY_DBLMOUSE1+5, "DBLMOUSE6"},
 	{KEY_DBLMOUSE1+6, "DBLMOUSE7"},
 	{KEY_DBLMOUSE1+7, "DBLMOUSE8"},
+#endif
 	{KEY_DBL2MOUSE1, "DBLSEC_MOUSE2"}, // BP: sorry my mouse handler swap button 1 and 2
 	{KEY_DBL2MOUSE1+1, "DBLSEC_MOUSE1"},
 	{KEY_DBL2MOUSE1+2, "DBLSEC_MOUSE3"},
+#if !defined(_arch_dreamcast) && !defined(_XBOX)
 	{KEY_DBL2MOUSE1+3, "DBLSEC_MOUSE4"},
 	{KEY_DBL2MOUSE1+4, "DBLSEC_MOUSE5"},
 	{KEY_DBL2MOUSE1+5, "DBLSEC_MOUSE6"},
 	{KEY_DBL2MOUSE1+6, "DBLSEC_MOUSE7"},
 	{KEY_DBL2MOUSE1+7, "DBLSEC_MOUSE8"},
+#endif
 
+#ifdef DC
+	{KEY_DBLJOY1,   "DBLJOYC"},
+	{KEY_DBLJOY1+1, "DBLJOYB"},
+	{KEY_DBLJOY1+2, "DBLJOYA"},
+	{KEY_DBLJOY1+3, "DBLJOYS"},
+	{KEY_DBLJOY1+4, "DBLJOYZ"},
+	{KEY_DBLJOY1+5, "DBLJOYY"},
+	{KEY_DBLJOY1+6, "DBLJOYX"},
+	{KEY_DBLJOY1+7, "DBLJOYD"},
+#elif defined(_XBOX)
+	{KEY_DBLJOY1,   "DBLJOYA"},
+	{KEY_DBLJOY1+1, "DBLJOYB"},
+	{KEY_DBLJOY1+2, "DBLJOYX"},
+	{KEY_DBLJOY1+3, "DBLJOYY"},
+	{KEY_DBLJOY1+4, "DBLJOYG"},
+	{KEY_DBLJOY1+5, "DBLJOYW"},
+	{KEY_DBLJOY1+6, "DBLJOYL"},
+	{KEY_DBLJOY1+7, "DBLJOYR"},
+	{KEY_DBLJOY1+8, "DBLJOYS"},
+	{KEY_DBLJOY1+9, "DBLJOYN"},
+	{KEY_DBLJOY1+10,"DBLJOYW"},
+	{KEY_DBLJOY1+11,"DBLJOYE"},
+#else
 	{KEY_DBLJOY1, "DBLJOY1"},
 	{KEY_DBLJOY1+1, "DBLJOY2"},
 	{KEY_DBLJOY1+2, "DBLJOY3"},
@@ -363,6 +424,8 @@ static keyname_t keynames[] =
 	{KEY_DBLJOY1+5, "DBLJOY6"},
 	{KEY_DBLJOY1+6, "DBLJOY7"},
 	{KEY_DBLJOY1+7, "DBLJOY8"},
+#endif
+#if !defined(_arch_dreamcast) && !defined(_XBOX)
 	{KEY_DBLJOY1+8, "DBLJOY9"},
 	{KEY_DBLJOY1+9, "DBLJOY10"},
 	{KEY_DBLJOY1+10, "DBLJOY11"},
@@ -387,14 +450,17 @@ static keyname_t keynames[] =
 	{KEY_DBLJOY1+29, "DBLJOY30"},
 	{KEY_DBLJOY1+30, "DBLJOY31"},
 	{KEY_DBLJOY1+31, "DBLJOY32"},
+#endif
 	{KEY_DBLHAT1,   "DBLHATUP"},
 	{KEY_DBLHAT1+1, "DBLHATDOWN"},
 	{KEY_DBLHAT1+2, "DBLHATLEFT"},
 	{KEY_DBLHAT1+3, "DBLHATRIGHT"},
+#ifndef _XBOX
 	{KEY_DBLHAT1+4, "DBLHATUP2"},
 	{KEY_DBLHAT1+5, "DBLHATDOWN2"},
 	{KEY_DBLHAT1+6, "DBLHATLEFT2"},
 	{KEY_DBLHAT1+7, "DBLHATRIGHT2"},
+#ifndef _arch_dreamcast
 	{KEY_DBLHAT1+8, "DBLHATUP3"},
 	{KEY_DBLHAT1+9, "DBLHATDOWN3"},
 	{KEY_DBLHAT1+10, "DBLHATLEFT3"},
@@ -403,16 +469,43 @@ static keyname_t keynames[] =
 	{KEY_DBLHAT1+13, "DBLHATDOWN4"},
 	{KEY_DBLHAT1+14, "DBLHATLEFT4"},
 	{KEY_DBLHAT1+15, "DBLHATRIGHT4"},
+#endif
+#endif
 
+#ifdef DC
+	{KEY_2JOY1,   "SEC_JOYC"},
+	{KEY_2JOY1+1, "SEC_JOYB"},
+	{KEY_2JOY1+2, "SEC_JOYA"},
+	{KEY_2JOY1+3, "SEC_JOYS"},
+	{KEY_2JOY1+4, "SEC_JOYZ"},
+	{KEY_2JOY1+5, "SEC_JOYY"},
+	{KEY_2JOY1+6, "SEC_JOYX"},
+	{KEY_2JOY1+7, "SEC_JOYD"},
+#elif defined(_XBOX)
+	{KEY_2JOY1,   "SEC_JOYA"},
+	{KEY_2JOY1+1, "SEC_JOYB"},
+	{KEY_2JOY1+2, "SEC_JOYX"},
+	{KEY_2JOY1+3, "SEC_JOYY"},
+	{KEY_2JOY1+4, "SEC_JOYG"},
+	{KEY_2JOY1+5, "SEC_JOYW"},
+	{KEY_2JOY1+6, "SEC_JOYL"},
+	{KEY_2JOY1+7, "SEC_JOYR"},
+	{KEY_2JOY1+8, "SEC_JOYS"},
+	{KEY_2JOY1+9, "SEC_JOYN"},
+	{KEY_2JOY1+10,"SEC_JOYW"},
+	{KEY_2JOY1+11,"SEC_JOYE"},
+#else
 	{KEY_2JOY1,   "SEC_JOY1"},
 	{KEY_2JOY1+1, "SEC_JOY2"},
 	{KEY_2JOY1+2, "SEC_JOY3"},
 	{KEY_2JOY1+3, "SEC_JOY4"},
 	{KEY_2JOY1+4, "SEC_JOY5"},
 	{KEY_2JOY1+5, "SEC_JOY6"},
-	// we use up to 32 buttons in DirectInput
 	{KEY_2JOY1+6, "SEC_JOY7"},
 	{KEY_2JOY1+7, "SEC_JOY8"},
+#endif
+#if !defined(_arch_dreamcast) && !defined(_XBOX)
+	// we use up to 32 buttons in DirectInput
 	{KEY_2JOY1+8, "SEC_JOY9"},
 	{KEY_2JOY1+9, "SEC_JOY10"},
 	{KEY_2JOY1+10, "SEC_JOY11"},
@@ -437,15 +530,18 @@ static keyname_t keynames[] =
 	{KEY_2JOY1+29, "SEC_JOY30"},
 	{KEY_2JOY1+30, "SEC_JOY31"},
 	{KEY_2JOY1+31, "SEC_JOY32"},
+#endif
 	// the DOS version uses Allegro's joystick support
 	{KEY_2HAT1,    "SEC_HATUP"},
 	{KEY_2HAT1+1,  "SEC_HATDOWN"},
 	{KEY_2HAT1+2,  "SEC_HATLEFT"},
 	{KEY_2HAT1+3,  "SEC_HATRIGHT"},
+#ifndef _XBOX
 	{KEY_2HAT1+4, "SEC_HATUP2"},
 	{KEY_2HAT1+5, "SEC_HATDOWN2"},
 	{KEY_2HAT1+6, "SEC_HATLEFT2"},
 	{KEY_2HAT1+7, "SEC_HATRIGHT2"},
+#ifndef _arch_dreamcast
 	{KEY_2HAT1+8, "SEC_HATUP3"},
 	{KEY_2HAT1+9, "SEC_HATDOWN3"},
 	{KEY_2HAT1+10, "SEC_HATLEFT3"},
@@ -454,7 +550,32 @@ static keyname_t keynames[] =
 	{KEY_2HAT1+13, "SEC_HATDOWN4"},
 	{KEY_2HAT1+14, "SEC_HATLEFT4"},
 	{KEY_2HAT1+15, "SEC_HATRIGHT4"},
+#endif
+#endif
 
+#ifdef DC
+	{KEY_DBL2JOY1,   "DBLSEC_JOYC"},
+	{KEY_DBL2JOY1+1, "DBLSEC_JOYB"},
+	{KEY_DBL2JOY1+2, "DBLSEC_JOYA"},
+	{KEY_DBL2JOY1+3, "DBLSEC_JOYS"},
+	{KEY_DBL2JOY1+4, "DBLSEC_JOYZ"},
+	{KEY_DBL2JOY1+5, "DBLSEC_JOYY"},
+	{KEY_DBL2JOY1+6, "DBLSEC_JOYX"},
+	{KEY_DBL2JOY1+7, "DBLSEC_JOYD"},
+#elif defined(_XBOX)
+	{KEY_DBL2JOY1,   "DBLSEC_JOYA"},
+	{KEY_DBL2JOY1+1, "DBLSEC_JOYB"},
+	{KEY_DBL2JOY1+2, "DBLSEC_JOYX"},
+	{KEY_DBL2JOY1+3, "DBLSEC_JOYY"},
+	{KEY_DBL2JOY1+4, "DBLSEC_JOYG"},
+	{KEY_DBL2JOY1+5, "DBLSEC_JOYW"},
+	{KEY_DBL2JOY1+6, "DBLSEC_JOYL"},
+	{KEY_DBL2JOY1+7, "DBLSEC_JOYR"},
+	{KEY_DBL2JOY1+8, "DBLSEC_JOYS"},
+	{KEY_DBL2JOY1+9, "DBLSEC_JOYN"},
+	{KEY_DBL2JOY1+10,"DBLSEC_JOYW"},
+	{KEY_DBL2JOY1+11,"DBLSEC_JOYE"},
+#else
 	{KEY_DBL2JOY1,   "DBLSEC_JOY1"},
 	{KEY_DBL2JOY1+1, "DBLSEC_JOY2"},
 	{KEY_DBL2JOY1+2, "DBLSEC_JOY3"},
@@ -463,6 +584,8 @@ static keyname_t keynames[] =
 	{KEY_DBL2JOY1+5, "DBLSEC_JOY6"},
 	{KEY_DBL2JOY1+6, "DBLSEC_JOY7"},
 	{KEY_DBL2JOY1+7, "DBLSEC_JOY8"},
+#endif
+#if !defined(_arch_dreamcast) && !defined(_XBOX)
 	{KEY_DBL2JOY1+8, "DBLSEC_JOY9"},
 	{KEY_DBL2JOY1+9, "DBLSEC_JOY10"},
 	{KEY_DBL2JOY1+10, "DBLSEC_JOY11"},
@@ -487,14 +610,17 @@ static keyname_t keynames[] =
 	{KEY_DBL2JOY1+29, "DBLSEC_JOY30"},
 	{KEY_DBL2JOY1+30, "DBLSEC_JOY31"},
 	{KEY_DBL2JOY1+31, "DBLSEC_JOY32"},
+#endif
 	{KEY_DBL2HAT1,   "DBLSEC_HATUP"},
 	{KEY_DBL2HAT1+1, "DBLSEC_HATDOWN"},
 	{KEY_DBL2HAT1+2, "DBLSEC_HATLEFT"},
 	{KEY_DBL2HAT1+3, "DBLSEC_HATRIGHT"},
+#ifndef _XBOX
 	{KEY_DBL2HAT1+4, "DBLSEC_HATUP2"},
 	{KEY_DBL2HAT1+5, "DBLSEC_HATDOWN2"},
 	{KEY_DBL2HAT1+6, "DBLSEC_HATLEFT2"},
 	{KEY_DBL2HAT1+7, "DBLSEC_HATRIGHT2"},
+#ifndef _arch_dreamcast
 	{KEY_DBL2HAT1+8, "DBLSEC_HATUP3"},
 	{KEY_DBL2HAT1+9, "DBLSEC_HATDOWN3"},
 	{KEY_DBL2HAT1+10, "DBLSEC_HATLEFT3"},
@@ -503,6 +629,8 @@ static keyname_t keynames[] =
 	{KEY_DBL2HAT1+13, "DBLSEC_HATDOWN4"},
 	{KEY_DBL2HAT1+14, "DBLSEC_HATLEFT4"},
 	{KEY_DBL2HAT1+15, "DBLSEC_HATRIGHT4"},
+#endif
+#endif
 
 };
 
@@ -549,7 +677,7 @@ void G_ClearControlKeys(int (*setupcontrols)[2], int control)
 // Returns the name of a key (or virtual key for mouse and joy)
 // the input value being an keynum
 //
-char* G_KeynumToString(int keynum)
+const char* G_KeynumToString(int keynum)
 {
 	static char keynamestr[8];
 
@@ -590,6 +718,59 @@ int G_KeyStringtoNum(const char* keystr)
 	return 0;
 }
 
+#ifdef DC
+void G_Controldefault(void)
+{
+	gamecontrol[gc_forward    ][0] = KEY_HAT1;
+	gamecontrol[gc_forward    ][1] = KEY_UPARROW;
+	gamecontrol[gc_backward   ][0] = KEY_HAT1+1;
+	gamecontrol[gc_backward   ][1] = KEY_DOWNARROW;
+	gamecontrol[gc_strafe     ][0] = KEY_ALT;
+	gamecontrol[gc_strafe     ][1] = KEY_MOUSE1+1;
+	//gamecontrol[gc_straferight][0] = '[';
+	//gamecontrol[gc_strafeleft ][0] = ']';
+	gamecontrol[gc_turnleft   ][0] = KEY_HAT1+2;
+	gamecontrol[gc_turnleft   ][1] = KEY_LEFTARROW;
+	gamecontrol[gc_turnright  ][0] = KEY_HAT1+3;
+	gamecontrol[gc_turnright  ][1] = KEY_RIGHTARROW;
+	gamecontrol[gc_fire       ][0] = KEY_JOY1+6;
+	gamecontrol[gc_fire       ][1] = KEY_CTRL;
+	gamecontrol[gc_firenormal ][0] = KEY_JOY1+5;
+	gamecontrol[gc_firenormal ][1] = ';';
+	gamecontrol[gc_lightdash  ][0] = '\'';
+	gamecontrol[gc_use        ][0] = KEY_JOY1+1;
+	gamecontrol[gc_use        ][1] = '.';
+	gamecontrol[gc_taunt      ][0] = ',';
+	gamecontrol[gc_camleft    ][0] = 'o';
+	gamecontrol[gc_camright   ][0] = 'p';
+	gamecontrol[gc_camreset   ][0] = 'c';
+	gamecontrol[gc_lookup     ][0] = KEY_PGUP;
+	gamecontrol[gc_lookdown   ][0] = KEY_PGDN;
+	gamecontrol[gc_centerview ][0] = KEY_END;
+	gamecontrol[gc_mouseaiming][0] = 's';
+	gamecontrol[gc_talkkey    ][0] = 't';
+	gamecontrol[gc_scores     ][0] = KEY_TAB;
+	gamecontrol[gc_jump       ][0] = KEY_JOY1+2;
+	gamecontrol[gc_jump       ][1] = '/';
+	gamecontrol[gc_console    ][0] = KEY_CONSOLE;
+	gamecontrol[gc_console    ][1] = KEY_F5;
+	//gamecontrolbis
+	gamecontrolbis[gc_forward   ][0] = KEY_2HAT1;
+	gamecontrolbis[gc_forward   ][1] = 'w';
+	gamecontrolbis[gc_backward  ][0] = KEY_2HAT1+1;
+	gamecontrolbis[gc_backward  ][1] = 's';
+	gamecontrolbis[gc_turnleft  ][0] = KEY_2HAT1+2;
+	gamecontrolbis[gc_turnleft  ][1] = 'a';
+	gamecontrolbis[gc_turnright ][0] = KEY_2HAT1+3;
+	gamecontrolbis[gc_turnright ][1] = 'd';
+	gamecontrolbis[gc_fire      ][0] = KEY_2JOY1+6;
+	gamecontrolbis[gc_firenormal][0] = KEY_2JOY1+5;
+	gamecontrolbis[gc_use       ][0] = KEY_2JOY1+1;
+	gamecontrolbis[gc_jump      ][0] = KEY_2JOY1+2;
+	//gamecontrolbis[gc_straferight][0] = 'x';
+	//gamecontrolbis[gc_strafeleft ][0] = 'z';
+}
+#else
 void G_Controldefault(void)
 {
 	gamecontrol[gc_forward    ][0] = KEY_UPARROW;
@@ -619,6 +800,7 @@ void G_Controldefault(void)
 	gamecontrol[gc_jump       ][0] = '/';
 	gamecontrol[gc_console    ][0] = KEY_CONSOLE;
 }
+#endif
 
 void G_SaveKeySetting(FILE* f)
 {

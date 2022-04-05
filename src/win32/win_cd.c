@@ -67,11 +67,11 @@ static void Command_Cd_f (void);
 // Retrieve error message corresponding to return value from
 //  mciSendCommand() or mciSenString()
 // -------------------
-static void MCIErrorMessageBox (MCIERROR iErrorCode)
+static VOID MCIErrorMessageBox (MCIERROR iErrorCode)
 {
 	char szErrorText[128];
-	if (!mciGetErrorString (iErrorCode, szErrorText, sizeof(szErrorText)))
-		wsprintf(szErrorText,"MCI CD Audio Unknow Error #%d\n", iErrorCode);
+	if (!mciGetErrorStringA (iErrorCode, szErrorText, sizeof(szErrorText)))
+		wsprintfA(szErrorText,"MCI CD Audio Unknow Error #%d\n", iErrorCode);
 	CONS_Printf (szErrorText);
 	/*MessageBox (GetActiveWindow(), szTemp+1, "LEGACY",
 				MB_OK | MB_ICONSTOP );*/
@@ -199,7 +199,7 @@ static char* hms(int seconds)
 
 static void Command_Cd_f (void)
 {
-	const char* s;
+	LPCSTR    s;
 	int       i,j;
 
 	if (!cdaudio_started)

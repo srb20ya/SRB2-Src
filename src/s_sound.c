@@ -63,7 +63,11 @@ consvar_t sndserver_arg = {"sndserver_arg", "-quiet", CV_SAVE, NULL, 0, NULL, NU
 #define SURROUND
 #endif
 
+#if defined(_WIN32_WCE) || defined(DC)
+consvar_t cv_samplerate = {"samplerate", "11025", 0, CV_Unsigned, NULL, 11025, NULL, NULL, 0, 0, NULL}; //Alam: For easy hacking?
+#else
 consvar_t cv_samplerate = {"samplerate", "22050", 0, CV_Unsigned, NULL, 22050, NULL, NULL, 0, 0, NULL}; //Alam: For easy hacking?
+#endif
 
 // stereo reverse
 consvar_t stereoreverse = {"stereoreverse", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
@@ -76,7 +80,11 @@ consvar_t cv_soundvolume = {"soundvolume", "15", CV_SAVE, soundvolume_cons_t, NU
 consvar_t cv_digmusicvolume = {"digmusicvolume", "31", CV_SAVE, soundvolume_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_midimusicvolume = {"midimusicvolume", "31", CV_SAVE, soundvolume_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 // number of channels available
+#if defined(_WIN32_WCE) || defined(DC)
+consvar_t cv_numChannels = {"snd_channels", "8", CV_SAVE|CV_CALL, CV_Unsigned, SetChannelsNum, 0, NULL, NULL, 0, 0, NULL};
+#else
 consvar_t cv_numChannels = {"snd_channels", "32", CV_SAVE|CV_CALL, CV_Unsigned, SetChannelsNum, 0, NULL, NULL, 0, 0, NULL};
+#endif
 
 static consvar_t surround = {"surround", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
@@ -199,6 +207,7 @@ static void SetChannelsNum(void)
 	{
 		S_StopSounds();
 		Z_Free(channels);
+		channels = NULL;
 	}
 
 	if(cv_numChannels.value == 999999999) //Alam_GBC: OH MY ROD!(ROD rimmiced with GOD!)
@@ -211,7 +220,8 @@ static void SetChannelsNum(void)
 		return;
 	}
 #endif
-	channels = (channel_t*)Z_Malloc(cv_numChannels.value * sizeof(channel_t), PU_STATIC, 0);
+	if(cv_numChannels.value)
+		channels = (channel_t*)Z_Malloc(cv_numChannels.value * sizeof(channel_t), PU_STATIC, NULL);
 	numofchannels = cv_numChannels.value;
 
 	// Free all channels for use
@@ -338,7 +348,7 @@ void S_StartSoundAtVolume(const void* origin_p, int sfx_id, int volume)
 	mobj_t* listenmobj = players[displayplayer].mo;
 	mobj_t* listenmobj2 = NULL;
 
-	if(sound_disabled)
+	if(sound_disabled || !sound_started)
 		return;
 
 	if(cv_splitscreen.value) listenmobj2 = players[secondarydisplayplayer].mo;
@@ -663,25 +673,33 @@ void S_UpdateSounds(void)
 	}
 #endif
 
-	/* Clean up unused data.
-	if(gametic > nextcleanup)
+	// Clean up unused data.
+#if 0
 	{
-		for (i = 1; i < NUMSFX; i++)
+		static tic_t nextcleanup = 0;
+		size_t i;
+		if(!gametic) nextcleanup = 0;
+		if(gametic > nextcleanup)
 		{
-			if(S_sfx[i].usefulness == 0)
+			for (i = 1; i < NUMSFX; i++)
 			{
-				//S_sfx[i].usefulness--;
-
-				// don't forget to unlock it !!!
-				// __dmpi_unlock_....
-				//Z_ChangeTag(S_sfx[i].data, PU_CACHE);
-				//S_sfx[i].data = 0;
-
-				CONS_Printf("\2flushed sfx %.6s\n", S_sfx[i].name);
+				if(S_sfx[i].usefulness == 0)
+				{
+					S_sfx[i].usefulness--;
+	
+					// don't forget to unlock it !!!
+					// __dmpi_unlock_....
+					//Z_ChangeTag(S_sfx[i].data, PU_CACHE);
+					I_FreeSfx(S_sfx+i);
+					//S_sfx[i].data = 0;
+	
+					CONS_Printf("\2flushed sfx %.6s\n", S_sfx[i].name);
+				}
 			}
+			nextcleanup = gametic + 15;
 		}
-		nextcleanup = gametic + 15;
-	}*/
+	}
+#endif
 
 	// FIXTHIS: nextcleanup is probably unused
 
@@ -854,6 +872,10 @@ void S_ChangeMusic(int music_num, int looping)
 {
 	musicinfo_t* music;
 
+#if defined(DC) || defined(_WIN32_WCE)
+	S_ClearSfx();
+#endif
+
 	if(nomusic && nofmod)
 		return;
 
@@ -896,8 +918,17 @@ void S_StopMusic(void)
 		Z_ChangeTag(mus_playing->data, PU_CACHE);
 
 	mus_playing->data = NULL;
-	mus_playing = 0;
+	mus_playing = NULL;
 
+}
+
+void S_ClearSfx(void)
+{
+#ifndef DJGPPDOS
+	size_t i;
+	for (i = 1; i < NUMSFX; i++)
+		I_FreeSfx(S_sfx + i);
+#endif
 }
 
 static void S_StopChannel(int cnum)
@@ -1008,11 +1039,11 @@ int S_AdjustSoundParams(const mobj_t* listener, const mobj_t* source, int* vol, 
 
 	// Taunts, deaths, etc, should all be heard louder.
 	if(sfxinfo->pitch & SF_X8AWAYSOUND)
-		approx_dist /= 8;
+		approx_dist = FixedDiv(approx_dist,8*FRACUNIT);
 	
 	// Combine 8XAWAYSOUND with 4XAWAYSOUND and get.... 32XAWAYSOUND?
 	if(sfxinfo->pitch & SF_X4AWAYSOUND)
-		approx_dist /= 4;
+		approx_dist = FixedDiv(approx_dist,4*FRACUNIT);
 
 	if(approx_dist > S_CLIPPING_DIST)
 		return 0;
@@ -1023,7 +1054,7 @@ int S_AdjustSoundParams(const mobj_t* listener, const mobj_t* source, int* vol, 
 	if(angle > listensource.angle)
 		angle = angle - listensource.angle;
 	else
-		angle = angle + (0xffffffff - listensource.angle);
+		angle = angle + (ANGLE_MAX - listensource.angle);
 
 #ifdef SURROUND
 	// Produce a surround sound for angle from 105 till 255

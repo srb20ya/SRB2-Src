@@ -24,8 +24,14 @@
 #ifdef __GNUC__
 #include <unistd.h>
 #endif
+// Extended map support.
+#include <ctype.h>
 #ifdef SDLIO
+#if defined(_XBOX) && defined(_MSC_VER)
+#include <SDL_rwops.h>
+#else
 #include <SDL/SDL_rwops.h>
+#endif
 #else
 #ifndef _WIN32_WCE
 #include <fcntl.h>
@@ -47,12 +53,17 @@
 #include "sdl/SRB2CE/cehelp.h"
 #endif
 
+#ifdef _XBOX
+#include "sdl/SRB2XBOX/xboxhelp.h"
+#endif
+
 #ifdef HWRENDER
 #include "hardware/hw_main.h"
 #endif
 
-// Extended map support.
-#include <ctype.h>
+static CV_PossibleValue_t screenshot_cons_t[] = {{0, "Default"}, {1, "HOME"}, {2, "SRB2"}, {3, "CUSTOM"}, {0, NULL}};
+consvar_t cv_screenshot_option = {"screenshot_option", "Default", CV_SAVE, screenshot_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_screenshot_folder = {"screenshot_folder", "", CV_SAVE, NULL, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 /** Returns the map number for a map identified by the last two characters in
   * its name.
@@ -121,7 +132,7 @@ boolean FIL_WriteFile(char const* name, void* source, size_t length)
 		return false;
 
 #ifdef SDLIO
-	count = SDL_RWwrite(handle, source, 1, length);
+	count = SDL_RWwrite(handle, source, 1, (int)length);
 	SDL_RWclose(handle);
 #else
 	count = write(handle, source, (unsigned int)length);
@@ -150,7 +161,7 @@ int FIL_ReadFile(char const* name, byte** buffer)
 	int handle;
 #endif
 	int count, length;
-#ifndef SDLIO
+#if !defined(SDLIO) && !defined(_arch_dreamcast)
 	struct stat fileinfo;
 #endif
 	byte* buf;
@@ -164,7 +175,7 @@ int FIL_ReadFile(char const* name, byte** buffer)
 #endif
 		return 0;
 
-#ifndef SDLIO
+#if !defined(SDLIO) && !defined(_arch_dreamcast)
 	if(fstat(handle, &fileinfo) == -1)
 		return 0;
 #endif
@@ -176,10 +187,12 @@ int FIL_ReadFile(char const* name, byte** buffer)
 		length = SDL_RWtell(handle);
 		SDL_RWseek(handle,currpos,SEEK_SET);
 	}
+#elif defined(_arch_dreamcast)
+	length = fs_total(handle);
 #else
 	length = fileinfo.st_size;
 #endif
-	buf = Z_Malloc(length + 1, PU_STATIC, 0);
+	buf = Z_Malloc(length + 1, PU_STATIC, NULL);
 #ifdef SDLIO
 	count = SDL_RWread(handle, buf, 1, length);
 	SDL_RWclose(handle);
@@ -189,7 +202,10 @@ int FIL_ReadFile(char const* name, byte** buffer)
 #endif
 
 	if(count < length)
+	{
+		Z_Free(buf);
 		return 0;
+	}
 
 	// append 0 byte for script text files
 	buf[length] = 0;
@@ -215,6 +231,26 @@ void FIL_DefaultExtension(char* path, const char* extension)
 	{
 		if(*src == '.')
 			return; // it has an extension
+		src--;
+	}
+
+	strcat(path, extension);
+}
+
+static inline void FIL_ForceExtension(char* path, const char* extension)
+{
+	char* src;
+
+	// search for '.' from end to begin, add .EXT only when not found
+	src = path + strlen(path) - 1;
+
+	while(*src != '/' && src != path)
+	{
+		if(*src == '.')
+		{
+			*src = '\0';
+			break; // it has an extension
+		}
 		src--;
 	}
 
@@ -259,16 +295,17 @@ void Command_SaveConfig_f(void)
 {
 	char tmpstr[MAX_WADPATH];
 
-	if(COM_Argc() != 2)
+	if(COM_Argc() < 2)
 	{
-		CONS_Printf("saveconfig <filename[.cfg]> : save config to a file\n");
+		CONS_Printf("saveconfig <filename[.cfg]> [-silent] : save config to a file\n");
 		return;
 	}
 	strcpy(tmpstr, COM_Argv(1));
-	FIL_DefaultExtension(tmpstr, ".cfg");
+	FIL_ForceExtension(tmpstr, ".cfg");
 
 	M_SaveConfig(tmpstr);
-	CONS_Printf("config saved as %s\n", configfile);
+	if(stricmp(COM_Argv(2), "-silent"))
+		CONS_Printf("config saved as %s\n", configfile);
 }
 
 /** Loads a game config, possibly from a particular file.
@@ -284,7 +321,7 @@ void Command_LoadConfig_f(void)
 	}
 
 	strcpy(configfile, COM_Argv(1));
-	FIL_DefaultExtension(configfile, ".cfg");
+	FIL_ForceExtension(configfile, ".cfg");
 	COM_BufInsertText(va("exec \"%s\"\n", configfile));
 }
 
@@ -413,6 +450,7 @@ typedef struct
   * \param height   Height of the picture.
   * \param palette  Palette of image data
   */
+#if !defined(DC) && !defined(_WIN32_WCE)
 static boolean WritePCXfile(char* filename, byte* data, int width, int height, byte* palette)
 {
 	int i;
@@ -463,6 +501,7 @@ static boolean WritePCXfile(char* filename, byte* data, int width, int height, b
 	Z_Free(pcx);
 	return i;
 }
+#endif
 
 /** Takes a screenshot.
   * The screenshot is saved as "srb2xxxx.pcx" (or "srb2xxxx.tga" in hardware
@@ -473,96 +512,106 @@ static boolean WritePCXfile(char* filename, byte* data, int width, int height, b
   */
 void M_ScreenShot(void)
 {
+#if !defined(DC) && !defined(_WIN32_WCE)
+	const char* pathname = ".";
 	char freename[13];
 	boolean ret = false;
+	int i = 5000; // start in the middle: num screenshots divided by 2
+	int add; // how much to add or subtract if wrong; gets divided by 2 each time
+	int result; // -1 = guess too high, 0 = correct, 1 = guess too low
+	byte* linear = NULL; // just so the compiler shuts up
 
+	if(cv_screenshot_option.value == 0)
+		pathname = usehome?srb2home:srb2path;
+	else if(cv_screenshot_option.value == 1)
+		pathname = srb2home;
+	else if(cv_screenshot_option.value == 2)
+		pathname = srb2path;
+	else if(cv_screenshot_option.value == 4 && *cv_screenshot_folder.string != '\0')
+		pathname = cv_screenshot_folder.string;
+	
+
+	// find a file name to save it to
+	strcpy(freename, "You are dumb"); // slots are 0 to 9999
+	freename[9] = 'p'; freename[0] = 's'; freename[10] = 'c';
+	freename[1] = 'r'; freename[3] = '2'; freename[11] = 'x';
+	freename[2] = 'b'; freename[8] = '.';
+	if(rendermode != render_soft)
 	{
-		int i = 5000; // start in the middle: num screenshots divided by 2
-		int add; // how much to add or subtract if wrong; gets divided by 2 each time
-		int result; // -1 = guess too high, 0 = correct, 1 = guess too low
-		byte* linear = NULL; // just so the compiler shuts up
+		freename[11] = 'a'; freename[9] = 't'; freename[10] = 'g';
+	}
+	else if(rendermode != render_none)
+	{
+		// munge planar buffer to linear
+		linear = screens[2];
+		I_ReadScreen(linear);
+	}
+	else
+		I_Error("Can't take a screenshot without a render system");
 
-		// find a file name to save it to
-		strcpy(freename, "You are dumb"); // slots are 0 to 9999
-		freename[9] = 'p'; freename[0] = 's'; freename[10] = 'c';
-		freename[1] = 'r'; freename[3] = '2'; freename[11] = 'x';
-		freename[2] = 'b'; freename[8] = '.';
-		if(rendermode != render_soft)
-		{
-			freename[11] = 'a'; freename[9] = 't'; freename[10] = 'g';
-		}
-		else if(rendermode != render_none)
-		{
-			// munge planar buffer to linear
-			linear = screens[2];
-			I_ReadScreen(linear);
-		}
-		else
-			I_Error("Can't take a screenshot without a render system");
+	add = i;
 
-		add = i;
-
-		for(;;)
-		{
-			freename[4] = (char)('0' + (char)(i/1000));
-			freename[5] = (char)('0' + (char)((i/100)%10));
-			freename[6] = (char)('0' + (char)((i/10)%10));
-			freename[7] = (char)('0' + (char)(i%10));
-
-			if(access(freename, W_OK) != -1) // access succeeds
-				result = 1; // too low
-			else // access fails: equal or too high
-			{
-				if(!i)
-					break; // not too high, so it must be equal! YAY!
-
-				freename[4] = (char)('0' + (char)((i-1)/1000));
-				freename[5] = (char)('0' + (char)(((i-1)/100)%10));
-				freename[6] = (char)('0' + (char)(((i-1)/10)%10));
-				freename[7] = (char)('0' + (char)((i-1)%10));
-				if(access(freename, W_OK) == -1) // access fails
-					result = -1; // too high
-				else
-					break; // not too high, so equal, YAY!
-			}
-
-			add /= 2;
-
-			if(!add) // don't get stuck at 5 due to truncation!
-				add = 1;
-
-			i += add * result;
-
-			if(add < 0 || add > 9999)
-				goto failure;
-		}
-
+	for(;;)
+	{
 		freename[4] = (char)('0' + (char)(i/1000));
 		freename[5] = (char)('0' + (char)((i/100)%10));
 		freename[6] = (char)('0' + (char)((i/10)%10));
 		freename[7] = (char)('0' + (char)(i%10));
 
+		if(access(va(pandf,pathname,freename), W_OK) != -1) // access succeeds
+			result = 1; // too low
+		else // access fails: equal or too high
+		{
+			if(!i)
+				break; // not too high, so it must be equal! YAY!
+
+			freename[4] = (char)('0' + (char)((i-1)/1000));
+			freename[5] = (char)('0' + (char)(((i-1)/100)%10));
+			freename[6] = (char)('0' + (char)(((i-1)/10)%10));
+			freename[7] = (char)('0' + (char)((i-1)%10));
+			if(access(va(pandf,pathname,freename), W_OK) == -1) // access fails
+				result = -1; // too high
+			else
+				break; // not too high, so equal, YAY!
+		}
+
+		add /= 2;
+
+		if(!add) // don't get stuck at 5 due to truncation!
+			add = 1;
+
+		i += add * result;
+
+		if(add < 0 || add > 9999)
+			goto failure;
+	}
+
+	freename[4] = (char)('0' + (char)(i/1000));
+	freename[5] = (char)('0' + (char)((i/100)%10));
+	freename[6] = (char)('0' + (char)((i/10)%10));
+	freename[7] = (char)('0' + (char)(i%10));
+
 		// save the pcx file
 #ifdef HWRENDER
-		if(rendermode != render_soft)
-			ret = HWR_Screenshot(freename);
-		else
+	if(rendermode != render_soft)
+		ret = HWR_Screenshot(va(pandf,pathname,freename));
+	else
 #endif
-		if(rendermode != render_none)
-			ret = WritePCXfile(freename, linear, vid.width, vid.height,
-				W_CacheLumpName("PLAYPAL", PU_CACHE));
-	}
+	if(rendermode != render_none)
+		ret = WritePCXfile(va(pandf,pathname,freename), linear, vid.width, vid.height,
+			W_CacheLumpName("PLAYPAL", PU_CACHE));
 
 failure:
 	if(ret)
-		CONS_Printf("screen shot %s saved\n", freename);
+		CONS_Printf("screen shot %s saved in %s\n", freename, pathname);
 	else
 	{
 		if(freename)
-			CONS_Printf("Couldn't create screen shot %s\n", freename);
+			CONS_Printf("Couldn't create screen shot %s in %s\n", freename, pathname);
 		else
-			CONS_Printf("Couldn't create screen shot (all 10000 slots used!)\n");
+			CONS_Printf("Couldn't create screen shot (all 10000 slots used!) in %s\n", pathname);
 	}
+#endif
 }
 
 // ==========================================================================
@@ -593,11 +642,7 @@ char* va(const char* format, ...)
 //
 char* Z_StrDup(const char* in)
 {
-	char* out;
-
-	out = ZZ_Alloc(strlen(in) + 1);
-	strcpy(out, in);
-	return out;
+	return strcpy(ZZ_Alloc(strlen(in) + 1), in);
 }
 
 /** Creates a string in the first argument that is the second argument followed

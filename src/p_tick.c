@@ -138,7 +138,7 @@ void P_Ticker(void)
 			{
 				if(playeringame[i])
 				{
-					players[i].exiting = (int)(2.8f*TICRATE + 1);
+					players[i].exiting = (14*TICRATE)/5 + 1;
 					players[i].gliding = 0;
 				}
 
@@ -156,7 +156,7 @@ void P_Ticker(void)
 				if(playeringame[i])
 					ssrings += (players[i].mo->health-1);
 
-			if(ssrings >= totalrings)
+			if(ssrings >= totalrings && totalrings > 0)
 			{
 				S_StartSound(0, sfx_cgot); // Got the emerald!
 
@@ -165,7 +165,7 @@ void P_Ticker(void)
 					if(playeringame[i])
 					{
 						players[i].mo->momx = players[i].mo->momy = 0;
-						players[i].exiting = (int)(2.8f*TICRATE + 1);
+						players[i].exiting = (14*TICRATE)/5 + 1;
 					}
 
 				sstimer = 0;

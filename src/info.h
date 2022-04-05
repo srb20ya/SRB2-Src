@@ -2219,7 +2219,7 @@ typedef struct
 	sfxenum_t seesound;
 	int reactiontime;
 	sfxenum_t attacksound;
-	int painstate;
+	statenum_t painstate;
 	int painchance;
 	sfxenum_t painsound;
 	statenum_t meleestate;
@@ -2227,9 +2227,9 @@ typedef struct
 	statenum_t deathstate;
 	statenum_t xdeathstate;
 	sfxenum_t deathsound;
-	int speed;
-	int radius;
-	int height;
+	fixed_t speed;
+	fixed_t radius;
+	fixed_t height;
 	int mass;
 	int damage;
 	sfxenum_t activesound;

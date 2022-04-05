@@ -52,6 +52,7 @@ boolean Net_AllAckReceived(void);
 // if reliable return true if packet sent, 0 else
 boolean HSendPacket(int   node, boolean reliable, byte acknum, size_t packetlength);
 boolean HGetPacket (void);
+void D_SetDoomcom(void);
 boolean D_CheckNetGame (void);
 void    D_CloseConnection( void );
 void    Net_UnAcknowledgPacket(int node);

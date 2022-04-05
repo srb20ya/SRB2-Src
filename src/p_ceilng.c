@@ -51,12 +51,15 @@ void T_MoveCeiling(ceiling_t* ceiling)
 
 			if(ceiling->type == bounceCeiling)
 			{
-				if(abs(ceiling->sector->ceilingheight - lines[ceiling->texture].frontsector->ceilingheight) < abs(ceiling->sector->ceilingheight - lines[ceiling->texture].backsector->ceilingheight))
-					ceiling->speed = abs(ceiling->sector->ceilingheight - lines[ceiling->texture].frontsector->ceilingheight)/25 + FRACUNIT/4;
+				const fixed_t origspeed = FixedDiv(ceiling->origspeed,(ELEVATORSPEED/2));
+				const fixed_t fs = abs(ceiling->sector->ceilingheight - lines[ceiling->texture].frontsector->ceilingheight);
+				const fixed_t bs = abs(ceiling->sector->ceilingheight - lines[ceiling->texture].backsector->ceilingheight);
+				if(fs < bs)
+					ceiling->speed = FixedDiv(fs,25*FRACUNIT) + FRACUNIT/4;
 				else
-					ceiling->speed = abs(ceiling->sector->ceilingheight - lines[ceiling->texture].backsector->ceilingheight)/25 + FRACUNIT/4;
+					ceiling->speed = FixedDiv(bs,25*FRACUNIT) + FRACUNIT/4;
 
-				ceiling->speed *= ceiling->origspeed/(ELEVATORSPEED/2);
+				ceiling->speed = FixedMul(ceiling->speed,origspeed);
 			}
 
 			if(res == pastdest)
@@ -87,9 +90,8 @@ void T_MoveCeiling(ceiling_t* ceiling)
 
 					case bounceCeiling:
 					{
-						int dest;
+						fixed_t dest = ceiling->topheight;
 
-						dest = ceiling->topheight;
 						if(dest == lines[ceiling->texture].frontsector->ceilingheight)
 							dest = lines[ceiling->texture].backsector->ceilingheight;
 						else
@@ -112,18 +114,17 @@ void T_MoveCeiling(ceiling_t* ceiling)
 
 					case bounceCeilingCrush:
 					{
-						int dest;
+						fixed_t dest = ceiling->topheight;
 
-						dest = ceiling->topheight;
 						if(dest == lines[ceiling->texture].frontsector->ceilingheight)
 						{
 							dest = lines[ceiling->texture].backsector->ceilingheight;
-							ceiling->speed = ceiling->origspeed = abs(lines[ceiling->texture].dy)/4; // return trip, use dy
+							ceiling->speed = ceiling->origspeed = FixedDiv(abs(lines[ceiling->texture].dy),4*FRACUNIT); // return trip, use dy
 						}
 						else
 						{
 							dest = lines[ceiling->texture].frontsector->ceilingheight;
-							ceiling->speed = ceiling->origspeed = abs(lines[ceiling->texture].dx)/4; // going frontways, use dx
+							ceiling->speed = ceiling->origspeed = FixedDiv(abs(lines[ceiling->texture].dx),4*FRACUNIT); // going frontways, use dx
 						}
 
 						if(dest < ceiling->sector->ceilingheight) // must move down
@@ -153,12 +154,14 @@ void T_MoveCeiling(ceiling_t* ceiling)
 
 			if(ceiling->type == bounceCeiling)
 			{
-				if(abs(ceiling->sector->ceilingheight - lines[ceiling->texture].frontsector->ceilingheight) < abs(ceiling->sector->ceilingheight - lines[ceiling->texture].backsector->ceilingheight))
-					ceiling->speed = abs(ceiling->sector->ceilingheight - lines[ceiling->texture].frontsector->ceilingheight)/25 + FRACUNIT/4;
+				const fixed_t origspeed = FixedDiv(ceiling->origspeed,(ELEVATORSPEED/2));
+				const fixed_t fs = abs(ceiling->sector->ceilingheight - lines[ceiling->texture].frontsector->ceilingheight);
+				const fixed_t bs = abs(ceiling->sector->ceilingheight - lines[ceiling->texture].backsector->ceilingheight);
+				if(fs < bs)
+					ceiling->speed = FixedDiv(fs,25*FRACUNIT) + FRACUNIT/4;
 				else
-					ceiling->speed = abs(ceiling->sector->ceilingheight - lines[ceiling->texture].backsector->ceilingheight)/25 + FRACUNIT/4;
-
-				ceiling->speed *= ceiling->origspeed/(ELEVATORSPEED/2);
+					ceiling->speed = FixedDiv(bs,25*FRACUNIT) + FRACUNIT/4;
+				ceiling->speed = FixedMul(ceiling->speed,origspeed);;
 			}
 
 			if(res == pastdest)
@@ -196,9 +199,8 @@ void T_MoveCeiling(ceiling_t* ceiling)
 						break;
 					case bounceCeiling:
 					{
-						int dest;
+						fixed_t dest = ceiling->bottomheight;
 
-						dest = ceiling->bottomheight;
 						if(dest == lines[ceiling->texture].frontsector->ceilingheight)
 							dest = lines[ceiling->texture].backsector->ceilingheight;
 						else
@@ -221,18 +223,17 @@ void T_MoveCeiling(ceiling_t* ceiling)
 
 					case bounceCeilingCrush:
 					{
-						int dest;
+						fixed_t dest = ceiling->bottomheight;
 
-						dest = ceiling->bottomheight;
 						if(dest == lines[ceiling->texture].frontsector->ceilingheight)
 						{
 							dest = lines[ceiling->texture].backsector->ceilingheight;
-							ceiling->speed = ceiling->origspeed = abs(lines[ceiling->texture].dy)/4; // return trip, use dy
+							ceiling->speed = ceiling->origspeed = FixedDiv(abs(lines[ceiling->texture].dy),4*FRACUNIT); // return trip, use dy
 						}
 						else
 						{
 							dest = lines[ceiling->texture].frontsector->ceilingheight;
-							ceiling->speed = ceiling->origspeed = abs(lines[ceiling->texture].dx)/4; // going frontways, use dx
+							ceiling->speed = ceiling->origspeed = FixedDiv(abs(lines[ceiling->texture].dx),4*FRACUNIT); // going frontways, use dx
 						}
 
 						if(dest < ceiling->sector->ceilingheight) // must move down
@@ -260,7 +261,7 @@ void T_MoveCeiling(ceiling_t* ceiling)
 				{
 					case crushAndRaise:
 					case lowerAndCrush:
-						ceiling->speed = CEILSPEED/8;
+						ceiling->speed = FixedDiv(CEILSPEED,8*FRACUNIT);
 						break;
 
 					default:
@@ -324,184 +325,183 @@ void T_CrushCeiling(ceiling_t* ceiling)
   */
 int EV_DoCeiling(line_t* line, ceiling_e type)
 {
-    int      secnum = -1, rtn = 0;
-    sector_t*   sec;
-    ceiling_t*  ceiling;
-	int firstone = 1;
+	int secnum = -1, rtn = 0, firstone = 1;
+	sector_t* sec;
+	ceiling_t* ceiling;
 
-    while ((secnum = P_FindSectorFromLineTag(line,secnum)) >= 0)
-    {
-        sec = &sectors[secnum];
+	while ((secnum = P_FindSectorFromLineTag(line,secnum)) >= 0)
+	{
+		sec = &sectors[secnum];
 
 		if(sec->ceilingdata)
 			continue;
 
-        // new door thinker
-        rtn = 1;
-        ceiling = Z_Malloc (sizeof(*ceiling), PU_LEVSPEC, 0);
-        P_AddThinker (&ceiling->thinker);
-        sec->ceilingdata = ceiling;
-        ceiling->thinker.function.acp1 = (actionf_p1)T_MoveCeiling;
-        ceiling->sector = sec;
-        ceiling->crush = false;
+		// new door thinker
+		rtn = 1;
+		ceiling = Z_Malloc (sizeof(*ceiling), PU_LEVSPEC, NULL);
+		P_AddThinker (&ceiling->thinker);
+		sec->ceilingdata = ceiling;
+		ceiling->thinker.function.acp1 = (actionf_p1)T_MoveCeiling;
+		ceiling->sector = sec;
+		ceiling->crush = false;
 
-        switch(type)
-        {
-          case fastCrushAndRaise:
-            ceiling->crush = true;
-            ceiling->topheight = sec->ceilingheight;
-            ceiling->bottomheight = sec->floorheight + (8*FRACUNIT);
-            ceiling->direction = -1;
-            ceiling->speed = CEILSPEED * 2;
-            break;
-
-          case crushAndRaise:
-            ceiling->crush = true;
-            ceiling->topheight = sec->ceilingheight;
-          case lowerAndCrush:
-            ceiling->bottomheight = sec->floorheight;
-			ceiling->bottomheight += 4*FRACUNIT;
-            ceiling->direction = -1;
-            ceiling->speed = line->dx;
-            break;
-
-          case raiseToHighest:
-            ceiling->topheight = P_FindHighestCeilingSurrounding(sec);
-            ceiling->direction = 1;
-            ceiling->speed = CEILSPEED;
-            break;
-
-          //SoM: 3/6/2000: Added Boom types
-		  case lowerToLowest:
-            ceiling->bottomheight = P_FindLowestCeilingSurrounding(sec);
-            ceiling->direction = -1;
-            ceiling->speed = CEILSPEED;
-            break;
-
-          case raiseToLowest: // Graue 09-07-2004
-            ceiling->topheight = P_FindLowestCeilingSurrounding(sec) - 4*FRACUNIT;
-            ceiling->direction = 1;
-            ceiling->speed = line->dx; // hack
-            break;
-
-		  case lowerToLowestFast:
-            ceiling->bottomheight = P_FindLowestCeilingSurrounding(sec);
-            ceiling->direction = -1;
-            ceiling->speed = (4*FRACUNIT)/NEWTICRATERATIO;
-            break;
-
-          case instantRaise:
-            ceiling->topheight = P_FindHighestCeilingSurrounding(sec);
-            ceiling->direction = 1;
-            ceiling->speed = MAXINT/2;
-            break;
-
-		  //  Linedef executor excellence
-		  case moveCeilingByFrontSector:
-			ceiling->speed = P_AproxDistance(line->dx, line->dy)/8;
-
-			if(line->frontsector->ceilingheight >= sec->ceilingheight) // Move up
-			{
-				ceiling->direction = 1;
-				ceiling->topheight = line->frontsector->ceilingheight;
-			}
-			else // Move down
-			{
+		switch(type)
+		{
+			case fastCrushAndRaise:
+				ceiling->crush = true;
+				ceiling->topheight = sec->ceilingheight;
+				ceiling->bottomheight = sec->floorheight + (8*FRACUNIT);
 				ceiling->direction = -1;
-				ceiling->bottomheight = line->frontsector->ceilingheight;
-			}
+				ceiling->speed = CEILSPEED * 2;
+				break;
 
-			// chained linedef executing ability
-			if(line->flags & ML_BLOCKMONSTERS)
-			{
-				// only set it on ONE of the moving sectors (the smallest numbered)
-				// and front side x offset must be positive
-				if(firstone && sides[line->sidenum[0]].textureoffset > 0)
-					ceiling->texture = (sides[line->sidenum[0]].textureoffset>>FRACBITS) - 32769;
+			case crushAndRaise:
+				ceiling->crush = true;
+				ceiling->topheight = sec->ceilingheight;
+			case lowerAndCrush:
+				ceiling->bottomheight = sec->floorheight;
+				ceiling->bottomheight += 4*FRACUNIT;
+				ceiling->direction = -1;
+				ceiling->speed = line->dx;
+				break;
+
+			case raiseToHighest:
+				ceiling->topheight = P_FindHighestCeilingSurrounding(sec);
+				ceiling->direction = 1;
+				ceiling->speed = CEILSPEED;
+				break;
+
+			//SoM: 3/6/2000: Added Boom types
+			case lowerToLowest:
+				ceiling->bottomheight = P_FindLowestCeilingSurrounding(sec);
+				ceiling->direction = -1;
+				ceiling->speed = CEILSPEED;
+				break;
+
+			case raiseToLowest: // Graue 09-07-2004
+				ceiling->topheight = P_FindLowestCeilingSurrounding(sec) - 4*FRACUNIT;
+				ceiling->direction = 1;
+				ceiling->speed = line->dx; // hack
+				break;
+
+			case lowerToLowestFast:
+				ceiling->bottomheight = P_FindLowestCeilingSurrounding(sec);
+				ceiling->direction = -1;
+				ceiling->speed = FixedDiv(4*FRACUNIT,NEWTICRATERATIO*FRACUNIT);
+				break;
+
+			case instantRaise:
+				ceiling->topheight = P_FindHighestCeilingSurrounding(sec);
+				ceiling->direction = 1;
+				ceiling->speed = MAXINT/2;
+				break;
+
+			//  Linedef executor excellence
+			case moveCeilingByFrontSector:
+				ceiling->speed = P_AproxDistance(line->dx, line->dy);
+				ceiling->speed = FixedDiv(ceiling->speed,8*FRACUNIT);
+				if(line->frontsector->ceilingheight >= sec->ceilingheight) // Move up
+				{
+					ceiling->direction = 1;
+					ceiling->topheight = line->frontsector->ceilingheight;
+				}
+				else // Move down
+				{
+					ceiling->direction = -1;
+					ceiling->bottomheight = line->frontsector->ceilingheight;
+				}
+	
+				// chained linedef executing ability
+				if(line->flags & ML_BLOCKMONSTERS)
+				{
+					// only set it on ONE of the moving sectors (the smallest numbered)
+					// and front side x offset must be positive
+					if(firstone && sides[line->sidenum[0]].textureoffset > 0)
+						ceiling->texture = (sides[line->sidenum[0]].textureoffset>>FRACBITS) - 32769;
+					else
+						ceiling->texture = -1;
+				}
+	
+				// flat changing ability
+				else if(line->flags & ML_NOCLIMB)
+					ceiling->texture = line->frontsector->ceilingpic;
 				else
 					ceiling->texture = -1;
-			}
-
-			// flat changing ability
-			else if(line->flags & ML_NOCLIMB)
+				break;
+	
+			// More linedef executor junk
+			case instantMoveCeilingByFrontSector:
+				ceiling->speed = MAXINT/2;
+	
+				if(line->frontsector->ceilingheight >= sec->ceilingheight) // Move up
+				{
+					ceiling->direction = 1;
+					ceiling->topheight = line->frontsector->ceilingheight;
+				}
+				else // Move down
+				{
+					ceiling->direction = -1;
+					ceiling->bottomheight = line->frontsector->ceilingheight;
+				}
 				ceiling->texture = line->frontsector->ceilingpic;
-			else
-				ceiling->texture = -1;
-			break;
+				break;
 
-		  // More linedef executor junk
-		  case instantMoveCeilingByFrontSector:
-			ceiling->speed = MAXINT/2;
+			case lowerCeilingByLine:
+				ceiling->speed = FixedDiv(abs(line->dx),8*FRACUNIT);
+				ceiling->direction = -1; // Move down
+				ceiling->bottomheight = sec->ceilingheight - abs(line->dy);
+				break;
 
-			if(line->frontsector->ceilingheight >= sec->ceilingheight) // Move up
-			{
-				ceiling->direction = 1;
-				ceiling->topheight = line->frontsector->ceilingheight;
-			}
-			else // Move down
-			{
-				ceiling->direction = -1;
-				ceiling->bottomheight = line->frontsector->ceilingheight;
-			}
-			ceiling->texture = line->frontsector->ceilingpic;
-			break;
+			case raiseCeilingByLine:
+				ceiling->speed = FixedDiv(abs(line->dx),8*FRACUNIT);
+				ceiling->direction = 1; // Move up
+				ceiling->topheight = sec->ceilingheight + abs(line->dy);
+				break;
 
-		  case lowerCeilingByLine:
-			ceiling->speed = abs(line->dx)/8;
-			ceiling->direction = -1; // Move down
-			ceiling->bottomheight = sec->ceilingheight - abs(line->dy);
-			break;
+			case bounceCeiling:
+				ceiling->speed = P_AproxDistance(line->dx, line->dy); // same speed as elevateContinuous
+				ceiling->speed = FixedDiv(ceiling->speed,NEWTICRATERATIO*4*FRACUNIT);
+				ceiling->origspeed = ceiling->speed;
+				if(line->frontsector->ceilingheight >= sec->ceilingheight) // Move up
+				{
+					ceiling->direction = 1;
+					ceiling->topheight = line->frontsector->ceilingheight;
+				}
+				else // Move down
+				{
+					ceiling->direction = -1;
+					ceiling->bottomheight = line->frontsector->ceilingheight;
+				}
+				ceiling->texture = (fixed_t)(line - lines); // hack: use texture to store sourceline number
+				break;
 
-		  case raiseCeilingByLine:
-			ceiling->speed = abs(line->dx)/8;
-			ceiling->direction = 1; // Move up
-			ceiling->topheight = sec->ceilingheight + abs(line->dy);
-			break;
+			case bounceCeilingCrush:
+				ceiling->speed = abs(line->dx); // same speed as elevateContinuous
+				ceiling->speed = FixedDiv(ceiling->speed,NEWTICRATERATIO*4*FRACUNIT);
+				ceiling->origspeed = ceiling->speed;
+				if(line->frontsector->ceilingheight >= sec->ceilingheight) // Move up
+				{
+					ceiling->direction = 1;
+					ceiling->topheight = line->frontsector->ceilingheight;
+				}
+				else // Move down
+				{
+					ceiling->direction = -1;
+					ceiling->bottomheight = line->frontsector->ceilingheight;
+				}
+				ceiling->texture = (fixed_t)(line - lines); // hack: use texture to store sourceline number
+				break;
 
-		  case bounceCeiling:
-			ceiling->speed = P_AproxDistance(line->dx, line->dy)/4; // same speed as elevateContinuous
-			ceiling->speed /= NEWTICRATERATIO;
-			ceiling->origspeed = ceiling->speed;
-			if(line->frontsector->ceilingheight >= sec->ceilingheight) // Move up
-			{
-				ceiling->direction = 1;
-				ceiling->topheight = line->frontsector->ceilingheight;
-			}
-			else // Move down
-			{
-				ceiling->direction = -1;
-				ceiling->bottomheight = line->frontsector->ceilingheight;
-			}
-			ceiling->texture = (fixed_t)(line - lines); // hack: use texture to store sourceline number
-			break;
+			default:
+				break;
 
-		  case bounceCeilingCrush:
-			ceiling->speed = abs(line->dx/4); // same speed as elevateContinuous
-			ceiling->speed /= NEWTICRATERATIO;
-			ceiling->origspeed = ceiling->speed;
-			if(line->frontsector->ceilingheight >= sec->ceilingheight) // Move up
-			{
-				ceiling->direction = 1;
-				ceiling->topheight = line->frontsector->ceilingheight;
-			}
-			else // Move down
-			{
-				ceiling->direction = -1;
-				ceiling->bottomheight = line->frontsector->ceilingheight;
-			}
-			ceiling->texture = (fixed_t)(line - lines); // hack: use texture to store sourceline number
-			break;
+		}
 
-          default:
-            break;
-
-        }
-
-        ceiling->tag = sec->tag;
-        ceiling->type = type;
+		ceiling->tag = sec->tag;
+		ceiling->type = type;
 		firstone = 0;
-    }
-    return rtn;
+	}
+	return rtn;
 }
 
 /** Starts a ceiling crusher.
@@ -514,26 +514,25 @@ int EV_DoCeiling(line_t* line, ceiling_e type)
   */
 int EV_DoCrush(line_t* line, ceiling_e type)
 {
-    int         secnum = -1, rtn = 0;
-    sector_t*   sec;
-    ceiling_t*  ceiling;
+	int         secnum = -1, rtn = 0;
+	sector_t*   sec;
+	ceiling_t*  ceiling;
 
-    while ((secnum = P_FindSectorFromLineTag(line,secnum)) >= 0)
-    {
-        sec = &sectors[secnum];
-
+	while ((secnum = P_FindSectorFromLineTag(line,secnum)) >= 0)
+	{
+		sec = &sectors[secnum];
 
 		if(sec->ceilingdata)
 			continue;
 
-        // new door thinker
-        rtn = 1;
-        ceiling = Z_Malloc (sizeof(*ceiling), PU_LEVSPEC, 0);
-        P_AddThinker (&ceiling->thinker);
-        sec->ceilingdata = ceiling;
-        ceiling->thinker.function.acp1 = (actionf_p1)T_CrushCeiling;
-        ceiling->sector = sec;
-        ceiling->crush = true;
+		// new door thinker
+		rtn = 1;
+		ceiling = Z_Malloc (sizeof(*ceiling), PU_LEVSPEC, NULL);
+		P_AddThinker (&ceiling->thinker);
+		sec->ceilingdata = ceiling;
+		ceiling->thinker.function.acp1 = (actionf_p1)T_CrushCeiling;
+		ceiling->sector = sec;
+		ceiling->crush = true;
 		ceiling->oldspeed = (R_PointToDist2(line->v2->x, line->v2->y, line->v1->x, line->v1->y)/16)/NEWTICRATERATIO;
 
 		if(type == fastCrushAndRaise)
@@ -551,8 +550,8 @@ int EV_DoCrush(line_t* line, ceiling_e type)
 
 		ceiling->bottomheight = sec->floorheight + FRACUNIT;
 
-        ceiling->tag = sec->tag;
-        ceiling->type = type;
-    }
-    return rtn;
+		ceiling->tag = sec->tag;
+		ceiling->type = type;
+	}
+	return rtn;
 }

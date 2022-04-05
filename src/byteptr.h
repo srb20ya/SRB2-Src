@@ -31,7 +31,6 @@
 #define WRITESTRING(p,b)    { int tmp_i = 0; do { WRITECHAR(p, b[tmp_i]); } while(b[tmp_i++]); }
 #define WRITESTRINGN(p,b,n) { int tmp_i = 0; do { WRITECHAR(p, b[tmp_i]); if(!b[tmp_i]) break; tmp_i++; } while(tmp_i < n); }
 #define WRITEMEM(p,s,n)     memcpy(p, s, n);p+=n
-#define WRITEDOUBLE(p,b)    do { double *p_tmp = (double *)p; *p_tmp = (double)(b); p_tmp++; p = (void*)p_tmp; } while(0)
 
 #ifdef __GNUC__
 #define READBYTE(p)         ({ byte* p_tmp = (byte*)p; byte b = *p_tmp; p_tmp++; p = (void*)p_tmp; b; })
@@ -42,7 +41,6 @@
 #define READULONG(p)        ({ ULONG* p_tmp = (ULONG*)p; ULONG b = *p_tmp; p_tmp++; p = (void*)p_tmp; b; })
 #define READFIXED(p)        ({ fixed_t* p_tmp = (fixed_t*)p; fixed_t b = *p_tmp; p_tmp++; p = (void*)p_tmp; b; })
 #define READANGLE(p)        ({ angle_t* p_tmp = (angle_t*)p; angle_t b = *p_tmp; p_tmp++; p = (void*)p_tmp; b; })
-#define READDOUBLE(p)       ({ double* p_tmp = (double*)p; double b = *p_tmp; p_tmp++; p = (void*)p_tmp; b; })
 #else
 #define READBYTE(p)         *((byte   *)p)++
 #define READCHAR(p)         *((char   *)p)++
@@ -52,26 +50,111 @@
 #define READULONG(p)        *((ULONG  *)p)++
 #define READFIXED(p)        *((fixed_t*)p)++
 #define READANGLE(p)        *((angle_t*)p)++
-#define READDOUBLE(p)       *((double *)p)++
 #endif
 
 #define READSTRING(p,s)     { int tmp_i = 0; do { s[tmp_i] = READBYTE(p); } while(s[tmp_i++]); }
 #define SKIPSTRING(p)       while(READBYTE(p))
 #define READMEM(p,s,n)      memcpy(s, p, n); p += n
-#else
+
+#ifdef NEEDALIGNED
+#ifdef __GNUC__
+#undef READSHORT
+#undef READUSHORT
+#undef READLONG
+#undef READULONG
+#undef READFIXED
+#undef READANGLE
+#endif
+#undef WRITESHORT
+#undef WRITEUSHORT
+#undef WRITELONG
+#undef WRITEULONG
+#undef WRITEFIXED
+#undef WRITEANGLE
+
+#ifdef __GNUC__
+FUNCINLINE static ATTRINLINE short readshort(void * ptr)
+{
+	short tmpvar;
+	memcpy(&tmpvar,ptr,sizeof(tmpvar));
+	return tmpvar;
+}
+
+FUNCINLINE static ATTRINLINE USHORT readushort(void * ptr)
+{
+	USHORT tmpvar;
+	memcpy(&tmpvar,ptr,sizeof(tmpvar));
+	return tmpvar;
+}
+
+FUNCINLINE static ATTRINLINE long readlong(void * ptr)
+{
+	long tmpvar;
+	memcpy(&tmpvar,ptr,sizeof(tmpvar));
+	return tmpvar;
+}
+
+FUNCINLINE static ATTRINLINE ULONG readulong(void * ptr)
+{
+	ULONG tmpvar;
+	memcpy(&tmpvar,ptr,sizeof(tmpvar));
+	return tmpvar;
+}
+
+#define READSHORT(p)        ({ short* p_tmp = (short*)p; short b = readshort(p);  p_tmp++; p = (void *)p_tmp;;b; })
+#define READUSHORT(p)       ({ USHORT* p_tmp = (USHORT*)p; USHORT b = readushort(p);  p_tmp++; p = (void *)p_tmp; b; })
+#define READLONG(p)         ({ long* p_tmp = (long*)p; long b = readlong(p);  p_tmp++; p = (void *)p_tmp; b; })
+#define READULONG(p)        ({ ULONG* p_tmp = (ULONG*)p; ULONG b = readulong(p);  p_tmp++; p = (void *)p_tmp; b; })
+#define READFIXED(p)        ({ fixed_t* p_tmp = (fixed_t*)p; fixed_t b = readlong(p);  p_tmp++; p = (void *)p_tmp; b; })
+#define READANGLE(p)        ({ angle_t* p_tmp = (angle_t*)p; angle_t b = readulong(p);  p_tmp++; p = (void *)p_tmp; b; })
+#endif
+
+FUNCINLINE static ATTRINLINE void writeshort(void * ptr, short val)
+{
+	short tmpvar = val;
+	memcpy(ptr,&tmpvar,sizeof(tmpvar));
+}
+
+FUNCINLINE static ATTRINLINE void writeushort(void * ptr, USHORT val)
+{
+	USHORT tmpvar = val;
+	memcpy(ptr,&tmpvar,sizeof(tmpvar));
+}
+
+FUNCINLINE static ATTRINLINE void writelong(void * ptr, long val)
+{
+	long tmpvar = val;
+	memcpy(ptr,&tmpvar,sizeof(tmpvar));
+}
+
+FUNCINLINE static ATTRINLINE void writeulong(void * ptr, ULONG val)
+{
+	ULONG tmpvar = val;
+	memcpy(ptr,&tmpvar,sizeof(tmpvar));
+}
+
+#define WRITESHORT(p,b)     do {short* p_tmp = (short*)p; writeshort (p, (short)(b)); p_tmp++; p = (void *)p_tmp;} while(0)
+#define WRITEUSHORT(p,b)    do {USHORT* p_tmp = (USHORT*)p; writeushort (p,  (USHORT)(b)); p_tmp++; p = (void *)p_tmp;} while(0)
+#define WRITELONG(p,b)      do {long* p_tmp = (long*)p; writelong (p, (long)(b)); p_tmp++; p = (void *)p_tmp;} while(0)
+#define WRITEULONG(p,b)     do {ULONG* p_tmp = (ULONG*)p; writeulong (p, (ULONG)(b)); p_tmp++; p = (void *)p_tmp;} while(0)
+#define WRITEFIXED(p,b)     do {fixed_t* p_tmp = (fixed_t*)p; writelong (p, (fixed_t)(b)); p_tmp++; p = (void *)p_tmp;} while(0)
+#define WRITEANGLE(p,b)     do {angle_t* p_tmp = (angle_t*)p; writeulong (p, (angle_t)(b)); p_tmp++; p = (void *)p_tmp;} while(0)
+#endif
+
+#else //__BIG_ENDIAN__
 //
 // definitions for big-endian machines with alignment constraints.
 //
 // Write a value to a little-endian, unaligned destination.
 //
-static inline void writeshort(void * ptr, int val)
+FUNCINLINE static ATTRINLINE void writeshort(void * ptr, int val)
 {
 	char * cp = ptr;
 	cp[0] = val ;  val >>= 8;
 	cp[1] = val ;
 }
 
-static inline void writelong(void * ptr, int val)
+FUNCINLINE static ATTRINLINE void writelong(void * ptr, int val)
 {
 	char * cp = ptr;
 	cp[0] = val ;  val >>= 8;
@@ -80,93 +163,54 @@ static inline void writelong(void * ptr, int val)
 	cp[3] = val ;
 }
 
-static inline void writedouble(void * ptr, INT64 val)
-{
-	char * cp = ptr;
-	cp[0] = val ;  val >>= 8;
-	cp[1] = val ;  val >>= 8;
-	cp[2] = val ;  val >>= 8;
-	cp[3] = val ;  val >>= 8;
-	cp[4] = val ;  val >>= 8;
-	cp[5] = val ;  val >>= 8;
-	cp[6] = val ;  val >>= 8;
-	cp[7] = val ;
-}
-
-#define WRITEBYTE(p,b)      *((byte   *)p)++ = (byte)(b)
-#define WRITECHAR(p,b)      *((char   *)p)++ = (char)(b)
-#define WRITESHORT(p,b)     writeshort(((short *)p)++,  (short)(b))
-#define WRITEUSHORT(p,b)    writeshort(((u_short*)p)++, (USHORT)(b))
-#define WRITELONG(p,b)      writelong (((long  *)p)++,  (long)(b))
-#define WRITEULONG(p,b)     writelong (((u_long *)p)++, (u_long)(b))
-#define WRITEFIXED(p,b)     writelong (((fixed_t*)p)++, (fixed_t)(b))
-#define WRITEANGLE(p,b)     writelong (((angle_t*)p)++, (angle_t)(b))
+#define WRITEBYTE(p,b)      do { byte* p_tmp = (byte*)p; *p_tmp = (byte)(b); p_tmp++; p = (void*)p_tmp; } while(0)
+#define WRITECHAR(p,b)      do { char* p_tmp = (char*)p; *p_tmp = (char)(b); p_tmp++; p = (void*)p_tmp; } while(0)
+#define WRITESHORT(p,b)     do {short* p_tmp = (short*)p; writeshort (p, (short)(b)); p_tmp++; p = (void *)p_tmp;} while(0)
+#define WRITEUSHORT(p,b)    do {USHORT* p_tmp = (USHORT*)p; writeshort (p,  (USHORT)(b)); p_tmp++; p = (void *)p_tmp;} while(0)
+#define WRITELONG(p,b)      do {long* p_tmp = (long*)p; writelong (p, (long)(b)); p_tmp++; p = (void *)p_tmp;} while(0)
+#define WRITEULONG(p,b)     do {ULONG* p_tmp = (ULONG*)p; writelong (p, (ULONG)(b)); p_tmp++; p = (void *)p_tmp;} while(0)
+#define WRITEFIXED(p,b)     do {fixed_t* p_tmp = (fixed_t*)p; writelong (p, (fixed_t)(b)); p_tmp++; p = (void *)p_tmp;} while(0)
+#define WRITEANGLE(p,b)     do {angle_t* p_tmp = (angle_t*)p; writelong (p, (angle_t)(b)); p_tmp++; p = (void *)p_tmp;} while(0)
 #define WRITESTRING(p,b)    { int tmp_i=0; do { WRITECHAR(p,b[tmp_i]); } while(b[tmp_i++]); }
 #define WRITESTRINGN(p,b,n) { int tmp_i=0; do { WRITECHAR(p,b[tmp_i]); if(!b[tmp_i]) break;tmp_i++; } while(tmp_i<n); }
 #define WRITEMEM(p,s,n)     memcpy(p, s, n);p+=n
-// New "functions" Tails
-#define WRITEDOUBLE(p,b)      writedouble(((double*)p)++,  *(INT64 *)&b) //Alam_GBC: Test Me!
 
 // Read a signed quantity from little-endian, unaligned data.
 //
-static inline short readshort(void * ptr)
+FUNCINLINE static ATTRINLINE short readshort(void * ptr)
 {
 	char   *cp  = ptr;
 	u_char *ucp = ptr;
 	return (cp[1] << 8)  |  ucp[0] ;
 }
 
-static inline u_short readushort(void * ptr)
+FUNCINLINE static ATTRINLINE USHORT readushort(void * ptr)
 {
 	u_char *ucp = ptr;
 	return (ucp[1] << 8) |  ucp[0] ;
 }
 
-static inline long readlong(void * ptr)
+FUNCINLINE static ATTRINLINE long readlong(void * ptr)
 {
 	char   *cp  = ptr;
 	u_char *ucp = ptr;
 	return (cp[3] << 24) | (ucp[2] << 16) | (ucp[1] << 8) | ucp[0] ;
 }
 
-static inline u_long readulong(void * ptr)
+FUNCINLINE static ATTRINLINE ULONG readulong(void * ptr)
 {
 	u_char *ucp = ptr;
 	return (ucp[3] << 24) | (ucp[2] << 16) | (ucp[1] << 8) | ucp[0] ;
 }
 
-//Alam_GBC: From SDL
-
-static inline unsigned int Swapui(unsigned int D)
-{
-	return((D<<24)|((D<<8)&0x00FF0000)|((D>>8)&0x0000FF00)|(D>>24));
-}
-
-static inline double readouble(void * ptr)
-{
-	unsigned int hi, lo;
-	long long llr, *val = ptr;
-
-	llr = *val;
-	/* Separate into high and low 32-bit values and swap them */
-	lo = (unsigned int)(llr&0xFFFFFFFF);
-	llr >>= 32;
-	hi = (unsigned int)(llr&0xFFFFFFFF);
-	llr = Swapui(lo);
-	llr <<= 32;
-	llr |= Swapui(hi);
-	return *(double *)&llr;
-}
-
-#define READBYTE(p)         *((byte   *)p)++
-#define READCHAR(p)         *((char   *)p)++
-#define READSHORT(p)        readshort ( ((short*) p)++)
-#define READUSHORT(p)       readushort(((USHORT*) p)++)
-#define READLONG(p)         readlong  (  ((long*) p)++)
-#define READULONG(p)        readulong ( ((ULONG*) p)++)
-#define READFIXED(p)        readlong  (  ((long*) p)++)
-#define READANGLE(p)        readulong ( ((ULONG*) p)++)
-#define READDOUBLE(p)       readouble (((double*)p)++) //Alam_GBC: Test Me!
+#define READBYTE(p)         ({ byte* p_tmp = (byte*)p; byte b = *p_tmp; p_tmp++; p = (void*)p_tmp; b; })
+#define READCHAR(p)         ({ char* p_tmp = (char*)p; char b = *p_tmp; p_tmp++; p = (void*)p_tmp; b; })
+#define READSHORT(p)        ({ short* p_tmp = (short*)p; short b = readshort(p); p_tmp++; p = (void *)p_tmp; b; })
+#define READUSHORT(p)       ({ USHORT* p_tmp = (USHORT*)p; USHORT b = readushort(p); p_tmp++; p = (void *)p_tmp; b; })
+#define READLONG(p)         ({ long* p_tmp = (long*)p; long b = readlong(p); p_tmp++; p = (void *)p_tmp; b; })
+#define READULONG(p)        ({ ULONG* p_tmp = (ULONG*)p; ULONG b = readulong(p); p_tmp++; p = (void *)p_tmp; b; })
+#define READFIXED(p)        ({ fixed_t* p_tmp = (fixed_t*)p; fixed_t b = readlong(p); p_tmp++; p = (void *)p_tmp; b; })
+#define READANGLE(p)        ({ angle_t* p_tmp = (angle_t*)p; angle_t b = readulong(p); p_tmp++; p = (void *)p_tmp; b; })
 #define READSTRING(p,s)     { int tmp_i=0; do { s[tmp_i]=READBYTE(p);  } while(s[tmp_i++]); }
 #define SKIPSTRING(p)       while(READBYTE(p))
 #define READMEM(p,s,n)      memcpy(s, p, n);p+=n

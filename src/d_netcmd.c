@@ -69,13 +69,12 @@ static void Got_SaveGamecmd(char** cp, int playernum);
 static void Got_Pause(char** cp, int playernum);
 static void Got_RandomSeed(char** cp, int playernum);
 static void Got_PizzaOrder(char** cp, int playernum);
-
+static void Got_RunSOCcmd(char** cp, int playernum);
 static void Got_Teamchange(char** cp, int playernum);
 static void Got_Clearscores(char** cp, int playernum);
 
 static void PointLimit_OnChange(void);
 static void TimeLimit_OnChange(void);
-static void ObjectPlace_OnChange(void);
 static void Mute_OnChange(void);
 
 static void Playerspeed_OnChange(void);
@@ -104,17 +103,19 @@ static void Command_Teleport_f(void);
 static void Command_OrderPizza_f(void);
 
 static void Command_Addfile(void);
+static void Command_RunSOC(void);
 static void Command_Pause(void);
 
 static void Command_Version_f(void);
 static void Command_ShowGametype_f(void);
 static void Command_Nodes_f(void);
-static void Command_Quit_f(void);
+FUNCNORETURN static ATTRNORETURN void Command_Quit_f(void);
 static void Command_Playintro_f(void);
 static void Command_Writethings_f(void);
 
 static void Command_Displayplayer_f(void);
 static void Command_Tunes_f(void);
+static void Command_Skynum_f(void);
 
 static void Command_ExitLevel_f(void);
 static void Command_Load_f(void);
@@ -165,7 +166,7 @@ static CV_PossibleValue_t teamplay_cons_t[] = {{0, "Off"}, {1, "Color"}, {2, "Sk
 
 static CV_PossibleValue_t ringlimit_cons_t[] = {{0, "MIN"}, {999999, "MAX"}, {0, NULL}};
 static CV_PossibleValue_t liveslimit_cons_t[] = {{0, "MIN"}, {99, "MAX"}, {0, NULL}};
-static CV_PossibleValue_t sleeping_cons_t[] = {{-1, "MIN"}, {TICRATE/1000, "MAX"}, {0, NULL}};
+static CV_PossibleValue_t sleeping_cons_t[] = {{-1, "MIN"}, {1000/TICRATE, "MAX"}, {0, NULL}};
 
 static CV_PossibleValue_t racetype_cons_t[] = {{0, "Full"}, {1, "Time_Only"}, {0, NULL}};
 static CV_PossibleValue_t raceitemboxes_cons_t[] = {{0, "Normal"}, {1, "Random"}, {2, "Teleports"},
@@ -209,10 +210,17 @@ boolean cv_debug;
 consvar_t cv_usemouse = {"use_mouse", "On", CV_SAVE|CV_CALL,usemouse_cons_t, I_StartupMouse, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_usemouse2 = {"use_mouse2", "Off", CV_SAVE|CV_CALL,usemouse_cons_t, I_StartupMouse2, 0, NULL, NULL, 0, 0, NULL};
 
+#if defined(DC) || defined(_XBOX)
+consvar_t cv_usejoystick = {"use_joystick", "1", CV_SAVE|CV_CALL, usejoystick_cons_t,
+	I_InitJoystick, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_usejoystick2 = {"use_joystick2", "2", CV_SAVE|CV_CALL, usejoystick_cons_t,
+	I_InitJoystick2, 0, NULL, NULL, 0, 0, NULL};
+#else
 consvar_t cv_usejoystick = {"use_joystick", "0", CV_SAVE|CV_CALL, usejoystick_cons_t,
 	I_InitJoystick, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_usejoystick2 = {"use_joystick2", "0", CV_SAVE|CV_CALL, usejoystick_cons_t,
 	I_InitJoystick2, 0, NULL, NULL, 0, 0, NULL};
+#endif
 #if (defined(LJOYSTICK) || defined(SDL))
 #ifdef LJOYSTICK
 consvar_t cv_joyport = {"joyport", "/dev/js0", CV_SAVE, joyport_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
@@ -280,6 +288,7 @@ consvar_t cv_countdowntime = {"countdowntime", "60", CV_NETVAR, CV_Unsigned, NUL
 
 consvar_t cv_teamplay = {"teamplay", "Off", CV_NETVAR|CV_CALL, teamplay_cons_t, TeamPlay_OnChange, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_teamdamage = {"teamdamage", "Off", CV_NETVAR, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_solidspectator = {"solidspectator", "Off", CV_NETVAR, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_timetic = {"timetic", "Off", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL}; // use tics in display
 consvar_t cv_objectplace = {"objectplace", "Off", CV_CALL|CV_JOHNNY, CV_OnOff,
 	ObjectPlace_OnChange, 0, NULL, NULL, 0, 0, NULL};
@@ -341,6 +350,7 @@ void D_RegisterServerCommands(void)
 	RegisterNetXCmd(XD_EXITLEVEL, Got_ExitLevelcmd);
 	RegisterNetXCmd(XD_ADDFILE, Got_Addfilecmd);
 	RegisterNetXCmd(XD_PAUSE, Got_Pause);
+	RegisterNetXCmd(XD_RUNSOC, Got_RunSOCcmd);
 
 	// Remote Administration
 	COM_AddCommand("password", Command_Changepassword_f);
@@ -360,9 +370,10 @@ void D_RegisterServerCommands(void)
 	COM_AddCommand("exitlevel", Command_ExitLevel_f);
 
 	COM_AddCommand("addfile", Command_Addfile);
+	COM_AddCommand("runsoc", Command_RunSOC);
 	COM_AddCommand("pause", Command_Pause);
 
-	COM_AddCommand("showgametype", Command_ShowGametype_f);
+	COM_AddCommand("gametype", Command_ShowGametype_f);
 	COM_AddCommand("version", Command_Version_f);
 	COM_AddCommand("quit", Command_Quit_f);
 
@@ -391,6 +402,7 @@ void D_RegisterServerCommands(void)
 	CV_RegisterVar(&cv_teamdamage);
 	CV_RegisterVar(&cv_pointlimit);
 	CV_RegisterVar(&cv_timetic);
+	CV_RegisterVar(&cv_solidspectator);
 
 	CV_RegisterVar(&cv_inttime);
 	CV_RegisterVar(&cv_advancemap);
@@ -505,7 +517,8 @@ void D_RegisterClientCommands(void)
 	COM_AddCommand("setcontrol2", Command_Setcontrol2_f);
 
 	COM_AddCommand("screenshot", M_ScreenShot);
-
+	CV_RegisterVar(&cv_screenshot_option);
+	CV_RegisterVar(&cv_screenshot_folder);
 	CV_RegisterVar(&cv_splats);
 
 	// register these so it is saved to config
@@ -523,7 +536,8 @@ void D_RegisterClientCommands(void)
 #endif
 
 	COM_AddCommand("displayplayer", Command_Displayplayer_f);
-	COM_AddCommand("tunes",Command_Tunes_f);
+	COM_AddCommand("tunes", Command_Tunes_f);
+	COM_AddCommand("skynum", Command_Skynum_f);
 
 	// r_things.c (skin NAME)
 	CV_RegisterVar(&cv_skin);
@@ -710,7 +724,7 @@ static int snacpending = 0, snac2pending = 0, chmappending = 0;
 //
 static void SendNameAndColor(void)
 {
-	char buf[MAXPLAYERNAME+1+SKINNAMESIZE+1];
+	XBOXSTATIC char buf[MAXPLAYERNAME+1+SKINNAMESIZE+1];
 	char* p;
 	byte extrainfo = 0; // color and (if applicable) CTF team
 
@@ -782,7 +796,7 @@ static void SendNameAndColor(void)
 // splitscreen
 static void SendNameAndColor2(void)
 {
-	char buf[MAXPLAYERNAME+1+SKINNAMESIZE+1];
+	XBOXSTATIC char buf[MAXPLAYERNAME+1+SKINNAMESIZE+1];
 	char* p;
 	int secondplaya;
 	byte extrainfo = 0;
@@ -985,7 +999,7 @@ static void Got_NameAndcolor(char** cp, int playernum)
 
 static void SendWeaponPref(void)
 {
-	char buf[1];
+	XBOXSTATIC char buf[1];
 
 	buf[0] = (char)cv_autoaim.value;
 	SendNetXCmd(XD_WEAPONPREF, buf, 1);
@@ -1018,7 +1032,7 @@ static void Command_OrderPizza_f(void)
 		return;
 	}
 
-	SendNetXCmd(XD_ORDERPIZZA, 0, 0);
+	SendNetXCmd(XD_ORDERPIZZA, NULL, 0);
 }
 
 static void Got_PizzaOrder(char** cp, int playernum)
@@ -1189,7 +1203,7 @@ int mapchangepending = 0;
   */
 void D_MapChange(int mapnum, int gametype, skill_t skill, int resetplayers, int delay, boolean skipprecutscene)
 {
-	static char buf[MAX_WADPATH+4];
+	static char buf[MAX_WADPATH+1+4];
 #define MAPNAME &buf[4]
 
 	if(devparm)
@@ -1406,7 +1420,7 @@ static void Got_Mapcmd(char** cp, int playernum)
 		CONS_Printf("Illegal map change received from %s\n", player_names[playernum]);
 		if(server)
 		{
-			char buf[2];
+			XBOXSTATIC char buf[2];
 
 			buf[0] = (char)playernum;
 			buf[1] = KICK_MSG_CON_FAIL;
@@ -1466,7 +1480,7 @@ static void Got_Mapcmd(char** cp, int playernum)
 
 static void Command_Pause(void)
 {
-	char buf;
+	XBOXSTATIC char buf;
 	if(COM_Argc() > 1)
 		buf = (char)(atoi(COM_Argv(1)) != 0);
 	else
@@ -1485,7 +1499,7 @@ static void Got_Pause(char** cp, int playernum)
 		CONS_Printf("Illegal pause command received from %s\n", player_names[playernum]);
 		if(server)
 		{
-			char buf[2];
+			XBOXSTATIC char buf[2];
 
 			buf[0] = (char)playernum;
 			buf[1] = KICK_MSG_CON_FAIL;
@@ -1571,7 +1585,7 @@ static void Got_Clearscores(char** cp, int playernum)
 		CONS_Printf("Illegal clear scores command received from %s\n", player_names[playernum]);
 		if(server)
 		{
-			char buf[2];
+			XBOXSTATIC char buf[2];
 
 			buf[0] = (char)playernum;
 			buf[1] = KICK_MSG_CON_FAIL;
@@ -1600,7 +1614,7 @@ static void Command_Teamchange_f(void)
 
 	if(!(buf == 1 || buf == 2))
 	{
-		CONS_Printf("teamchange <color> : switch to a new team (red or blue)"); // Graue 06-19-2004
+		CONS_Printf("teamchange <color> : switch to a new team (red or blue)\n"); // Graue 06-19-2004
 		return;
 	}
 
@@ -1639,7 +1653,7 @@ static void Command_Teamchange2_f(void)
 
 	if(!(buf == 1 || buf == 2))
 	{
-		CONS_Printf("teamchange2 <color> : switch to a new team (red or blue)"); // Graue 06-19-2004
+		CONS_Printf("teamchange2 <color> : switch to a new team (red or blue)\n"); // Graue 06-19-2004
 		return;
 	}
 
@@ -1720,7 +1734,7 @@ static void Got_Teamchange(char** cp, int playernum)
 		CONS_Printf("Illegal team change received from player %s\n", player_names[playernum]);
 		if(server)
 		{
-			char buf[2];
+			XBOXSTATIC char buf[2];
 
 			buf[0] = (char)playernum;
 			buf[1] = KICK_MSG_CON_FAIL;
@@ -1739,7 +1753,7 @@ static void Got_Teamchange(char** cp, int playernum)
 			CONS_Printf("Illegal team change received from player %s\n", player_names[playernum]);
 			if(server)
 			{
-				char buf[2];
+				XBOXSTATIC char buf[2];
 
 				buf[0] = (char)playernum;
 				buf[1] = KICK_MSG_CON_FAIL;
@@ -1753,7 +1767,7 @@ static void Got_Teamchange(char** cp, int playernum)
 	newteam &= 3; // We do this either way, since... who cares?
 	if(server && (!newteam || newteam == 3))
 	{
-		char buf[2];
+		XBOXSTATIC char buf[2];
 
 		buf[0] = (char)playernum;
 		buf[1] = KICK_MSG_CON_FAIL;
@@ -1817,7 +1831,7 @@ static void Command_Changepassword_f(void)
 
 static void Command_Login_f(void)
 {
-	char password[9];
+	XBOXSTATIC char password[9];
 
 	// If the server uses login, it will effectively just remove admin privileges
 	// from whoever has them. This is good.
@@ -1867,7 +1881,7 @@ static void Got_Login(char** cp, int playernum)
 
 static void Command_Verify_f(void)
 {
-	char buf[8]; // Should be plenty
+	XBOXSTATIC char buf[8]; // Should be plenty
 	char* temp;
 	int playernum;
 
@@ -1917,6 +1931,92 @@ static void Got_Verification(char** cp, int playernum)
 	CONS_Printf("Password correct. You are now an administrator.\n");
 }
 
+static void Command_RunSOC(void)
+{
+	const char *fn;
+	XBOXSTATIC char buf[255];
+	size_t length = 0;
+
+	if(COM_Argc() != 2)
+	{
+		CONS_Printf("runsoc <socfile.soc> or <lumpname> : run a soc\n");
+		return;
+	}
+	else
+		fn = COM_Argv(1);
+
+	if(netgame && !(server || adminplayer))
+	{
+		CONS_Printf("Sorry, only the server can do this.\n");
+		return;
+	}
+
+	if(!modifiedgame)
+	{
+		modifiedgame = true;
+		if(!(netgame || multiplayer))
+			CONS_Printf("WARNING: Game must be restarted to record statistics.\n");
+	}
+
+	if(!(netgame || multiplayer))
+	{
+		P_RunSOC(fn);
+		return;
+	}
+
+	strcpy(buf, fn);
+	nameonly(buf);
+	length = strlen(buf)+1;
+
+	SendNetXCmd(XD_RUNSOC, buf, length);
+}
+
+static void Got_RunSOCcmd(char** cp, int playernum)
+{
+	char filename[256];
+	filestatus_t ncs = FS_NOTFOUND;
+
+	if(playernum != serverplayer && playernum != adminplayer)
+	{
+		CONS_Printf("Illegal runsoc command received from %s\n", player_names[playernum]);
+		if(server)
+		{
+			XBOXSTATIC char buf[2];
+
+			buf[0] = (char)playernum;
+			buf[1] = KICK_MSG_CON_FAIL;
+			SendNetXCmd(XD_KICK, &buf, 2);
+		}
+		return;
+	}
+	
+	strncpy(filename, *cp, 255);
+	SKIPSTRING(*cp);
+	(*cp)++;
+
+	// Maybe add md5 support?
+	if (strstr(filename, ".soc") != NULL)
+	{
+		ncs = findfile(filename,NULL,true);
+
+		if(ncs != FS_FOUND)
+		{
+			Command_ExitGame_f();
+			if(ncs == FS_NOTFOUND)
+			{
+				CONS_Printf("The server tried to add %s,\nbut you don't have this file.\nYou need to find it in order\nto play on this server.", filename);
+			}
+			else
+			{
+				CONS_Printf("Unknown error finding soc file (%s) the server added.\n", filename);
+			}
+			return;
+		}
+	}
+
+	P_RunSOC(filename);
+}
+
 /** Adds a pwad at runtime.
   * Searches for sounds, maps, music, new images.
   *
@@ -1926,7 +2026,8 @@ static void Got_Verification(char** cp, int playernum)
   */
 static void Command_Addfile(void)
 {
-	char buf[255];
+	const char *fn;
+	XBOXSTATIC char buf[255];
 	size_t length = 0;
 
 	if(COM_Argc() != 2)
@@ -1934,6 +2035,8 @@ static void Command_Addfile(void)
 		CONS_Printf("addfile <wadfile.wad> : load wad file\n");
 		return;
 	}
+	else
+		fn = COM_Argv(1);
 
 	if(netgame && !(server || adminplayer))
 	{
@@ -1941,7 +2044,7 @@ static void Command_Addfile(void)
 		return;
 	}
 
-	if(!modifiedgame && !W_VerifyNMUSlumps(COM_Argv(1)))
+	if(!modifiedgame && !W_VerifyNMUSlumps(fn))
 	{
 		modifiedgame = true;
 		if(!(netgame || multiplayer))
@@ -1950,27 +2053,34 @@ static void Command_Addfile(void)
 
 	if(!(netgame || multiplayer))
 	{
-		P_AddWadFile(COM_Argv(1), NULL);
+		P_AddWadFile(fn, NULL);
 		return;
 	}
 
-	strcpy(buf, COM_Argv(1));
-	length = strlen(COM_Argv(1))+1;
+	strcpy(buf, fn);
+	nameonly(buf);
+	length = strlen(buf)+1;
 
-#ifndef NOMD5
 	{
+		unsigned char md5sum[16] = "";
+#ifndef NOMD5
 		FILE* fhandle;
-		unsigned char md5sum[16];
+		
 
-		fhandle = fopen(COM_Argv(1), "rb");
+		fhandle = fopen(fn, "rb");
 
-		if(fhandle != NULL)
+		if(fhandle)
 		{
 			int t = I_GetTime();
+#ifdef _arch_dreamcast
+			CONS_Printf("Making MD5 for %s\n",fn);
+#endif
 			md5_stream(fhandle, md5sum);
+#ifndef _arch_dreamcast
 			if(devparm)
-				CONS_Printf("md5 calc for %s took %f second\n",
-					COM_Argv(1), (float)(I_GetTime() - t)/TICRATE);
+#endif
+				CONS_Printf("MD5 calc for %s took %f second\n",
+					fn, (float)(I_GetTime() - t)/TICRATE);
 			fclose(fhandle);
 		}
 		else
@@ -1978,27 +2088,26 @@ static void Command_Addfile(void)
 			CONS_Printf("File doesn't exist.\n");
 			return;
 		}
-		strcpy(&buf[strlen(buf)+2], (const char *)md5sum);
+#endif
+		strcpy(&buf[length+1], (const char *)md5sum);
 		length += sizeof(md5sum)+1;
 	}
-#endif
 
 	SendNetXCmd(XD_ADDFILE, buf, length);
 }
 
 static void Got_Addfilecmd(char** cp, int playernum)
 {
-	char filename[255];
-#ifndef NOMD5
-	unsigned char md5sum[16];
-#endif
+	char filename[256];
+	filestatus_t ncs = FS_NOTFOUND;
+	unsigned char md5sum[16+1];
 
 	if(playernum != serverplayer && playernum != adminplayer)
 	{
 		CONS_Printf("Illegal addfile command received from %s\n", player_names[playernum]);
 		if(server)
 		{
-			char buf[2];
+			XBOXSTATIC char buf[2];
 
 			buf[0] = (char)playernum;
 			buf[1] = KICK_MSG_CON_FAIL;
@@ -2007,50 +2116,30 @@ static void Got_Addfilecmd(char** cp, int playernum)
 		return;
 	}
 
-	strcpy(filename, *cp);
+	strncpy(filename, *cp, 255);
 	SKIPSTRING(*cp);
-
-#ifndef NOMD5
 	(*cp)++;
 	strncpy((char *)md5sum, *cp, 16);
 	SKIPSTRING(*cp);
+	ncs = findfile(filename,md5sum,true);
+
+	if(ncs != FS_FOUND)
 	{
-		FILE* fhandle;
-		unsigned char localmd5[16];
-
-		fhandle = fopen(filename, "rb");
-
-		if(fhandle != NULL)
+		Command_ExitGame_f();
+		if(ncs == FS_NOTFOUND)
 		{
-			int t = I_GetTime();
-			md5_stream(fhandle, localmd5);
-			if(devparm)
-				CONS_Printf("md5 calc for %s took %f second\n",
-					filename, (float)(I_GetTime() - t)/TICRATE);
-			fclose(fhandle);
+			CONS_Printf("The server tried to add %s,\nbut you don't have this file.\nYou need to find it in order\nto play on this server.", filename);
+		}
+		else if(ncs == FS_MD5SUMBAD)
+		{
+			CONS_Printf("Checksum mismatch while loading %s.\nMake sure you have the copy of\nthis file that the server has.\n", filename);
 		}
 		else
 		{
-			I_Error("The server tried to add %s,\nbut you don't have this file.\nYou need to find it in order\nto play on this server.", filename);
-			return;
+			CONS_Printf("Unknown error finding wad file (%s) the server added.\n", filename);
 		}
-
-		if(devparm)
-		{
-			CONS_Printf("Remote MD5 is %i, %i, %i, %i, %i, %i, %i, %i, %i, %i, %i, %i, %i, %i, %i, %i\n",
-				md5sum[0], md5sum[1], md5sum[2], md5sum[3], md5sum[4], md5sum[5], md5sum[6], md5sum[7], md5sum[8], md5sum[9], md5sum[10], md5sum[11], md5sum[12], md5sum[13], md5sum[14], md5sum[15]);
-
-			CONS_Printf("Local MD5 is %i, %i, %i, %i, %i, %i, %i, %i, %i, %i, %i, %i, %i, %i, %i, %i\n",
-				localmd5[0], localmd5[1], localmd5[2], localmd5[3], localmd5[4], localmd5[5], localmd5[6], localmd5[7], localmd5[8], localmd5[9], localmd5[10], localmd5[11], localmd5[12], localmd5[13], localmd5[14], localmd5[15]);
-		}
-
-		if(strncmp((char *)md5sum, (char *)localmd5, 16))
-		{
-			I_Error("Checksum mismatch while loading %s.\nMake sure you have the copy of\nthis file that the server has.\n", filename);
-			return;
-		}
+		return;
 	}
-#endif
 
 	P_AddWadFile(filename, NULL);
 }
@@ -2108,12 +2197,12 @@ static void Command_Writethings_f(void)
 
 /** Quits the game immediately.
   */
-FUNCNORETURN static void Command_Quit_f(void)
+FUNCNORETURN static ATTRNORETURN void Command_Quit_f(void)
 {
 	I_Quit();
 }
 
-static void ObjectPlace_OnChange(void)
+void ObjectPlace_OnChange(void)
 {
 #ifndef JOHNNYFUNCODE
 	if((netgame || multiplayer) && cv_objectplace.value) // You spoon!
@@ -2199,6 +2288,13 @@ static void ObjectPlace_OnChange(void)
 		if(!players[0].currentthing)
 			players[0].currentthing = 1;
 		players[0].mo->momx = players[0].mo->momy = players[0].mo->momz = 0;
+		if(!modifiedgame || savemoddata)
+		{
+			modifiedgame = true;
+			savemoddata = false;
+			if(!(netgame || multiplayer))
+				CONS_Printf("WARNING: Game must be restarted to record statistics.\n");
+		}
 	}
 	else if(players[0].mo)
 	{
@@ -2521,7 +2617,7 @@ static void Got_ExitLevelcmd(char** cp, int playernum)
 		CONS_Printf("Illegal exitlevel command received from %s\n", player_names[playernum]);
 		if(server)
 		{
-			char buf[2];
+			XBOXSTATIC char buf[2];
 
 			buf[0] = (char)playernum;
 			buf[1] = KICK_MSG_CON_FAIL;
@@ -2540,6 +2636,23 @@ static void Got_ExitLevelcmd(char** cp, int playernum)
 static void Command_Displayplayer_f(void)
 {
 	CONS_Printf("Displayplayer is %d\n", displayplayer);
+}
+
+static void Command_Skynum_f(void)
+{
+	if(COM_Argc() != 2)
+	{
+		CONS_Printf("skynum <sky#>: change the sky\n");
+		return;
+	}
+
+	if(netgame || multiplayer)
+	{
+		CONS_Printf("Can't use this in a multiplayer game, sorry!\n");
+		return;
+	}
+
+	P_SetupLevelSky(atoi(COM_Argv(1)));
 }
 
 static void Command_Tunes_f(void)
@@ -2597,14 +2710,14 @@ static void Command_Load_f(void)
 
 static void Got_LoadGamecmd(char** cp, int playernum)
 {
-	byte slot;
+	char slot;
 
 	if(playernum != serverplayer && playernum != adminplayer)
 	{
 		CONS_Printf("Illegal load game command received from %s\n", player_names[playernum]);
 		if(server)
 		{
-			char buf[2];
+			XBOXSTATIC char buf[2];
 
 			buf[0] = (char)playernum;
 			buf[1] = KICK_MSG_CON_FAIL;
@@ -2619,7 +2732,7 @@ static void Got_LoadGamecmd(char** cp, int playernum)
 
 static void Command_Save_f(void)
 {
-	char p[SAVESTRINGSIZE + 1];
+	XBOXSTATIC char p[SAVESTRINGSIZE + 1];
 
 	if(COM_Argc() != 3)
 	{
@@ -2640,7 +2753,7 @@ static void Command_Save_f(void)
 
 static void Got_SaveGamecmd(char** cp, int playernum)
 {
-	byte slot;
+	char slot;
 	char description[SAVESTRINGSIZE];
 
 	if(playernum != serverplayer && playernum != adminplayer)
@@ -2648,7 +2761,7 @@ static void Got_SaveGamecmd(char** cp, int playernum)
 		CONS_Printf("Illegal save game command received from %s\n", player_names[playernum]);
 		if(server)
 		{
-			char buf[2];
+			XBOXSTATIC char buf[2];
 
 			buf[0] = (char)playernum;
 			buf[1] = KICK_MSG_CON_FAIL;
@@ -2680,6 +2793,7 @@ void Command_ExitGame_f(void)
 			players[i].ctfteam = 0;
 	}
 	CV_SetValue(&cv_splitscreen, 0);
+	cv_debug = false;
 	D_StartTitle();
 }
 

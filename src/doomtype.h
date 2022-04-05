@@ -23,24 +23,24 @@
 #ifndef __DOOMTYPE__
 #define __DOOMTYPE__
 
-#if defined(_WIN32) || (defined(_WIN32_WCE) && !defined(__GNUC__)) || defined (_WIN64)
+#if (defined(_WIN32) && !defined(_XBOX)) || (defined(_WIN32_WCE) && !defined(__GNUC__)) || defined (_WIN64)
 //#define WIN32_LEAN_AND_MEAN
 #define RPC_NO_WINDOWS_H
 #include <windows.h>
 #endif
 #ifndef _OS2EMX_H
-#ifndef __MINGW32__
-#ifndef __MINGW64__
+#if defined(_XBOX) || !(defined(__MINGW32__) || defined(__MINGW64__))
 typedef unsigned long ULONG;
 typedef unsigned short USHORT;
-#endif
 #endif
 #endif // _OS2EMX_H
 
 #if defined(__GNUC__) || defined(__MWERKS__) || defined(__SUNPRO_C) || defined(__DECC)
 #define INT64  long long
+#define UINT64 unsigned long long
 #elif defined(_MSC_VER)
 #define INT64  __int64
+#define UINT64 unsigned __int64
 #else
 "Warning, need 64 bit type for this compiler"
 #endif
@@ -118,13 +118,11 @@ int strlwr(char* n); // from dosstr.c
 	//#ifdef __cplusplus
 	//    typedef bool boolean;
 	//#else
-	#ifndef __MINGW32__
-	#ifndef __MINGW64__
+	#if defined(_XBOX) || !(defined(__MINGW32__) || defined(__MINGW64__))
 		typedef unsigned char byte;
 	#endif
-	#endif
 	//faB: clean that up !!
-	#if defined (_WIN32) || (defined(_WIN32_WCE) && !defined(__GNUC__)) || defined(_WIN64)
+	#if (defined (_WIN32) || (defined(_WIN32_WCE) && !defined(__GNUC__)) || defined(_WIN64)) && !defined(_XBOX)
 		#define false   FALSE           // use windows types
 		#define true    TRUE
 		#define boolean BOOL
@@ -218,8 +216,16 @@ typedef union FColorRGBA RGBA_t;
 #define FUNCINLINE __attribute__((always_inline))
 #define FUNCNOINLINE __attribute__((noinline))
 #define ATTRPACK __attribute__ ((packed))
+#ifdef _XBOX
+#define FILESTAMP I_OutputMsg("%s:%d\n",__FILE__,__LINE__);
+#define XBOXSTATIC static
+#endif
 #elif defined(_MSC_VER)
+#define ATTRNORETURN   __declspec(noreturn)
 #define ATTRINLINE __forceinline
+#if _MSC_VER > 1200
+#define ATTRNOINLINE __declspec(noinline)
+#endif
 #endif
 
 #ifndef FUNCPRINTF
@@ -243,8 +249,19 @@ typedef union FColorRGBA RGBA_t;
 #ifndef ATTRPACK
 #define ATTRPACK
 #endif
+#ifndef ATTRNORETURN
+#define ATTRNORETURN
+#endif
 #ifndef ATTRINLINE
 #define ATTRINLINE inline
 #endif
-
+#ifndef ATTRNOINLINE
+#define ATTRNOINLINE
+#endif
+#ifndef XBOXSTATIC
+#define XBOXSTATIC
+#endif
+#ifndef FILESTAMP
+#define FILESTAMP
+#endif
 #endif //__DOOMTYPE__

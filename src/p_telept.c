@@ -104,7 +104,8 @@ boolean P_Teleport(mobj_t* thing, fixed_t x, fixed_t y, fixed_t z, angle_t angle
 	{
 		thing->player->viewz = thing->z + thing->player->viewheight;
 
-		thing->reactiontime = TICRATE/2; // don't move for about half a second
+		if(!dontstopmove)
+			thing->reactiontime = TICRATE/2; // don't move for about half a second
 
 		// absolute angle position
 		if(thing == players[consoleplayer].mo)
@@ -122,15 +123,14 @@ boolean P_Teleport(mobj_t* thing, fixed_t x, fixed_t y, fixed_t z, angle_t angle
 			P_ResetCamera(thing->player, &camera);
 
 		// don't run in place after a teleport
-		if(dontstopmove)
+		if(!dontstopmove)
 		{
 			thing->player->cmomx = thing->player->cmomy = 0;
 			thing->player->rmomx = thing->player->rmomy = 0;
 			thing->player->speed = 0;
+			P_ResetPlayer(thing->player);
+			P_SetPlayerMobjState(thing, S_PLAY_STND);
 		}
-
-		P_ResetPlayer(thing->player);
-		P_SetPlayerMobjState(thing, S_PLAY_STND);
 
 		if(flash)
 			thing->player->bonuscount = 10; // flash the palette
@@ -138,7 +138,8 @@ boolean P_Teleport(mobj_t* thing, fixed_t x, fixed_t y, fixed_t z, angle_t angle
 
 	thing->angle = angle;
 
-	thing->momx = thing->momy = thing->momz = 0;
+	if(!dontstopmove)
+		thing->momx = thing->momy = thing->momz = 0;
 
 	return true;
 }

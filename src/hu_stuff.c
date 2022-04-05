@@ -167,7 +167,7 @@ static void Got_Saycmd(char** p,int playernum);
 void HU_Init(void)
 {
 	int i, j;
-	char buffer[9];
+	char *buffer = malloc(9);
 
 	COM_AddCommand("say", Command_Say_f);
 	COM_AddCommand("sayto", Command_Sayto_f);
@@ -175,7 +175,10 @@ void HU_Init(void)
 	RegisterNetXCmd(XD_SAY, Got_Saycmd);
 
 	if(dedicated)
+	{
+		free(buffer);
 		return;
+	}
 
 	// set shift translation table
 	shiftxform = english_shiftxform;
@@ -193,6 +196,19 @@ void HU_Init(void)
 
 	// cache the level title font for entire game execution
 	lt_font[0] = (patch_t*)W_CachePatchName("LTFNT039", PU_STATIC); /// \note fake start hack
+
+	// Number support
+	lt_font[9] = (patch_t*)W_CachePatchName("LTFNT048", PU_STATIC);
+	lt_font[10] = (patch_t*)W_CachePatchName("LTFNT049", PU_STATIC);
+	lt_font[11] = (patch_t*)W_CachePatchName("LTFNT050", PU_STATIC);
+	lt_font[12] = (patch_t*)W_CachePatchName("LTFNT051", PU_STATIC);
+	lt_font[13] = (patch_t*)W_CachePatchName("LTFNT052", PU_STATIC);
+	lt_font[14] = (patch_t*)W_CachePatchName("LTFNT053", PU_STATIC);
+	lt_font[15] = (patch_t*)W_CachePatchName("LTFNT054", PU_STATIC);
+	lt_font[16] = (patch_t*)W_CachePatchName("LTFNT055", PU_STATIC);
+	lt_font[17] = (patch_t*)W_CachePatchName("LTFNT056", PU_STATIC);
+	lt_font[18] = (patch_t*)W_CachePatchName("LTFNT057", PU_STATIC);
+
 	j = LT_REALFONTSTART;
 	for(i = LT_REALFONTSTART - LT_FONTSTART; i < LT_FONTSIZE; i++)
 	{
@@ -217,6 +233,7 @@ void HU_Init(void)
 		sprintf(buffer, "CROSHAI%c", '1'+i);
 		crosshair[i] = (patch_t*)W_CachePatchName(buffer, PU_STATIC);
 	}
+	free(buffer);
 
 	emblemicon = W_CachePatchName("EMBLICON", PU_STATIC);
 	emerald1 = W_CachePatchName("CHAOS1", PU_STATIC);
@@ -282,7 +299,7 @@ void TeamPlay_OnChange(void)
 
 static void Command_Say_f(void)
 {
-	char buf[255];
+	XBOXSTATIC char buf[255];
 	size_t i, j;
 
 	if((j = COM_Argc()) < 2)
@@ -309,7 +326,7 @@ static void Command_Say_f(void)
 
 static void Command_Sayto_f(void)
 {
-	char buf[255];
+	XBOXSTATIC char buf[255];
 	size_t i, j;
 
 	if((j = COM_Argc()) < 3)
@@ -338,7 +355,7 @@ static void Command_Sayto_f(void)
 
 static void Command_Sayteam_f(void)
 {
-	char buf[255];
+	XBOXSTATIC char buf[255];
 	size_t i, j;
 
 	if((j = COM_Argc()) < 2)
@@ -379,7 +396,7 @@ static void Got_Saycmd(char** p, int playernum)
 		CONS_Printf("Illegal say command received from %s while muted\n", player_names[playernum]);
 		if(server)
 		{
-			char buf[2];
+			XBOXSTATIC char buf[2];
 
 			buf[0] = (char)playernum;
 			buf[1] = KICK_MSG_CON_FAIL;
@@ -477,10 +494,8 @@ void HU_Ticker(void)
 {
 	player_t* pl;
 
-#if (!defined(_WINDOWS) && !defined(SDLMAIN))
 	if(dedicated)
 		return;
-#endif
 
 	hu_tick++;
 	hu_tick &= 7; // currently only to blink chat input cursor
@@ -1203,10 +1218,8 @@ void HU_HackChatmacros(void)
 	chat_macros[8] = &cv_chatmacro8;
 	chat_macros[9] = &cv_chatmacro9;
 
-#if (!defined(_WINDOWS) && !defined(SDLMAIN))
 	if(dedicated)
 		return;
-#endif
 
 	// register chatmacro vars ready for config.cfg
 	for(i = 0; i < 10; i++)

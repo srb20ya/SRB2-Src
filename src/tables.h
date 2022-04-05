@@ -44,14 +44,20 @@ extern fixed_t finetangent[FINEANGLES/2];
 #define ANG180 0x80000000
 #define ANG270 0xc0000000
 
+#define ANGLE_10 0x071C71C7
 #define ANGLE_45 0x20000000
 #define ANGLE_90 0x40000000
 #define ANGLE_180 0x80000000
-#define ANGLE_MAX 0xffffffff
+#define ANGLE_350 0xF8E38E38
+#define ANGLE_MAX 0xFFFFFFFF
 #define ANGLE_1 (ANGLE_45/45)
 #define ANGLE_60 (ANGLE_180/3)
 
-typedef unsigned angle_t;
+#if defined(_MSC_VER)
+typedef unsigned __int32 angle_t;
+#else
+typedef unsigned int angle_t;
+#endif
 
 // To get a global angle from Cartesian coordinates, the coordinates are
 // flipped until they are in the first octant of the coordinate system, then

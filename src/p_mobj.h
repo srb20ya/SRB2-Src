@@ -147,8 +147,8 @@ typedef enum
 	MF_HIRES            = 0x80000,
 	// Item box
 	MF_MONITOR          = 0x100000,
-	// Floating to a height for a move, don't auto float to target's height.
-	MF_INFLOAT          = 0x200000,
+	// Don't run the thinker for this object.
+	MF_NOTHINK          = 0x200000,
 	// Fire object. Doesn't harm if you have fire shield.
 	MF_FIRE             = 0x400000,
 	// On picking up, count this item object towards intermission item total.
@@ -176,7 +176,7 @@ typedef enum
 	MF2_DONTRESPAWN    =     0x00000004, // Don't respawn this object!
 	MF2_RINGORHOOP     =     0x00000008, // Ring or Hoop object
 	MF2_FRET           =     0x00000010, // Flashing from a previous hit
-	MF2_NOTHINK        =     0x00000020, // Don't run this mobj's thinker
+	MF2_INFLOAT        =     0x00000020, // Floating to a height for a move, don't auto float to target's height.
 	MF2_DEBRIS         =     0x00000040, // Splash ring from explosion ring
 	MF2_NOTELEPORT     =     0x00000080, // does not teleport
 	MF2_NIGHTSPULL     =     0x00000100, // Attracted from a paraloop
@@ -284,7 +284,7 @@ typedef struct mobj_s
 	int health; // for player this is rings + 1
 
 	// Movement direction, movement generation (zig-zagging).
-	int movedir; // 0-7; also used by Deton for up/down angle
+	angle_t movedir; // 0-7; also used by Deton for up/down angle
 	int movecount; // when 0, select a new dir
 
 	struct mobj_s* target; // Thing being chased/attacked (or NULL), and originator for missiles.
@@ -356,9 +356,9 @@ void P_SpawnMapThing(mapthing_t* mthing);
 void P_SpawnPlayer(mapthing_t* mthing, int playernum);
 void P_SpawnStarpostPlayer(mobj_t* mobj, int playernum);
 void P_SpawnHoopsAndRings(mapthing_t* mthing);
-void P_SpawnHoopOfSomething(fixed_t x, fixed_t y, fixed_t z, fixed_t radius, int number, mobjtype_t type, int rotangle);
+void P_SpawnHoopOfSomething(fixed_t x, fixed_t y, fixed_t z, fixed_t radius, int number, mobjtype_t type, angle_t rotangle);
 void P_SpawnPrecipitation(void);
-void P_SpawnParaloop(fixed_t x, fixed_t y, fixed_t z, fixed_t radius, int number, mobjtype_t type, int rotangle);
+void P_SpawnParaloop(fixed_t x, fixed_t y, fixed_t z, fixed_t radius, int number, mobjtype_t type, angle_t rotangle);
 boolean P_SupermanLook4Players(mobj_t* actor);
 void P_DestroyRobots(void);
 void P_SnowThinker(precipmobj_t* mobj);
@@ -370,7 +370,5 @@ void P_XYMovement(mobj_t* mo);
 #define MAXHUNTEMERALDS 64
 extern mapthing_t* huntemeralds[3][MAXHUNTEMERALDS];
 extern int numhuntemeralds[3];
-
-extern const double deg2rad;
 
 #endif

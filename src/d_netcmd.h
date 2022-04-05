@@ -104,7 +104,9 @@ extern consvar_t cv_chaos_spawnrate, cv_chaos_bluecrawla, cv_chaos_redcrawla;
 extern consvar_t cv_chaos_crawlacommander, cv_chaos_jettysynbomber, cv_chaos_jettysyngunner;
 extern consvar_t cv_chaos_eggmobile1, cv_chaos_eggmobile2, cv_chaos_skim;
 
-extern consvar_t cv_sleep;
+extern consvar_t cv_solidspectator;
+
+extern consvar_t cv_sleep, cv_screenshot_option, cv_screenshot_folder;
 
 typedef enum
 {
@@ -126,6 +128,7 @@ typedef enum
 	XD_VERIFIED,
 	XD_RANDOMSEED,
 	XD_ORDERPIZZA,
+	XD_RUNSOC,
 	MAXNETXCMD
 } netxcmd_t;
 
@@ -136,5 +139,6 @@ void D_SendPlayerConfig(void);
 void Command_ExitGame_f(void);
 void D_GameTypeChanged(int lastgametype); // not a real _OnChange function anymore
 void D_MapChange(int mapnum, int gametype, skill_t skill, int resetplayers, int delay, boolean skipprecutscene);
+void ObjectPlace_OnChange(void);
 
 #endif

@@ -40,7 +40,7 @@ byte* save_p;
 #ifdef SGI
 // BP: this stuff isn't be removed but i think it will no more work
 //     anyway what processor can't read/write unaligned data ?
-#define PADSAVEP() save_p += (4 - ((int) save_p & 3)) & 3
+#define PADSAVEP() save_p += (4 - ((size_t) save_p & 3)) & 3
 #else
 #define PADSAVEP()
 #endif
@@ -225,9 +225,8 @@ static void P_NetArchivePlayers(void)
 		WRITEANGLE(save_p, players[i].starpostangle);
 		WRITEULONG(save_p, players[i].starpostbit);
 
-		WRITEDOUBLE(save_p, players[i].angle_speed);
-		WRITEDOUBLE(save_p, players[i].angle_pos);
-		WRITEDOUBLE(save_p, players[i].old_angle_pos);
+		WRITEANGLE(save_p, players[i].angle_pos);
+		WRITEANGLE(save_p, players[i].old_angle_pos);
 		WRITEBYTE(save_p, players[i].nightsmode);
 
 		WRITEBYTE(save_p, players[i].axishit);
@@ -437,9 +436,8 @@ static void P_NetUnArchivePlayers(void)
 		players[i].starpostangle = READANGLE(save_p);
 		players[i].starpostbit = READULONG(save_p);
 
-		players[i].angle_speed = READDOUBLE(save_p);
-		players[i].angle_pos = READDOUBLE(save_p);
-		players[i].old_angle_pos = READDOUBLE(save_p);
+		players[i].angle_pos = READANGLE(save_p);
+		players[i].old_angle_pos = READANGLE(save_p);
 		players[i].nightsmode = READBYTE(save_p);
 
 		players[i].axishit = READBYTE(save_p);
@@ -1041,7 +1039,7 @@ static void P_NetArchiveThinkers(void)
 			if(diff & MD_PLAYER)
 				WRITEBYTE(save_p, mobj->player-players);
 			if(diff & MD_MOVEDIR)
-				WRITELONG(save_p, mobj->movedir);
+				WRITEANGLE(save_p, mobj->movedir);
 			if(diff & MD_MOVECOUNT)
 				WRITELONG(save_p, mobj->movecount);
 			if(diff & MD_THRESHOLD)
@@ -1521,7 +1519,7 @@ static void P_NetUnArchiveThinkers(void)
 						localangle2 = mobj->angle;
 				}
 				if(diff & MD_MOVEDIR)
-					mobj->movedir = READLONG(save_p);
+					mobj->movedir = READANGLE(save_p);
 				if(diff & MD_MOVECOUNT)
 					mobj->movecount = READLONG(save_p);
 				if(diff & MD_THRESHOLD)
@@ -1960,7 +1958,7 @@ static void P_NetUnArchiveThinkers(void)
 //
 // P_FinishMobjs
 //
-static void P_FinishMobjs()
+static void P_FinishMobjs(void)
 {
 	thinker_t* currentthinker;
 	mobj_t* mobj;
@@ -2138,7 +2136,7 @@ static void P_NetUnArchiveSpecials(void)
 // =======================================================================
 //          Misc
 // =======================================================================
-static void P_ArchiveMisc()
+static void P_ArchiveMisc(void)
 {
 	ULONG pig = 0;
 	int i;
@@ -2159,7 +2157,7 @@ static void P_ArchiveMisc()
 	WRITEULONG(save_p, pig);
 }
 
-static boolean P_UnArchiveMisc()
+static boolean P_UnArchiveMisc(void)
 {
 	ULONG pig;
 	int i;
@@ -2207,7 +2205,7 @@ static boolean P_UnArchiveMisc()
 			players[i].starpostangle = players[i].starpostbit = 0;
 		}
 
-	if(!P_SetupLevel(gamemap, gameskill, NULL))
+	if(!P_SetupLevel(gamemap, gameskill, "\2"))
 		return false;
 
 	gameaction = ga_nothing;
@@ -2215,7 +2213,7 @@ static boolean P_UnArchiveMisc()
 	return true;
 }
 
-static void P_NetArchiveMisc()
+static void P_NetArchiveMisc(void)
 {
 	ULONG pig = 0;
 	int i;
@@ -2252,7 +2250,7 @@ static void P_NetArchiveMisc()
 	WRITEBYTE(save_p, P_GetRandIndex());
 }
 
-static boolean P_NetUnArchiveMisc()
+static boolean P_NetUnArchiveMisc(void)
 {
 	ULONG pig;
 	int i;
@@ -2309,8 +2307,10 @@ void P_SaveGame(void)
 
 void P_SaveNetGame(void)
 {
-
-	CV_SaveNetVars((char**)&save_p);
+	char **tp, *rp;
+	rp = (char *)&save_p;
+	tp = (char **)rp;
+	CV_SaveNetVars(tp);
 	P_NetArchiveMisc();
 	P_NetArchivePlayers();
 	P_NetArchiveWorld();
@@ -2340,6 +2340,9 @@ boolean P_LoadGame(void)
 	P_UnArchivePlayers();
 	P_FinishMobjs();
 
+	P_SpawnSecretItems(true);
+	P_SpawnPrecipitation();
+
 	for(i = 0; i < MAXPLAYERS; i++)
 		if(playeringame[i])
 			SetSavedSkin(i, players[i].skin, players[i].skincolor);
@@ -2349,8 +2352,10 @@ boolean P_LoadGame(void)
 
 boolean P_LoadNetGame(void)
 {
-
-	CV_LoadNetVars((char**)&save_p);
+	char **tp, *rp;
+	rp = (char *)&save_p;
+	tp = (char**)rp;
+	CV_LoadNetVars(tp);
 	if(!P_NetUnArchiveMisc())
 		return false;
 	P_NetUnArchivePlayers();

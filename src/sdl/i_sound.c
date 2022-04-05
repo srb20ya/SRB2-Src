@@ -61,16 +61,25 @@
 #include <math.h>
 #include "../doomtype.h"
 
+#if defined(_XBOX) && defined(_MSC_VER)
+#include <SDL.h>
+#else
 #include <SDL/SDL.h>
+#endif
+
 #ifdef HAVE_MIXER
-#ifdef __APPLE_CC__
+//#define USE_RWOPS
+#if defined(__APPLE_CC__) || defined(_XBOX)
 #include <SDL_mixer.h> // MacOSX's SDL_mixer
 #else
 #include <SDL/SDL_mixer.h>
 #endif
+
+#else
+#define MIX_CHANNELS 8
 #endif
 
-#if (defined (_WIN32) && !defined(_WIN32_WCE)) || defined(_WIN64)
+#if ((defined (_WIN32) && !defined(_WIN32_WCE)) || defined(_WIN64)) && !defined(_XBOX)
 #include <direct.h>
 #elif defined (__GNUC__)
 #include <unistd.h>
@@ -102,16 +111,16 @@
 //  mixing buffer, and the samplerate of the raw data.
 
 // Needed for calling the actual sound output.
-#ifdef _WIN32_WCE
-#define NUM_CHANNELS            8
+#if defined(_WIN32_WCE) || defined(Dc)
+#define NUM_CHANNELS            MIX_CHANNELS
 #else
-#define NUM_CHANNELS            32
+#define NUM_CHANNELS            MIX_CHANNELS*4
 #endif
 
-#define INDEXOFSFX(x) ((char *)x - (char *)S_sfx) / sizeof(sfxinfo_t)
+#define INDEXOFSFX(x) ((sfxinfo_t *)x - S_sfx)
 
-#ifdef _WIN32_WCE
-static Uint16 samplecount = 512;
+#if defined(_WIN32_WCE) || defined(DC)
+static Uint16 samplecount = 512; //Alam: .5KB samplecount at 11025hz is 46.439909297052154195011337868481ms of buffer
 #else
 static Uint16 samplecount = 1024; //Alam: 1KB samplecount at 22050hz is 46.439909297052154195011337868481ms of buffer
 #endif
@@ -168,11 +177,16 @@ static SDL_bool musicStarted = SDL_FALSE;
 #ifdef HAVE_MIXER
 static SDL_mutex *Msc_Mutex = NULL;
 /* FIXME: Make this file instance-specific */
-#define MIDI_TMPFILE    "srb2music"
-#define MIDI_TMPFILE2    "srb2wav"
+#ifdef _arch_dreamcast
+#define MIDI_PATH     "/ram"
+#else
+#define MIDI_PATH     srb2home
+#endif
+#define MIDI_TMPFILE  "srb2music"
+#define MIDI_TMPFILE2 "srb2wav"
 static int musicvol = 62;
 
-static long double loopstartDig = 0.0L; // warning: use of `long double' type; its size may change in a future release
+static long double loopstartDig = 0.0L;
 static boolean loopingDig = false;
 static void I_FinishMusic(void);
 
@@ -180,6 +194,16 @@ static void I_FinishMusic(void);
 #define MIXER_POS //Mix_GetMusicType and Mix_FadeInMusicPos in 1.2.4+
 #else
 #define Mix_FadeInMusicPos(music,loops,ms,position) Mix_FadeInMusic(music,loops,ms)
+#endif
+
+#if (MIX_MAJOR_VERSION > 1) || (MIX_MINOR_VERSION >= 3) || (MIX_MINOR_VERSION == 2 && MIX_PATCHLEVEL >= 7)
+// ???
+#elif !defined(DC) && (!(defined (_WIN32) && !defined(_WIN32_WCE) || defined(_WIN64)) && !defined(_XBOX))
+#undef USE_RWOPS
+#endif
+
+#ifdef USE_RWOPS
+static SDL_RWops* musicRW = NULL;
 #endif
 
 static const int MIDIfade = 500;
@@ -229,10 +253,12 @@ static void *getsfx(int sfxlump, Uint32 *len)
 {
 	Uint8 *sfx, *paddedsfx = NULL;
 	Uint16 sr;
-	Uint32 i, size = *len, paddedsize = 0;
+	Uint32 size = *len, paddedsize = 0;
 	SDL_AudioCVT sfxcvt;
 
-	sfx = (Uint8 *) W_CacheLumpNum(sfxlump, PU_STATIC);
+	sfx = (Uint8 *)malloc(size);
+	if(sfx) W_ReadLump(sfxlump, sfx);
+	else return NULL;
 	sr = (Uint16)((sfx[3]<<8)+sfx[2]);
 
 	if(Snd_Convert(sr) && SDL_BuildAudioCVT(&sfxcvt, AUDIO_U8, 1, sr, AUDIO_U8, 1, audio.freq))
@@ -244,15 +270,15 @@ static void *getsfx(int sfxlump, Uint32 *len)
 
 		if(sfxcvt.buf && SDL_ConvertAudio(&sfxcvt) == 0) //Alam: let convert it!
 		{
-				Uint16 *sfxfq = NULL;
+				Uint16 *sfxfq;
 				size = sfxcvt.len_cvt + 8;
 
 				// Pads the sound effect out to the mixing buffer size.
 				// The original realloc would interfere with zone memory.
-				paddedsize = ((sfxcvt.len_cvt + (samplecount - 1)) / samplecount) * samplecount;
+				paddedsize = sfxcvt.len_cvt;
 
 				// Allocate from zone memory.
-				paddedsfx = (Uint8 *) Z_Malloc(paddedsize + 8, PU_STATIC, 0);
+				paddedsfx = (Uint8 *) Z_Malloc(paddedsize + 8, PU_SOUND, 0);
 				sfxfq = (Uint16 *)paddedsfx+1;
 				// This should interfere with zone memory handling,
 				//  which does not kick in in the soundserver.
@@ -268,10 +294,10 @@ static void *getsfx(int sfxlump, Uint32 *len)
 			if(sfxcvt.buf) free(sfxcvt.buf);
 			// Pads the sound effect out to the mixing buffer size.
 			// The original realloc would interfere with zone memory.
-			paddedsize = ((size - 8 + (samplecount - 1)) / samplecount) * samplecount;
+			paddedsize = size - 8;
 
 			// Allocate from zone memory.
-			paddedsfx = (Uint8 *) Z_Malloc(paddedsize + 8, PU_STATIC, 0);
+			paddedsfx = (Uint8 *) Z_Malloc(paddedsize + 8, PU_SOUND, 0);
 			// This should interfere with zone memory handling,
 			//  which does not kick in in the soundserver.
 
@@ -283,10 +309,10 @@ static void *getsfx(int sfxlump, Uint32 *len)
 	{
 		// Pads the sound effect out to the mixing buffer size.
 		// The original realloc would interfere with zone memory.
-		paddedsize = ((size - 8 + (samplecount - 1)) / samplecount) * samplecount;
+		paddedsize = size - 8;
 
 		// Allocate from zone memory.
-		paddedsfx = (Uint8 *) Z_Malloc(paddedsize + 8, PU_STATIC, 0);
+		paddedsfx = (Uint8 *) Z_Malloc(paddedsize + 8, PU_SOUND, 0);
 		// This should interfere with zone memory handling,
 		//  which does not kick in in the soundserver.
 
@@ -294,11 +320,8 @@ static void *getsfx(int sfxlump, Uint32 *len)
 		memcpy(paddedsfx, sfx, size);
 	}
 
-	for(i = size; i < paddedsize + 8; i++)
-		paddedsfx[i] = 128;
-
 	// Remove the cached lump.
-	Z_Free(sfx);
+	free(sfx);
 
 	// Preserve padded length.
 	*len = paddedsize;
@@ -429,7 +452,7 @@ static int addsfx(int sfxid, int volume, int step, int seperation)
 	channels[slot].samplerate = (channels[slot].data[3]<<8)+channels[slot].data[2];
 	channels[slot].data += 8; //Alam: offset of the sound header
 
-	for(;FindChannel(handlenums)!=-1;)
+	while(FindChannel(handlenums)!=-1)
 	{
 		handlenums++;
 		// Reset current handle number, limited to 0..65535.
@@ -562,14 +585,14 @@ void I_FreeSfx(sfxinfo_t * sfx)
 	else
 #endif
 	{
-		int i;
+		size_t i;
 
 		for (i = 1; i < NUMSFX; i++)
 		{
 			// Alias? Example is the chaingun sound linked to pistol.
 			if(S_sfx[i].data == sfx->data)
 			{
-				if(&S_sfx[i] != sfx) S_sfx[i].data = NULL;
+				if(S_sfx+i != sfx) S_sfx[i].data = NULL;
 				S_sfx[i].lumpnum = -1;
 				lengths[i] = 0;
 			}
@@ -855,6 +878,13 @@ void I_StartupSound(void)
 #ifndef HAVE_MIXER
 	nomusic = nofmod = true;
 #endif
+#ifdef DC
+	//nosound = true;
+#ifdef HAVE_MIXER
+	nomusic = true;
+	nofmod = true;
+#endif
+#endif
 
 	memset(channels, 0, sizeof(channels)); //Alam: Clean it
 
@@ -883,11 +913,7 @@ void I_StartupSound(void)
 	else
 	{
 		audio.samples = samplecount;
-#ifdef _WIN32_WCE
-		audio.freq = 11025;
-#else
 		audio.freq = cv_samplerate.value;
-#endif
 	}
 
 	if(nosound)
@@ -942,7 +968,7 @@ void I_StartupSound(void)
 			//I_AddExitFunc(I_ShutdownSound);
 			snddev.bps = 16;
 			snddev.sample_rate = audio.freq;
-#if defined(_WIN32) || defined(_WIN64)
+#if (defined(_WIN32) || defined(_WIN64)) && !defined(_XBOX)
 			snddev.cooplevel = 0x00000002;
 			snddev.hWnd = vid.WndParent;
 #endif
@@ -967,6 +993,12 @@ void I_StartupSound(void)
 		SDL_CloseAudio();
 		nosound = true;
 		return;
+	}
+	else
+	{
+		char *ad = malloc(100);
+		CONS_Printf(" Staring up with audio driver : %s\n", SDL_AudioDriverName(ad,100));
+		free(ad);
 	}
 	samplecount = audio.samples;
 	CV_SetValue(&cv_samplerate,audio.freq);
@@ -1012,7 +1044,15 @@ void I_ShutdownMusic(void)
 	I_StopDigSong();
 	I_UnRegisterSong(0);
 	Mix_CloseAudio();
-
+#ifdef USE_RWOPS
+	if(musicRW)
+	{
+		Z_Free(musicRW->hidden.mem.base);
+		SDL_FreeRW(musicRW);
+	}
+	musicRW = NULL;
+#endif
+	unlink(va("%s/"MIDI_TMPFILE2,MIDI_PATH));
 	CONS_Printf("shut down\n");
 	musicStarted = SDL_FALSE;
 	if(Msc_Mutex)
@@ -1032,6 +1072,9 @@ void I_InitDigMusic(void)
 
 void I_InitMusic(void)
 {
+#ifdef HAVE_MIXER
+	char *ad;
+#endif
 	if(nomusic && nofmod)
 		return;
 
@@ -1039,11 +1082,13 @@ void I_InitMusic(void)
 		return;
 
 #ifdef HAVE_MIXER
+#ifndef DC
 	if(audio.freq < 44100 && !M_CheckParm ("-freq")) //I want atleast 44Khz
 	{
 		audio.samples = (Uint16)(audio.samples*(int)(44100/audio.freq));
 		audio.freq = 44100; //Alam: to keep it around the same XX ms
 	}
+#endif
 
 	if(sound_started
 #ifdef HW3SOUND
@@ -1058,6 +1103,7 @@ void I_InitMusic(void)
 
 	CONS_Printf("I_InitMusic:");
 
+	ad = malloc(100);
 	if(Mix_OpenAudio(audio.freq, audio.format, audio.channels, audio.samples) < 0) //open_music(&audio)
 	{
 		CONS_Printf(" Unable to open music: %s\n", Mix_GetError());
@@ -1075,9 +1121,20 @@ void I_InitMusic(void)
 				nosound = true;
 				sound_started = false;
 			}
+			else if(ad)
+				CONS_Printf(" Restaring up with audio driver : %s\n", SDL_AudioDriverName(ad,100));
+			else
+				CONS_Printf(" Restaring up with audio driver\n");
 		}
 		return;
 	}
+	else if(ad)
+	{
+		CONS_Printf(" Staring up with audio driver : %s with SDL_Mixer\n", SDL_AudioDriverName(ad,100));
+		free(ad);
+	}
+	else
+		CONS_Printf(" Staring up with audio driver with SDL_Mixer\n");
 
 
 #if 0 /// \todo Alam: Test!@#
@@ -1176,13 +1233,15 @@ void I_UnRegisterSong(int handle)
 		return;
 
 	Mix_HaltMusic();
+	while(Mix_PlayingMusic())
+		;
 
-	if(music[handle])
+	if(music[0])
 	{
-		Mix_FreeMusic(music[handle]);
-		music[handle] = NULL;
+		Mix_FreeMusic(music[0]);
+		music[0] = NULL;
 	}
-	unlink(va("%s"MIDI_TMPFILE,srb2home));
+	unlink(va("%s/"MIDI_TMPFILE,MIDI_PATH));
 #endif
 }
 
@@ -1190,7 +1249,7 @@ int I_RegisterSong(void *data, int len)
 {
 #ifdef HAVE_MIXER
 	FILE *midfile;
-	const char *tempname = va("%s"MIDI_TMPFILE,srb2home);
+	const char *tempname = va("%s/"MIDI_TMPFILE,MIDI_PATH);
 
 	if(nomusic || !musicStarted)
 		return false;
@@ -1202,16 +1261,19 @@ int I_RegisterSong(void *data, int len)
 		return false;
 	}
 
+#if 0
 	if(memcmp(data, "MThd", 4) == 0) // support mid file in WAD !!!
 	{
 		fwrite(data, 1, len, midfile);
 	}
 	else
 	{
-
 		CONS_Printf("Music Lump is not a MIDI lump\n");
 		return false;
 	}
+#else
+	fwrite(data, 1, len, midfile);
+#endif
 
 	fclose(midfile);
 
@@ -1219,6 +1281,7 @@ int I_RegisterSong(void *data, int len)
 
 	if(music[0] == NULL)
 	{
+		unlink(va("%s/"MIDI_TMPFILE,MIDI_PATH));
 		CONS_Printf("Couldn't load MIDI from %s: %s\n", tempname, Mix_GetError());
 	}
 #else
@@ -1243,14 +1306,59 @@ void I_SetMIDIMusicVolume(int volume)
 #endif
 }
 
+#ifdef HAVE_MIXER
+static inline boolean LoadSong(const char* lumpname, int lumplength)
+{
+	const char *tempname;
+	void *data;
+	FILE *midfile;
+
+#ifdef USE_RWOPS
+	data = W_CacheLumpName ( lumpname, PU_STATIC );
+	if(musicRW)
+	{
+		Z_Free(musicRW->hidden.mem.base);
+		SDL_FreeRW(musicRW);
+		musicRW = NULL;
+	}
+	musicRW = SDL_RWFromMem(data,lumplength);
+	if(!musicRW)
+	{
+		Z_Free(data);
+		return false;
+	}
+	music[1] = Mix_LoadMUS_RW(musicRW);
+	return true;
+#endif
+
+	tempname = va("%s/"MIDI_TMPFILE2,MIDI_PATH);
+	midfile = fopen(tempname, "wb");
+
+	if(!midfile)
+	{
+		CONS_Printf("Couldn't write WAV to %s\n", tempname);
+		return false;
+	}
+
+	data = W_CacheLumpName ( lumpname, PU_MUSIC );
+
+	fwrite(data, 1, lumplength, midfile);
+	fclose(midfile);
+
+	Z_Free(data);
+
+	music[1] = Mix_LoadMUS(tempname);
+
+	return true;
+}
+#endif
+
 boolean I_StartDigSong (const char* musicname, int looping)
 {
 #ifdef HAVE_MIXER
-	char filename[9];
-	const char *tempname;
+	XBOXSTATIC char filename[9];
 	void *data;
 	int lumpnum,lumplength;
-	FILE *midfile;
 
 	if(nofmod)
 		return false;
@@ -1261,8 +1369,6 @@ boolean I_StartDigSong (const char* musicname, int looping)
 
 	I_StopDigSong();
 
-	//unlink(MIDI_TMPFILE2);
-
 	if(lumpnum == -1)
 	{
 	// Alam_GBC: like in win32/win_snd.c: Graue 02-29-2004: don't worry about missing music, there might still be a MIDI
@@ -1272,30 +1378,22 @@ boolean I_StartDigSong (const char* musicname, int looping)
 	else
 		lumplength = W_LumpLength(lumpnum);
 
-	tempname = va("%s"MIDI_TMPFILE,srb2home);
-	midfile = fopen(tempname, "wb");
-	if(!midfile)
+	if(Msc_Mutex) SDL_LockMutex(Msc_Mutex);
+
+	if(!LoadSong(filename,lumplength))
 	{
-		CONS_Printf("Couldn't write WAV to %s\n", tempname);
+		if(Msc_Mutex) SDL_UnlockMutex(Msc_Mutex);
 		return false;
 	}
 
-	data = W_CacheLumpName ( filename, PU_CACHE );
-
-	fwrite(data, 1, lumplength, midfile);
-	fclose(midfile);
-
-	Z_Free(data);
-
-	music[1] = Mix_LoadMUS(tempname);
-
 	if(!music[1])
 	{
+		if(Msc_Mutex) SDL_UnlockMutex(Msc_Mutex);
 		//CONS_Printf("Couldn't load music lump %s from the file %s\n",filename,tempname);
+		unlink(va("%s/"MIDI_TMPFILE2,MIDI_PATH));
 	}
 	else
 	{
-		if(Msc_Mutex) SDL_LockMutex(Msc_Mutex);
 		loopingDig = looping;
 #ifdef MIXER_POS
 		if(Mix_GetMusicType(music[1]) == MUS_OGG) //Only Ogg files
@@ -1315,13 +1413,13 @@ boolean I_StartDigSong (const char* musicname, int looping)
 		{
 			int scan;
 			byte* dataum;
-			char looplength[64];
+			XBOXSTATIC char looplength[64];
 			unsigned int loopstart = 0;
 			int newcount = 0;
 
 			Mix_HookMusicFinished(I_FinishMusic);
 
-			data = W_CacheLumpName ( filename, PU_CACHE );
+			data = W_CacheLumpName ( filename, PU_MUSIC );
 
 			dataum = (byte *)data;
 
@@ -1397,7 +1495,7 @@ boolean I_StartDigSong (const char* musicname, int looping)
 
 			if(loopstart > 0)
 			{
-				loopstartDig = (8.0L+loopstart) / 44100.0L; //8 PCM chucks off and PCM to secs
+				loopstartDig = (44.1L+loopstart) / 44100.0L; //8 PCM chucks off and PCM to secs
 #ifdef PARANOIA
 				//CONS_Printf("looping start at %i\n",(int)loopstartDig);
 #endif
@@ -1427,39 +1525,41 @@ void I_StopDigSong(void)
 
 	Mix_HookMusicFinished(NULL);
 	Mix_HaltMusic();
+	while(Mix_PlayingMusic())
+		;
 
 	if(music[1])
 	{
 		Mix_FreeMusic(music[1]);
 		music[1] = NULL;
 	}
+	unlink(va("%s/"MIDI_TMPFILE2,MIDI_PATH));
+
+	
 #endif
 }
 
 void I_SetDigMusicVolume(int volume)
 {
-#ifdef HAVE_MIXER
 	//if(music[1] == NULL) return;
 
 	I_SetMIDIMusicVolume(volume);
-#else
-	volume = 0;
-#endif
 }
 
 
 #ifdef HAVE_MIXER
 static void I_FinishMusic(void)
 {
-	int musicst;
-	if(!music[1])
-		return;
 	if(Msc_Mutex) SDL_LockMutex(Msc_Mutex);
-	musicst = Mix_FadeInMusicPos(music[1],loopstartDig?0:-1,Digfade,(double)loopstartDig);
-	if(musicst == 0)
+	if(!music[1])
+	{
+		if(Msc_Mutex) SDL_UnlockMutex(Msc_Mutex);
+		return;
+	}
+	if(Mix_FadeInMusicPos(music[1],loopstartDig?0:-1,Digfade,(double)loopstartDig) == 0)
 		Mix_VolumeMusic(musicvol);
-	if(Msc_Mutex) SDL_UnlockMutex(Msc_Mutex);
 	else if(devparm)
 		CONS_Printf("I_FinishMusic: Couldn't loop song because %s\n",Mix_GetError());
+	if(Msc_Mutex) SDL_UnlockMutex(Msc_Mutex);
 }
 #endif

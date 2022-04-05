@@ -303,8 +303,9 @@ typedef struct {
 const CPUInfoFlags *I_CPUInfo(void);
 
 /**	\brief Find main WAD
+		\return path to main WAD
 */
-void I_LocateWad(void);
+const char *I_LocateWad(void);
 
 /**	\brief First Joystick's events
 */
@@ -317,9 +318,5 @@ void I_GetJoystick2Events(void);
 /**	\brief Mouses events
 */
 void I_GetMouseEvents(void);
-
-/**	\brief Consle keys
-*/
-int I_ConsoleKey(void);
 
 #endif

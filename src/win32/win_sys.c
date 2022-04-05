@@ -299,13 +299,55 @@ byte* I_AllocLow(int length)
 // ===========================================================================================
 //                                                                                      EVENTS
 // ===========================================================================================
+static inline BOOL I_ReadyConsole(HANDLE ci)
+{
+	DWORD gotinput;
+	if(ci == (HANDLE)-1 || GetFileType(ci) != FILE_TYPE_CHAR) return FALSE;
+	return (GetNumberOfConsoleInputEvents(ci, &gotinput) && gotinput);
+}
 
+static inline VOID I_GetConsoleEvents(VOID)
+{
+	HANDLE ci = GetStdHandle(STD_INPUT_HANDLE);
+	HANDLE co = GetStdHandle(STD_OUTPUT_HANDLE);
+	event_t ev = {0,0,0,0};
+	INPUT_RECORD input;
+	DWORD gotinput;
+	while(I_ReadyConsole(ci) && ReadConsoleInput(ci, &input, 1, &gotinput) && gotinput)
+	{
+		if(input.EventType == KEY_EVENT && input.Event.KeyEvent.bKeyDown)
+		{
+			ev.type = ev_console;
+			switch (input.Event.KeyEvent.wVirtualKeyCode)
+			{
+				case VK_ESCAPE:
+					ev.data1 = KEY_ESCAPE;
+					break;
+				case VK_RETURN:
+					ev.data1 = KEY_ENTER;
+					break;
+				default:
+					ev.data1 = MapVirtualKey(input.Event.KeyEvent.wVirtualKeyCode,2); // convert in to char
+			}
+			if(co != (HANDLE)-1 && GetFileType(co) == FILE_TYPE_CHAR)
+			{
+#ifdef _UNICODE
+				WriteConsole(co, &input.Event.KeyEvent.uChar.UnicodeChar, 1, &gotinput, NULL);
+#else
+				WriteConsole(co, &input.Event.KeyEvent.uChar.AsciiChar, 1 , &gotinput, NULL);
+#endif
+			}
+			if(ev.data1) D_PostEvent(&ev);
+		}
+	}
+}
 // ----------
 // I_GetEvent
 // Post new events for all sorts of user-input
 // ----------
 void I_GetEvent(void)
 {
+	I_GetConsoleEvents();
 	I_GetKeyboardEvents();
 	I_GetMouseEvents();
 	I_GetJoystickEvents();
@@ -318,6 +360,7 @@ void I_GetEvent(void)
 void I_OsPolling(void)
 {
 	MSG msg;
+	HANDLE ci = GetStdHandle(STD_INPUT_HANDLE);
 
 	// we need to dispatch messages to the window
 	// so the window procedure can respond to messages and PostEvent() for keys
@@ -335,9 +378,9 @@ void I_OsPolling(void)
 			else // winspec : this is quit message
 				I_Quit();
 		}
-		if(!appActive && !netgame)
+		if(!appActive && !netgame && !I_ReadyConsole(ci))
 			WaitMessage();
-	} while(!appActive && !netgame);
+	} while(!appActive && !netgame && !I_ReadyConsole(ci));
 
 	// this is called by the network synchronization,
 	// check keys and allow escaping
@@ -433,7 +476,7 @@ static void signal_handler(int num)
 	}
 #endif
 
-	MessageBox(hWndMain, va("signal_handler(): %s", sigmsg), "SRB2 error", MB_OK|MB_ICONERROR);
+	MessageBoxA(hWndMain, va("signal_handler(): %s", sigmsg), "SRB2 error", MB_OK|MB_ICONERROR);
 
 	signal(num, SIG_DFL); // default signal action
 	raise(num);
@@ -443,17 +486,25 @@ static void signal_handler(int num)
 //
 // put an error message (with format) on stderr
 //
-void I_OutputMsg(const char *error, ...)
+void I_OutputMsg(const char *fmt, ...)
 {
+	HANDLE co = GetStdHandle(STD_OUTPUT_HANDLE);
 	va_list argptr;
 	char txt[8192];
 
-	va_start(argptr, error);
-	vsprintf(txt, error, argptr);
+	va_start(argptr,fmt);
+	vsprintf(txt, fmt, argptr);
 	va_end(argptr);
 
-	fprintf(stderr, "Error: %s\n", txt);
-	// don't flush the message!
+	OutputDebugStringA(txt);
+	if(co != (HANDLE)-1)
+	{
+		DWORD bytesWritten;
+		if(GetFileType(co) == FILE_TYPE_CHAR)
+			WriteConsoleA(co, txt, (DWORD)strlen(txt), &bytesWritten, NULL);
+		else
+			WriteFile(co, txt, (DWORD)strlen(txt), &bytesWritten, NULL);
+	}
 
 #ifdef LOGMESSAGES
 	if(logstream != INVALID_HANDLE_VALUE)
@@ -489,7 +540,7 @@ void I_Error(const char* error, ...)
 			vsprintf(txt, error, argptr);
 			va_end(argptr);
 
-			MessageBox(hWndMain, txt, "SRB2 Recursive Error", MB_OK|MB_ICONERROR);
+			MessageBoxA(hWndMain, txt, "SRB2 Recursive Error", MB_OK|MB_ICONERROR);
 			exit(-1); // recursive errors detected
 		}
 	}
@@ -497,7 +548,7 @@ void I_Error(const char* error, ...)
 
 	// put message to stderr
 	va_start(argptr, error);
-	wvsprintf(txt, error, argptr);
+	wvsprintfA(txt, error, argptr);
 	va_end(argptr);
 
 	CONS_Printf("I_Error(): %s\n", txt);
@@ -530,16 +581,63 @@ void I_Error(const char* error, ...)
 	}
 #endif
 
-	MessageBox(hWndMain, txt, "SRB2 Error", MB_OK|MB_ICONERROR);
+	MessageBoxA(hWndMain, txt, "SRB2 Error", MB_OK|MB_ICONERROR);
 
 	exit(-1);
 }
+
+static inline VOID ShowEndTxt(HANDLE co)
+{
+	int i;
+	unsigned short j, att = 0;
+	int nlflag = 1;
+	CONSOLE_SCREEN_BUFFER_INFO backupcon;
+	COORD resizewin = {80,-1};
+	unsigned short *text;
+	void *data;
+	int endoomnum = W_GetNumForName("ENDOOM");
+
+	/* get the lump with the text */
+	data = text = W_CacheLumpNum(endoomnum, PU_CACHE);
+
+	backupcon.wAttributes = FOREGROUND_RED|FOREGROUND_GREEN|FOREGROUND_BLUE; // Just in case
+	GetConsoleScreenBufferInfo(co, &backupcon); //Store old state
+	resizewin.Y = backupcon.dwSize.Y;
+	if(backupcon.dwSize.X < resizewin.X)
+		SetConsoleScreenBufferSize(co, resizewin);
+
+	for (i=1; i<=80*25; i++) // print 80x25 text and deal with the attributes too
+	{
+		j = (unsigned short)(*text >> 8); // attribute first
+		if (j != att) // attribute changed?
+		{
+			att = j; // save current attribute
+			SetConsoleTextAttribute(co, j); //set fg and bg color for buffer
+		}
+
+		printf("%c",*text++ & 0xff); // now the text
+
+		if (nlflag && !(i % 80) && backupcon.dwSize.X > resizewin.X) // do we need a nl?
+		{
+			att = backupcon.wAttributes;
+			SetConsoleTextAttribute(co, att); // all attributes off
+			printf("\n");
+		}
+	}
+	SetConsoleTextAttribute(co, backupcon.wAttributes); // all attributes off
+	if (nlflag)
+		printf("\n");
+
+	Z_Free(data);
+}
+
 
 //
 // I_Quit: shutdown everything cleanly, in reverse order of Startup.
 //
 void I_Quit(void)
 {
+	HANDLE co = GetStdHandle(STD_OUTPUT_HANDLE);
 	// when recording a demo, should exit using 'q',
 	// but sometimes we forget and use Alt+F4, so save here too.
 	if(demorecording)
@@ -567,7 +665,12 @@ void I_Quit(void)
 		logstream = INVALID_HANDLE_VALUE;
 	}
 #endif
-
+	if (!M_CheckParm("-noendtxt") && W_CheckNumForName("ENDOOM")!=-1
+		&& co != (HANDLE)(-1) && GetFileType(co) == FILE_TYPE_CHAR)
+	{
+		printf("\r");
+		ShowEndTxt(co);
+	}
 	fflush(stderr);
 	exit(0);
 }
@@ -578,14 +681,14 @@ void I_Quit(void)
 // --------------------------------------------------------------------------
 void I_GetLastErrorMsgBox(void)
 {
-	LPVOID lpMsgBuf;
+	LPSTR lpMsgBuf = NULL;
 
-	FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER|FORMAT_MESSAGE_FROM_SYSTEM,
+	FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER|FORMAT_MESSAGE_FROM_SYSTEM,
 		NULL, GetLastError(), MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), // Default language
-		(LPTSTR)&lpMsgBuf, 0, NULL);
+		lpMsgBuf, 0, NULL);
 
 	// Display the string.
-	MessageBox(NULL, lpMsgBuf, "GetLastError", MB_OK|MB_ICONINFORMATION);
+	MessageBoxA(NULL, lpMsgBuf, "GetLastError", MB_OK|MB_ICONINFORMATION);
 
 	// put it in console too and log if any 
 	CONS_Printf("Error: %s\n", lpMsgBuf);
@@ -662,8 +765,9 @@ static void CreateDevice2(LPDIRECTINPUT di, REFGUID pguid, LPDIRECTINPUTDEVICE* 
 		// get Device2 but only if we are not in DirectInput version 3
 		if(!bDX0300 && lpDEV2)
 		{
-			hr2 = lpdid1->lpVtbl->QueryInterface(lpdid1, &IID_IDirectInputDevice2,
-				(void**)&lpdid2);
+			LPDIRECTINPUTDEVICE2 *rp = &lpdid2;
+			LPVOID *tp  = (LPVOID *)rp;
+			hr2 = lpdid1->lpVtbl->QueryInterface(lpdid1, &IID_IDirectInputDevice2, tp);
 			if(FAILED(hr2))
 			{
 				CONS_Printf("\2Could not create IDirectInput device 2");
@@ -800,7 +904,7 @@ void I_StartupMouse2(void)
 	if(mouse2filehandle != (HANDLE)(-1))
 	{
 		// COM file handle
-		mouse2filehandle = CreateFile(cv_mouse2port.string, GENERIC_READ|GENERIC_WRITE,
+		mouse2filehandle = CreateFileA(cv_mouse2port.string, GENERIC_READ|GENERIC_WRITE,
 		                              0, // exclusive access
 		                              NULL, // no security attrs
 		                              OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
@@ -1440,7 +1544,7 @@ static BOOL CALLBACK DIEnumJoysticks ( LPCDIDEVICEINSTANCE lpddi,
 {
 	LPDIRECTINPUTDEVICE pdev;
 	DIPROPRANGE         diprg;
-	DIDEVCAPS_DX3       caps;
+	DIDEVCAPS           caps;
 	BOOL                bUseThisOne = FALSE;
 
 	iJoyNum++;
@@ -1448,8 +1552,11 @@ static BOOL CALLBACK DIEnumJoysticks ( LPCDIDEVICEINSTANCE lpddi,
 	//faB: if cv holds a string description of joystick, the value from atoi() is 0
 	//     else, the value was probably set by user at console to one of the previously
 	//     enumerated joysticks
-	if ( ((consvar_t *)pvRef)->value == iJoyNum ||
-		 !lstrcmp( ((consvar_t *)pvRef)->string, lpddi->tszProductName ) )
+	if ( ((consvar_t *)pvRef)->value == iJoyNum 
+#ifndef _UNICODE
+		|| !lstrcmpA( ((consvar_t *)pvRef)->string, lpddi->tszProductName )
+#endif
+		 )
 		bUseThisOne = TRUE;
 
 	//CONS_Printf (" cv joy is %s\n", ((consvar_t *)pvRef)->string);
@@ -1480,7 +1587,7 @@ static BOOL CALLBACK DIEnumJoysticks ( LPCDIDEVICEINSTANCE lpddi,
 	// get the Device capabilities
 	//
 	caps.dwSize = sizeof(DIDEVCAPS_DX3);
-	if ( FAILED( pdev->lpVtbl->GetCapabilities ( pdev, (DIDEVCAPS*)&caps ) ) )
+	if ( FAILED( pdev->lpVtbl->GetCapabilities ( pdev, &caps ) ) )
 	{
 		CONS_Printf ("DIEnumJoysticks(): GetCapabilities FAILED\n");
 		pdev->lpVtbl->Release (pdev);
@@ -1682,8 +1789,9 @@ static BOOL CALLBACK DIEnumJoysticks ( LPCDIDEVICEINSTANCE lpddi,
 	}
 	else
 	{
-		if (FAILED( pdev->lpVtbl->QueryInterface(pdev, &IID_IDirectInputDevice2,
-		                                         (LPVOID *)&lpDIJA) ) )
+		LPDIRECTINPUTDEVICE2 *rp = &lpDIJA;
+		LPVOID *tp  = (LPVOID *)rp;
+		if (FAILED( pdev->lpVtbl->QueryInterface(pdev, &IID_IDirectInputDevice2, tp) ) )
 		{
 			CONS_Printf ("DIEnumJoysticks(): QueryInterface FAILED\n");
 			pdev->lpVtbl->Release (pdev);
@@ -1739,7 +1847,7 @@ void I_InitJoystick(void)
 	else
 		// don't do anything at the registration of the joystick cvar,
 		// until config is loaded
-		 if(!lstrcmp(cv_usejoystick.string, "0" ))
+		 if(!lstrcmpA(cv_usejoystick.string, "0" ))
 		return;
 
 	// acquire the joystick only once
@@ -1803,7 +1911,7 @@ static BOOL CALLBACK DIEnumJoysticks2 ( LPCDIDEVICEINSTANCE lpddi,
 {
 	LPDIRECTINPUTDEVICE pdev;
 	DIPROPRANGE         diprg;
-	DIDEVCAPS_DX3       caps;
+	DIDEVCAPS           caps;
 	BOOL                bUseThisOne = FALSE;
 
 	iJoy2Num++;
@@ -1811,8 +1919,11 @@ static BOOL CALLBACK DIEnumJoysticks2 ( LPCDIDEVICEINSTANCE lpddi,
 	//faB: if cv holds a string description of joystick, the value from atoi() is 0
 	//     else, the value was probably set by user at console to one of the previsouly
 	//     enumerated joysticks
-	if ( ((consvar_t *)pvRef)->value == iJoy2Num ||
-		 !lstrcmp( ((consvar_t *)pvRef)->string, lpddi->tszProductName ) )
+	if ( ((consvar_t *)pvRef)->value == iJoy2Num
+#ifndef _UNICODE
+		|| !lstrcmpA( ((consvar_t *)pvRef)->string, lpddi->tszProductName )
+#endif
+		)
 		bUseThisOne = TRUE;
 
 	//CONS_Printf (" cv joy2 is %s\n", ((consvar_t *)pvRef)->string);
@@ -1843,7 +1954,7 @@ static BOOL CALLBACK DIEnumJoysticks2 ( LPCDIDEVICEINSTANCE lpddi,
 	// get the Device capabilities
 	//
 	caps.dwSize = sizeof(DIDEVCAPS_DX3);
-	if ( FAILED( pdev->lpVtbl->GetCapabilities ( pdev, (DIDEVCAPS*)&caps ) ) )
+	if ( FAILED( pdev->lpVtbl->GetCapabilities ( pdev, &caps ) ) )
 	{
 		CONS_Printf ("DIEnumJoysticks2(): GetCapabilities FAILED\n");
 		pdev->lpVtbl->Release (pdev);
@@ -2045,8 +2156,9 @@ static BOOL CALLBACK DIEnumJoysticks2 ( LPCDIDEVICEINSTANCE lpddi,
 	}
 	else
 	{
-		if (FAILED( pdev->lpVtbl->QueryInterface(pdev, &IID_IDirectInputDevice2,
-		                                         (LPVOID *)&lpDIJ2A) ) )
+		LPDIRECTINPUTDEVICE2 *rp = &lpDIJ2A;
+		LPVOID *tp  = (LPVOID *)rp;
+		if (FAILED( pdev->lpVtbl->QueryInterface(pdev, &IID_IDirectInputDevice2, tp) ) )
 		{
 			CONS_Printf ("DIEnumJoysticks2(): QueryInterface FAILED\n");
 			pdev->lpVtbl->Release (pdev);
@@ -2105,7 +2217,7 @@ void I_InitJoystick2 (void)
 	else
 		// don't do anything at the registration of the joystick cvar,
 		// until config is loaded
-		if ( !lstrcmp( cv_usejoystick2.string, "0" ) )
+		if ( !lstrcmpA( cv_usejoystick2.string, "0" ) )
 			return;
 
 	// acquire the joystick only once
@@ -2881,7 +2993,7 @@ int I_GetKey(void)
 	{
 		ev = &events[eventtail];
 		eventtail = (eventtail+1) & (MAXEVENTS-1);
-		if(ev->type == ev_keydown)
+		if(ev->type == ev_keydown || ev->type == ev_console)
 			return ev->data1;
 		else
 			return 0;
@@ -2898,6 +3010,9 @@ int I_GetKey(void)
 void I_StartupKeyboard(void)
 {
 	DIPROPDWORD dip;
+
+	if(dedicated)
+		return;
 
 	// make sure the app window has the focus or DirectInput acquire keyboard won't work
 	if(hWndMain)
@@ -3183,10 +3298,10 @@ void I_SaveMemToFile(unsigned char* pData, unsigned long iLength, const char* sF
 	HANDLE fileHandle;
 	DWORD bytesWritten;
 
-	fileHandle = CreateFile(sFileName, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS,
+	fileHandle = CreateFileA(sFileName, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS,
 		FILE_ATTRIBUTE_NORMAL|FILE_FLAG_WRITE_THROUGH, NULL);
 	if(fileHandle == (HANDLE)-1)
-		I_Error("SaveMemToFile");
+		I_Error("SaveMemToFile: Error opening file %s",sFileName);
 	WriteFile(fileHandle, pData, iLength, &bytesWritten, NULL);
 	CloseHandle(fileHandle);
 }
@@ -3234,7 +3349,7 @@ char* I_GetUserName(void)
 	char* p;
 	DWORD i = MAXPLAYERNAME;
 
-	if (!GetUserName(username, &i))
+	if (!GetUserNameA(username, &i))
 	{
 		p = getenv("USER");
 		if(!p)
@@ -3265,7 +3380,7 @@ int I_mkdir(const char* dirname, int unixright)
 {
 	SECURITY_ATTRIBUTES ntrights = {0, NULL, TRUE}; /// \todo should implement ntright under nt...
 	unixright = 0;
-	return CreateDirectoryEx(".", dirname, &ntrights);
+	return CreateDirectoryExA(".", dirname, &ntrights);
 }
 
 const CPUInfoFlags *I_CPUInfo(void)

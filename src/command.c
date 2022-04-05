@@ -112,7 +112,7 @@ void COM_BufAddText(const char* text)
   */
 void COM_BufInsertText(const char* text)
 {
-	char* temp;
+	char* temp = NULL;
 	size_t templen;
 
 	// copy off any commands still remaining in the exec buffer
@@ -123,8 +123,6 @@ void COM_BufInsertText(const char* text)
 		memcpy(temp, com_text.data, templen);
 		VS_Clear(&com_text);
 	}
-	else
-		temp = NULL; // shut up compiler
 
 	// add the entire text of the file (or alias)
 	COM_BufAddText(text);
@@ -184,7 +182,8 @@ void COM_BufExecute(void)
 		{
 			i++;
 			com_text.cursize -= i;
-			memcpy(text, text+i, com_text.cursize);
+			//memcpy(text, text+i, com_text.cursize); // Use memmove if the memory areas do overlap.
+			memmove(text, text+i, com_text.cursize); 
 		}
 
 		// execute the command line
@@ -1030,8 +1029,7 @@ found:
 
 	if(var->flags & CV_FLOAT)
 	{
-		double d;
-		d = atof(var->string);
+		double d = atof(var->string);
 		var->value = (int)(d * FRACUNIT);
 	}
 	else
@@ -1055,19 +1053,22 @@ finish:
 //      2 byte for variable identification
 //      then the value of the variable followed with a 0 byte (like str)
 //
+
+static boolean serverloading = false;
+
 static void Got_NetVar(char** p, int playernum)
 {
 	consvar_t* cvar;
 	unsigned short netid;
 	char* svalue;
 
-	if(playernum != serverplayer && playernum != adminplayer)
+	if(playernum != serverplayer && playernum != adminplayer && !serverloading)
 	{
 		// not from server or remote admin, must be hacked/buggy client
 		CONS_Printf("Illegal netvar command received from %s\n", player_names[playernum]);
 		if(server)
 		{
-			char buf[2];
+			XBOXSTATIC char buf[2];
 
 			buf[0] = (char)playernum;
 			buf[1] = KICK_MSG_CON_FAIL;
@@ -1109,9 +1110,11 @@ void CV_LoadNetVars(char** p)
 {
 	consvar_t* cvar;
 
+	serverloading = true;
 	for(cvar = consvar_vars; cvar; cvar = cvar->next)
 		if(cvar->flags & CV_NETVAR)
 			Got_NetVar(p, 0);
+	serverloading = false;
 }
 
 /** Sets a value to a variable without calling its callback function.
@@ -1161,7 +1164,7 @@ void CV_Set(consvar_t* var, const char* value)
 	if(var->flags & CV_NETVAR)
 	{
 		// send the value of the variable
-		char buf[128];
+		XBOXSTATIC char buf[128];
 		char* p;
 		if(!(server || admin))
 		{
@@ -1304,8 +1307,8 @@ void CV_AddValue(consvar_t* var, int increment)
 							gt = -1; // don't loop forever if there's none of a certain gametype
 					} while(var->PossibleValue[newvalue].strvalue == NULL
 						|| (gt == GT_COOP && !(mapheaderinfo[newvalue].typeoflevel & TOL_COOP))
-						|| (gt == GT_MATCH && !(mapheaderinfo[newvalue].typeoflevel & TOL_MATCH))
-						|| (gt == GT_RACE && !(mapheaderinfo[newvalue].typeoflevel & TOL_RACE))
+						|| ((gt == GT_MATCH||gt==42) && !(mapheaderinfo[newvalue].typeoflevel & TOL_MATCH))
+						|| ((gt == GT_RACE||gt==43) && !(mapheaderinfo[newvalue].typeoflevel & TOL_RACE))
 						|| (gt == GT_TAG && !(mapheaderinfo[newvalue].typeoflevel & TOL_TAG))
 						|| (gt == GT_CTF && !(mapheaderinfo[newvalue].typeoflevel & TOL_CTF))
 						|| (gt == GT_CHAOS && !(mapheaderinfo[newvalue].typeoflevel & TOL_CHAOS)));

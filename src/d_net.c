@@ -51,9 +51,9 @@
 #define CONNECTIONTIMEOUT (15*TICRATE)
 
 /// \brief network packet
-doomcom_t* doomcom;
+doomcom_t* doomcom = NULL;
 /// \brief network packet data, points inside doomcom
-doomdata_t* netbuffer; 
+doomdata_t* netbuffer = NULL; 
 
 FILE* debugfile = NULL; // put some net info in a file during the game
 
@@ -75,6 +75,10 @@ void (*I_NetCloseSocket)(void) = NULL;
 void (*I_NetFreeNodenum)(int nodenum) = NULL;
 signed char (*I_NetMakeNode)(const char* address) = NULL;
 boolean (*I_NetOpenSocket)(void) = NULL;
+boolean (*I_Ban) (int node) = NULL;
+void (*I_ClearBans)(void) = NULL;
+boolean *bannednode = NULL;
+
 
 // network stats
 static tic_t statstarttic;
@@ -92,11 +96,13 @@ int packetheaderlength;
 boolean Net_GetNetStat(void)
 {
 	tic_t t = I_GetTime();
-	static int oldsendbyte = 0;
+	static INT64 oldsendbyte = 0;
 	if(statstarttic+STATLENGTH <= t)
 	{
-		getbps = (getbytes*TICRATE)/(t-statstarttic);
-		sendbps = (int)(((sendbytes - oldsendbyte)*TICRATE)/(t - statstarttic));
+		tic_t df = t-statstarttic;
+		INT64 newsendbyte = sendbytes - oldsendbyte;
+		sendbps = (int)(newsendbyte*TICRATE)/df;
+		getbps = (getbytes*TICRATE)/df;
 		if(sendackpacket)
 			lostpercent = 100.0f*(float)retransmit/(float)sendackpacket;
 		else
@@ -111,7 +117,7 @@ boolean Net_GetNetStat(void)
 			gamelostpercent = 0.0f;
 
 		ticmiss = ticruned = 0;
-		oldsendbyte = (int)sendbytes;
+		oldsendbyte = sendbytes;
 		getbytes = 0;
 		sendackpacket = getackpacket = duppacket = retransmit = 0;
 		statstarttic = t;
@@ -560,7 +566,7 @@ static void InitNode(int node)
 	nodes[node].flags = 0;
 }
 
-static void InitAck()
+static void InitAck(void)
 {
 	int i;
 
@@ -925,7 +931,7 @@ static void Internal_Get(void)
 	doomcom->remotenode = -1;
 }
 
-FUNCNORETURN static void Internal_Send(void)
+FUNCNORETURN static ATTRNORETURN void Internal_Send(void)
 {
 	I_Error("Send without netgame\n");
 }
@@ -933,6 +939,19 @@ FUNCNORETURN static void Internal_Send(void)
 static void Internal_FreeNodenum(int nodenum)
 {
 	nodenum=0;
+}
+
+void D_SetDoomcom(void)
+{
+	if(doomcom) return;
+	doomcom = Z_Malloc(sizeof(doomcom_t), PU_STATIC, NULL);
+	memset(doomcom, 0, sizeof(doomcom_t));
+	doomcom->id = DOOMCOM_ID;
+	doomcom->numplayers = doomcom->numnodes = 1;
+	doomcom->deathmatch = false;
+	doomcom->gametype = 0;
+	doomcom->consoleplayer = 0;
+	doomcom->extratics = 0;
 }
 
 //
@@ -963,17 +982,9 @@ boolean D_CheckNetGame(void)
 
 	// only dos version with external driver will return true
 	netgame = I_InitNetwork();
-	if(!netgame)
+	if(!netgame && !I_NetOpenSocket)
 	{
-		doomcom = Z_Malloc(sizeof(doomcom_t), PU_STATIC, NULL);
-		memset(doomcom, 0, sizeof(doomcom_t));
-		doomcom->id = DOOMCOM_ID;
-		doomcom->numplayers = doomcom->numnodes = 1;
-		doomcom->deathmatch = false;
-		doomcom->gametype = 0;
-		doomcom->consoleplayer = 0;
-		doomcom->extratics = 0;
-
+		D_SetDoomcom();
 		netgame = I_InitTcpNetwork();
 	}
 
@@ -1032,6 +1043,11 @@ boolean D_CheckNetGame(void)
 	netbuffer = (doomdata_t*)&doomcom->data;
 
 #ifdef DEBUGFILE
+#ifdef _arch_dreamcast
+	//debugfile = stderr;
+	if(debugfile)
+			CONS_Printf("debug output to: strerr\n");
+#else
 	if(M_CheckParm("-debugfile"))
 	{
 		char filename[20];
@@ -1049,6 +1065,7 @@ boolean D_CheckNetGame(void)
 		else
 			CONS_Printf("\2cannot debug output to file %s!\n", filename);
 	}
+#endif
 #endif
 
 	D_ClientServerInit();

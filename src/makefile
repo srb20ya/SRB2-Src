@@ -26,6 +26,7 @@
 #     Compile the DirectX/Mingw version with 'make MINGW=1'
 #     Compile the SDL/Mingw version with 'make MINGW=1 SDL=1'
 #     Compile the SDL/Linux version with 'make LINUX=1'
+#     Compile the SDL/Solaris version with 'make SOLARIS=1'
 #     Compile the SDL/Cygwin version with 'make CYGWIN32=1'
 #     Comile the SDL/other version try with 'make SDL=1'
 #
@@ -84,6 +85,10 @@ ifdef DJGPPDOS
 include djgppdos/makefile.cfg
 endif
 
+ifdef SOLARIS
+LINUX=1
+endif
+
 ifdef LINUX
 include sdl/makeNIX.cfg
 endif #ifdef LINUX
@@ -129,20 +134,29 @@ ifndef NONX86
 endif
 endif
 
+ifdef NOMD5
+	OPTS:= $(OPTS) -DNOMD5
+else
+	OBJS:= $(OBJDIR)/md5.o $(OBJS)
+endif
+
+ifdef FAKEDC
+	OPTS:= $(OPTS) -DDC -DNEEDALIGNED
+endif
+
+	OPTS:= -ffloat-store $(OPTS)
+
 ifdef DEBUGMODE
 
 	# build with debugging information
 	WINDRESFLAGS = -D_DEBUG
-	CFLAGS = -g -O0 -fno-strict-aliasing $(OPTS) -fno-exceptions -ffloat-store
-	ifndef DC
-		CFLAGS += $(M5) -DPARANOIA $(WINDRESFLAGS)
-	endif
+	CFLAGS = -g -O0 $(OPTS) -fno-exceptions $(M5) -DPARANOIA $(WINDRESFLAGS)
 else
 
 
 	# build a normal optimised version
 	WINDRESFLAGS = -DNDEBUG
-	CFLAGS = $(OPTS) $(M5) -Os -fno-strict-aliasing $(WINDRESFLAGS) -ffloat-store
+	CFLAGS = $(OPTS) $(M5) -Os $(WINDRESFLAGS)
 		# -fgcse -fcse-follow-jumps -fcse-skip-blocks -frerun-cse-after-loop -ffunction-cse \
 		# -fexpensive-optimizations -fforce-mem -fstrength-reduce -fthread-jumps  \
 		# -fregmove -fschedule-insns -fschedule-insns2 -fmove-all-movables \
@@ -154,7 +168,9 @@ ifdef PROFILEMODE
    # build with profiling information
 	CFLAGS := -pg $(CFLAGS)
 else
+ifndef DC
 	CFLAGS := -fomit-frame-pointer $(CFLAGS)
+endif
 endif
 
 # not too sophisticated dependency
@@ -214,7 +230,6 @@ OBJS := $(i_main_o) \
 		$(OBJDIR)/v_video.o  \
 		$(OBJDIR)/s_sound.o  \
 		$(OBJDIR)/sounds.o   \
-		$(OBJDIR)/md5.o      \
 		$(OBJDIR)/w_wad.o    \
 		$(OBJDIR)/filesrch.o \
 		$(OBJDIR)/mserv.o    \
@@ -229,6 +244,11 @@ ifdef DJGPPDOS
 all:	 pre-build $(BIN)/$(EXENAME)
 endif
 
+ifdef XBOX
+all:	 pre-build $(BIN)/$(BINNAME)
+endif
+
+ifndef XBOX
 ifdef MINGW
 ifndef SDL
 all:	 pre-build $(BIN)/$(EXENAME) dll
@@ -237,6 +257,7 @@ endif
 
 ifdef SDL
 all:	 pre-build $(BIN)/$(EXENAME)
+endif
 endif
 
 cleandep:
@@ -376,7 +397,7 @@ $(OBJDIR)/r_minigl.o: hardware/r_minigl/r_minigl.c hardware/r_opengl/r_opengl.h 
 
 $(OBJDIR)/s_ds3d.o: hardware/s_ds3d/s_ds3d.c hardware/hw3dsdrv.h \
  hardware/hw_dll.h
-	$(CC) $(M5) -Os -fno-strict-aliasing -o $(OBJDIR)/s_ds3d.o $(WFLAGS) -D_WINDOWS -mwindows -c hardware/s_ds3d/s_ds3d.c
+	$(CC) $(M5) -Os -o $(OBJDIR)/s_ds3d.o $(WFLAGS) -D_WINDOWS -mwindows -c hardware/s_ds3d/s_ds3d.c
 
 $(OBJDIR)/s_fmod.o: hardware/s_openal/s_openal.c hardware/hw3dsdrv.h \
  hardware/hw_dll.h
@@ -437,6 +458,16 @@ endif
 	$(REMOVE) $(OBJDIR)/depend.ped
 	@echo "Created dependency file, depend.dep"
 
+ifdef DC
+$(OBJDIR)/v_video.o: v_video.c doomdef.h doomtype.h g_state.h m_swap.h r_local.h \
+  tables.h m_fixed.h screen.h command.h m_bbox.h r_main.h d_player.h \
+  p_pspr.h info.h d_think.h sounds.h p_mobj.h doomdata.h d_ticcmd.h \
+  r_data.h r_defs.h r_state.h r_bsp.h r_segs.h r_plane.h r_sky.h \
+  r_things.h r_draw.h v_video.h hu_stuff.h d_event.h w_wad.h console.h \
+  i_video.h z_zone.h doomstat.h d_clisrv.h d_netcmd.h
+	$(CC) $(CFLAGS) -fno-omit-frame-pointer $(WFLAGS) -c $< -o $@
+endif
+
 $(OBJDIR)/%.o: %.c
 	$(CC) $(CFLAGS) $(WFLAGS) -c $< -o $@
 
@@ -467,6 +498,17 @@ $(OBJDIR)/romdisk.o: romdisk.img
 
 $(OBJDIR)/dchelp.o: $(INTERFACE)/SRB2DC/dchelp.c
 		$(CC) $(CFLAGS) $(WFLAGS) -c $< -o $@
+
+$(OBJDIR)/i_udp.o: $(INTERFACE)/SRB2DC/i_udp.c
+		$(CC) $(CFLAGS) $(WFLAGS) -c $< -o $@
+endif
+
+ifdef XBOX
+$(OBJDIR)/xboxhelp.o: $(INTERFACE)/SRB2XBOX/xboxhelp.c
+		$(CC) $(CFLAGS) $(WFLAGS) -c $< -o $@
+
+$(BIN)/$(BINNAME): $(BIN)/$(EXENAME)
+	$(CXBE) -OUT:"$@" -DUMPINFO:"$(BIN)/SRB2XBOX.cxbe"  -TITLE:"Sonic Robo Blast 2" $<
 endif
 
 #############################################################

@@ -63,7 +63,7 @@ typedef int             HANDLE;
 //                                                                     PROTOS
 // ==========================================================================
 
-void DBG_Printf(const LPCTSTR lpFmt, ...) FUNCPRINTF;                                          
+void DBG_Printf(const char *lpFmt, ...) FUNCPRINTF;                                          
 void Flush(void);
 int  isExtAvailable(char *extension);
 boolean SetupPixelFormat(int WantColorBits, int WantStencilBits, int WantDepthBits);

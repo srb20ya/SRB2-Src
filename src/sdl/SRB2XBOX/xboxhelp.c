@@ -19,6 +19,12 @@
 //-----------------------------------------------------------------------------
 
 #include "../../doomdef.h"
+#include "xboxhelp.h"
+#ifdef __GNUC__
+#include <unistd.h>
+#else
+#include <stdlib.h>
+#endif
 
 int access(const char* path, int amode)
 {
@@ -47,19 +53,31 @@ char* getcwd(char *_buf, size_t _size )
 	return _buf;
 }
 
+#ifdef __GNUC__
 int mkdir(const char *path, mode_t _mode)
 {
+	path = NULL;
+	_mode = 0;
 	return 0;
 }
-
-void chdir (const char *__path )
+#else
+int mkdir(const char *path)
 {
-	return;
+	path = NULL;
+	return 0;
+}
+#endif
+
+int chdir (const char *__path )
+{
+	__path = NULL;
+	return 0;
 }
 
 time_t time(time_t *T)
 {
 	long returntime = 0;
+	T = NULL;
 /*
 	SYSTEMTIME st;
 	FILETIME stft;
@@ -73,3 +91,21 @@ time_t time(time_t *T)
 */
 	return returntime;
 }
+
+#ifdef _MSC_VER
+#include <RtcApi.h>
+void __cdecl _RTC_Initialize(void)
+{
+}
+char *getenv(const char *__env)
+{
+	__env = NULL;
+	return NULL;
+}
+
+int putenv(const char *__env)
+{
+	__env = NULL;
+	return 0;
+}
+#endif

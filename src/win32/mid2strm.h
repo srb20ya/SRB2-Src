@@ -137,6 +137,6 @@ extern  INFILESTATE      ifs;
 extern  DWORD   dwProgressBytes;
 extern  BOOL    bMidiLooped;
 
-void    Mid2StreamConverterCleanup (void);
+void    Mid2StreamConverterCleanup (VOID);
 BOOL    Mid2StreamConverterInit( unsigned char* pMidiData, ULONG iMidiSize );
 int     Mid2StreamConvertToBuffer( DWORD dwFlags, LPCONVERTINFO lpciInfo );

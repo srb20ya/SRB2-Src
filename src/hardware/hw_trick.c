@@ -1,3 +1,4 @@
+
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
@@ -129,7 +130,7 @@ static void addLineToChain(sector_t *sector, line_t *line)
 }
 
 //
-// We don´t want a memory hole, do we? ;-)
+// We dont want a memory hole, do we? ;-)
 //
 static void releaseLineChains(void)
 {
@@ -154,13 +155,13 @@ static void releaseLineChains(void)
 }
 
 //
-// check if a pseudo sector is valid by checking all it´s linedefs
+// check if a pseudo sector is valid by checking all its linedefs
 //
 static boolean isPSectorValid(sector_t *sector)
 {
 	linechain_t *thisElem, *nextElem;
 	
-	if(!sector->pseudoSector) // check only pseudosectors, others don´t care
+	if(!sector->pseudoSector) // check only pseudosectors, others dont care
 	{	
 #ifdef PARANOIA
 		CONS_Printf("Alert! non-pseudosector fed to isPSectorClosed()\n");
@@ -382,7 +383,7 @@ static void generateStacklist(sector_t *thisSector)
 	{
 	checkSector = &sectors[i];
 
-	if(checkSector == thisSector) // don´t check self
+	if(checkSector == thisSector) // dont check self
 		continue;
 
 	// buggy sector?
@@ -805,7 +806,7 @@ static fixed_t estimateFloorHeight(sector_t *thisSector)
 #define CORRECT_FLOAT_EXPERIMENTAL
 
 // --------------------------------------------------------------------------
-// Some levels have missing sidedefs, which produces HOM, so let´s try to compensate for that
+// Some levels have missing sidedefs, which produces HOM, so lets try to compensate for that
 // and some levels have deep water trick, invisible staircases etc.
 // --------------------------------------------------------------------------
 // FIXME: put some nice default texture in legacy.dat and use it
@@ -933,7 +934,7 @@ void HWR_CorrectSWTricks(void)
 		secl = ld->backsector;
 		
 		if(secr == secl) // special renderer trick 
-			continue; // we can´t correct missing textures here
+			continue; // we cant correct missing textures here
 		
 		if(secl) // only if there is a backsector 
 		{

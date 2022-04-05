@@ -48,7 +48,7 @@ void R_DrawColumn_8(void)
 //#ifdef RANGECHECK
 	if((unsigned)dc_x >= (unsigned)vid.width || dc_yl < 0 || dc_yh >= vid.height)
 	{
-		CONS_Printf("R_DrawColumn_8: %d to %d at %d, from %d\n", dc_yl, dc_yh, dc_x, whereitsfrom);
+		//CONS_Printf("R_DrawColumn_8: %d to %d at %d, from %d\n", dc_yl, dc_yh, dc_x, whereitsfrom);
 		return;
 	}
 //#endif
@@ -129,8 +129,7 @@ void R_DrawSkyColumn_8(void)
 //#ifdef RANGECHECK
 	if((unsigned)dc_x >= (unsigned)vid.width || dc_yl < 0 || dc_yh >= vid.height)
 	{
-		CONS_Printf
-		/*I_Error*/("R_DrawSkyColumn_8: %d to %d at %d, from %d\n", dc_yl, dc_yh, dc_x, whereitsfrom);
+		//CONS_Printf("R_DrawSkyColumn_8: %d to %d at %d, from %d\n", dc_yl, dc_yh, dc_x, whereitsfrom);
 		return;
 	}
 //#endif

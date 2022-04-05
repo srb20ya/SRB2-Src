@@ -480,9 +480,9 @@ void HWR_SuperSonicLightToggle(boolean super)
 }
 
 // --------------------------------------------------------------------------
-// calcul la projection d'un point sur une droite (determinée par deux 
-// points) et ensuite calcul la distance (au carré) de ce point au point
-// projecté sur cette droite
+// calcul la projection d'un point sur une droite (determinï¿½ par deux 
+// points) et ensuite calcul la distance (au carrï¿½ de ce point au point
+// projectï¿½sur cette droite
 // --------------------------------------------------------------------------
 static float HWR_DistP2D(FOutVector *p1, FOutVector *p2, FVector *p3, FVector *inter)
 {
@@ -576,7 +576,7 @@ void HWR_WallLighting(FOutVector *wlVerts)
 			+ (wlVerts[0].z-inter.z)*(wlVerts[0].z-inter.z));
 		d[1] = (float)sqrt((wlVerts[2].x-inter.x)*(wlVerts[2].x-inter.x)
 			+ (wlVerts[2].z-inter.z)*(wlVerts[2].z-inter.z));
-		//dAB = sqrt((wlVerts[0].x-wlVerts[2].x)*(wlVerts[0].x-wlVerts[2].x)+(wlVerts[0].z-wlVerts[2].z)*(wlVerts[0].z-wlVerts[2].z));
+		//dAB = sqrtf((wlVerts[0].x-wlVerts[2].x)*(wlVerts[0].x-wlVerts[2].x)+(wlVerts[0].z-wlVerts[2].z)*(wlVerts[0].z-wlVerts[2].z));
 		//if ( (d[0] < dAB) && (d[1] < dAB) ) // test if the intersection is on the wall
 		//{
 		//    d[0] = -d[0]; // if yes, the left distcance must be negative for texcoord
@@ -591,9 +591,9 @@ void HWR_WallLighting(FOutVector *wlVerts)
 		}
 		d[2] = d[1]; d[3] = d[0];
 #ifdef DL_HIGH_QUALITY
-		s = (float)(0.5f / DL_RADIUS(j));
+		s = 0.5f / DL_RADIUS(j);
 #else
-		s = (float)(0.5f / sqrt(DL_SQRRADIUS(j)-dist_p2d));
+		s = 0.5f / sqrtf(DL_SQRRADIUS(j)-dist_p2d);
 #endif
 		for(i = 0; i < 4; i++)
 		{
@@ -627,10 +627,10 @@ void HWR_PlaneLighting(FOutVector *clVerts, int nrClipVerts)
 	int     i, j;
 	FOutVector p1,p2;
 
-	p1.z=hwbbox[BOXTOP]*crapmul;
-	p1.x=hwbbox[BOXLEFT]*crapmul;
-	p2.z=hwbbox[BOXBOTTOM]*crapmul;
-	p2.x=hwbbox[BOXRIGHT]*crapmul;
+	p1.z=FIXED_TO_FLOAT(hwbbox[BOXTOP   ]);
+	p1.x=FIXED_TO_FLOAT(hwbbox[BOXLEFT  ]);
+	p2.z=FIXED_TO_FLOAT(hwbbox[BOXBOTTOM]);
+	p2.x=FIXED_TO_FLOAT(hwbbox[BOXRIGHT ]);
 	p2.y=clVerts[0].y;
 	p1.y=clVerts[0].y;
 
@@ -656,7 +656,7 @@ void HWR_PlaneLighting(FOutVector *clVerts, int nrClipVerts)
 #ifdef DL_HIGH_QUALITY
 		s = 0.5f / DL_RADIUS(j);
 #else
-		s = 0.5f / sqrt(DL_SQRRADIUS(j)-dist_p2d);
+		s = 0.5f / sqrtf(DL_SQRRADIUS(j)-dist_p2d);
 #endif
 		for (i=0; i<nrClipVerts; i++)
 		{
@@ -895,9 +895,9 @@ void HWR_DL_AddLight(gr_vissprite_t *spr, GlidePatch_t *patch)
 
 	  && spr->mobj->state )
 	{
-		LIGHT_POS(dynlights->nb).x = spr->mobj->x*crapmul;
-		LIGHT_POS(dynlights->nb).y = (float)(spr->mobj->z*crapmul+FIXED_TO_FLOAT(spr->mobj->height>>1)+p_lspr->light_yoffset);
-		LIGHT_POS(dynlights->nb).z = spr->mobj->y*crapmul;
+		LIGHT_POS(dynlights->nb).x = FIXED_TO_FLOAT(spr->mobj->x);
+		LIGHT_POS(dynlights->nb).y = FIXED_TO_FLOAT(spr->mobj->z)+FIXED_TO_FLOAT(spr->mobj->height>>1)+p_lspr->light_yoffset;
+		LIGHT_POS(dynlights->nb).z = FIXED_TO_FLOAT(spr->mobj->y);
 
 		dynlights->mo[dynlights->nb] = spr->mobj;
 
@@ -939,7 +939,7 @@ static void HWR_SetLight( void )
 			{
 				int pos = ((i-64)*(i-64))+((j-64)*(j-64));
 				if (pos <= 63*63)
-					Data[i*128+j] = (USHORT)(((byte)(255-(4*sqrt((double)pos)))) << 8 | 0xff);
+					Data[i*128+j] = (USHORT)(((byte)(255-(4*(float)sqrt((float)pos)))) << 8 | 0xff);
 				else
 					Data[i*128+j] = 0;
 			}
@@ -984,7 +984,7 @@ static inline void HWR_BuildWallLightmaps(FVector *p1, FVector *p2, int lighnum,
 	lp->next = line->lightmaps;
 	line->lightmaps = lp;
 	
-	// (...) encore des bô calcul bien lourd et on stock tout sa dans la lightmap
+	// (...) encore des bï¿½calcul bien lourd et on stock tout sa dans la lightmap
 }
 
 static void HWR_AddLightMapForLine( int lightnum, seg_t *line)
@@ -1016,10 +1016,10 @@ static void HWR_AddLightMapForLine( int lightnum, seg_t *line)
 	}
 */
 
-	p1.y=lgr_curline->v1->y*crapmul;
-	p1.x=lgr_curline->v1->x*crapmul;
-	p2.y=lgr_curline->v2->y*crapmul;
-	p2.x=lgr_curline->v2->x*crapmul;
+	p1.y=FIXED_TO_FLOAT(lgr_curline->v1->y);
+	p1.x=FIXED_TO_FLOAT(lgr_curline->v1->x);
+	p2.y=FIXED_TO_FLOAT(lgr_curline->v2->y);
+	p2.x=FIXED_TO_FLOAT(lgr_curline->v2->x);
 
 	// check bbox of the seg
 //	if( CircleTouchBBox(&p1, &p2, &LIGHT_POS(lightnum), DL_RADIUS(lightnum))==false )    
@@ -1039,10 +1039,10 @@ static void HWR_CheckSubsector( int num, fixed_t *bbox )
 	FVector     p1,p2;
 	int         lightnum;
 
-	p1.y=bbox[BOXTOP]*crapmul;
-	p1.x=bbox[BOXLEFT]*crapmul;
-	p2.y=bbox[BOXBOTTOM]*crapmul;
-	p2.x=bbox[BOXRIGHT]*crapmul;
+	p1.y=FIXED_TO_FLOAT(bbox[BOXTOP   ]);
+	p1.x=FIXED_TO_FLOAT(bbox[BOXLEFT  ]);
+	p2.y=FIXED_TO_FLOAT(bbox[BOXBOTTOM]);
+	p2.x=FIXED_TO_FLOAT(bbox[BOXRIGHT ]);
 
 
 	if (num < numsubsectors)
@@ -1073,9 +1073,9 @@ static void HWR_AddMobjLights(mobj_t *thing)
 {
 	if ( t_lspr[thing->sprite]->type & CORONA_SPR )
 	{
-		LIGHT_POS(dynlights->nb).x = (float)thing->x * crapmul;
-		LIGHT_POS(dynlights->nb).y = (float)thing->z * crapmul + t_lspr[thing->sprite]->light_yoffset;
-		LIGHT_POS(dynlights->nb).z = (float)thing->y * crapmul;
+		LIGHT_POS(dynlights->nb).x = FIXED_TO_FLOAT(thing->x);
+		LIGHT_POS(dynlights->nb).y = FIXED_TO_FLOAT(thing->z) + t_lspr[thing->sprite]->light_yoffset;
+		LIGHT_POS(dynlights->nb).z = FIXED_TO_FLOAT(thing->y);
 		
 		dynlights->p_lspr[dynlights->nb] = t_lspr[thing->sprite];
 		
@@ -1148,7 +1148,7 @@ void HWR_CreateStaticLightmaps(int bspnum)
 /**
  \todo 
 
-  - Les coronas ne sont pas gérer avec le nouveau systeme, seul le dynamic lighting l'est
+  - Les coronas ne sont pas gï¿½er avec le nouveau systeme, seul le dynamic lighting l'est
   - calculer l'offset des coronas au chargement du level et non faire la moyenne
 	au moment de l'afficher
 	 BP: euh non en fait il faux encoder la position de la light dans le sprite

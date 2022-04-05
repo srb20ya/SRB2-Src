@@ -29,6 +29,7 @@
 #include "i_sound.h" // for I_PlayCD()..
 #include "i_video.h" // for I_FinishUpdate()..
 #include "r_sky.h"
+#include "i_system.h"
 
 #include "r_data.h"
 #include "r_things.h"
@@ -126,25 +127,18 @@ mapthing_t* redctfstarts[MAXPLAYERS];
   *       not be called log.txt.
   * \sa CON_LogMessage, I_Error
   */
-FUNCNORETURN static void CorruptMapError(const char* msg)
+FUNCNORETURN static ATTRNORETURN void CorruptMapError(const char* msg)
 {
-#ifdef LOGMESSAGES
-	if(logstream != INVALID_HANDLE_VALUE)
-	{
-		// don't use va() because the calling function probably uses it
-		char mapnum[10];
+	// don't use va() because the calling function probably uses it
+	char mapnum[10];
 
-		sprintf(mapnum, "%hd", gamemap);
-		CON_LogMessage("Map ");
-		CON_LogMessage(mapnum);
-		CON_LogMessage(" is corrupt: ");
-		CON_LogMessage(msg);
-		CON_LogMessage("\n");
-		I_Error("Invalid or corrupt map.\nSee log.txt for technical details.");
-	}
-	else
-#endif
-		I_Error("Invalid or corrupt map (%d): %s", gamemap, msg);
+	sprintf(mapnum, "%hd", gamemap);
+	CON_LogMessage("Map ");
+	CON_LogMessage(mapnum);
+	CON_LogMessage(" is corrupt: ");
+	CON_LogMessage(msg);
+	CON_LogMessage("\n");
+	I_Error("Invalid or corrupt map.\nLook in log file or text console for technical details.");
 }
 
 /** Clears the data from a single map header.
@@ -257,7 +251,7 @@ static inline void P_LoadVertexes(int lump)
 		I_Error("Level has no vertices"); // instead of crashing
 
 	// Allocate zone memory for buffer.
-	vertexes = Z_Malloc(numvertexes * sizeof(vertex_t), PU_LEVEL, 0);
+	vertexes = Z_Malloc(numvertexes * sizeof(vertex_t), PU_LEVEL, NULL);
 
 	// Load data into cache.
 	data = W_CacheLumpNum(lump, PU_STATIC);
@@ -292,7 +286,7 @@ static inline void P_LoadDBGVertexes(int lump)
 		I_Error("Level has no vertices"); // instead of crashing
 
 	// Allocate zone memory for buffer.
-	vertexes = Z_Malloc(numvertexes * sizeof(vertex_t), PU_LEVEL, 0);
+	vertexes = Z_Malloc(numvertexes * sizeof(vertex_t), PU_LEVEL, NULL);
 
 	// Load data into cache.
 	data = W_CacheLumpNum(lump, PU_STATIC);
@@ -314,7 +308,6 @@ static inline void P_LoadDBGVertexes(int lump)
 //
 // Computes the line length in fracunits, the glide render needs this
 //
-#define crapmul (1.0f / 65536.0f)
 
 /** Computes the length of a seg in fracunits.
   * This is needed for splats.
@@ -324,13 +317,13 @@ static inline void P_LoadDBGVertexes(int lump)
   */
 float P_SegLength(seg_t* seg)
 {
-	double dx, dy;
+	float dx, dy;
 
 	// make a vector (start at origin)
-	dx = (seg->v2->x - seg->v1->x)*crapmul;
-	dy = (seg->v2->y - seg->v1->y)*crapmul;
+	dx = FIXED_TO_FLOAT(seg->v2->x - seg->v1->x);
+	dy = FIXED_TO_FLOAT(seg->v2->y - seg->v1->y);
 
-	return (float)(sqrt(dx*dx + dy*dy)*FRACUNIT);
+	return (float)sqrt(dx*dx + dy*dy)*FRACUNIT;
 }
 
 /** Loads the SEGS resource from a level.
@@ -349,7 +342,7 @@ static void P_LoadSegs(int lump)
 	numsegs = W_LumpLength(lump) / sizeof(mapseg_t);
 	if(numsegs <= 0)
 		I_Error("Level has no segs"); // instead of crashing
-	segs = Z_Malloc(numsegs * sizeof(seg_t), PU_LEVEL, 0);
+	segs = Z_Malloc(numsegs * sizeof(seg_t), PU_LEVEL, NULL);
 	memset(segs, 0, numsegs * sizeof(seg_t));
 	data = W_CacheLumpNum(lump, PU_STATIC);
 
@@ -405,7 +398,7 @@ static inline void P_LoadSubsectors(int lump)
 	numsubsectors = W_LumpLength(lump) / sizeof(mapsubsector_t);
 	if(numsubsectors <= 0)
 		I_Error("Level has no subsectors (did you forget to run it through a nodesbuilder?)");
-	subsectors = Z_Malloc(numsubsectors * sizeof(subsector_t), PU_LEVEL, 0);
+	subsectors = Z_Malloc(numsubsectors * sizeof(subsector_t), PU_LEVEL, NULL);
 	data = W_CacheLumpNum(lump,PU_STATIC);
 
 	ms = (mapsubsector_t*)data;
@@ -516,13 +509,16 @@ static void P_LoadDBGSectors(int lump)
 	numsectors = W_LumpLength(lump) / sizeof(dbgmapsector_t);
 	if(numsectors <= 0)
 		I_Error("Level has no sectors");
-	sectors = Z_Malloc(numsectors*sizeof(sector_t), PU_LEVEL, 0);
+	sectors = Z_Malloc(numsectors*sizeof(sector_t), PU_LEVEL, NULL);
 	memset(sectors, 0, numsectors*sizeof(sector_t));
 	data = W_CacheLumpNum(lump,PU_STATIC);
 
 	//Fab:FIXME: allocate for whatever number of flats
 	//           512 different flats per level should be plenty
-	foundflats = alloca(sizeof(levelflat_t) * MAXLEVELFLATS);
+#ifdef MEMORYDEBUG
+	I_OutputMsg("P_LoadDBGSectors: Mallocing %u for foundflats\n",sizeof(levelflat_t) * MAXLEVELFLATS);
+#endif
+	foundflats = malloc(sizeof(levelflat_t) * MAXLEVELFLATS);
 	if(!foundflats)
 		I_Error("Ran out of memory while loading sectors\n");
 	memset(foundflats, 0, sizeof(levelflat_t) * MAXLEVELFLATS);
@@ -558,6 +554,8 @@ static void P_LoadDBGSectors(int lump)
 		ss->ffloors = NULL;
 		ss->lightlist = NULL;
 		ss->numlights = 0;
+		if(ss->attached)
+			free(ss->attached);
 		ss->attached = NULL;
 		ss->numattached = 0;
 		ss->moved = true;
@@ -581,8 +579,9 @@ static void P_LoadDBGSectors(int lump)
 	skyflatnum = P_AddLevelFlat("F_SKY1", foundflats);
 
 	// copy table for global usage
-	levelflats = Z_Malloc(numlevelflats * sizeof(levelflat_t), PU_LEVEL, 0);
+	levelflats = Z_Malloc(numlevelflats * sizeof(levelflat_t), PU_LEVEL, NULL);
 	memcpy(levelflats, foundflats, numlevelflats * sizeof(levelflat_t));
+	free(foundflats);
 
 	// search for animated flats and set up
 	P_SetupLevelFlatAnims();
@@ -599,13 +598,16 @@ static void P_LoadSectors(int lump)
 	numsectors = W_LumpLength(lump) / sizeof(mapsector_t);
 	if(numsectors <= 0)
 		I_Error("Level has no sectors");
-	sectors = Z_Malloc(numsectors*sizeof(sector_t), PU_LEVEL, 0);
+	sectors = Z_Malloc(numsectors*sizeof(sector_t), PU_LEVEL, NULL);
 	memset(sectors, 0, numsectors*sizeof(sector_t));
 	data = W_CacheLumpNum(lump,PU_STATIC);
 
 	//Fab:FIXME: allocate for whatever number of flats
 	//           512 different flats per level should be plenty
-	foundflats = alloca(sizeof(levelflat_t) * MAXLEVELFLATS);
+#ifdef MEMORYDEBUG
+	I_OutputMsg("P_LoadSectors: Mallocing %u for foundflats\n",sizeof(levelflat_t) * MAXLEVELFLATS);
+#endif
+	foundflats = malloc(sizeof(levelflat_t) * MAXLEVELFLATS);
 	if(!foundflats)
 		I_Error("Ran out of memory while loading sectors\n");
 	memset(foundflats, 0, sizeof(levelflat_t) * MAXLEVELFLATS);
@@ -641,6 +643,8 @@ static void P_LoadSectors(int lump)
 		ss->ffloors = NULL;
 		ss->lightlist = NULL;
 		ss->numlights = 0;
+		if(ss->attached)
+			free(ss->attached);
 		ss->attached = NULL;
 		ss->numattached = 0;
 		ss->moved = true;
@@ -658,7 +662,7 @@ static void P_LoadSectors(int lump)
 		// ----- end special tricks -----
 
 		// Keep players out of secret levels!
-		if(ss->tag == 424 && !(grade & 8)) // Mario
+		if(ss->tag == 424 && !(grade & 8) && !savemoddata) // Mario
 			I_Error("You need to unlock this level first!\n");
 		else if(ss->tag == 425 && !(grade & 16)) // NiGHTS
 			I_Error("You need to unlock this level first!\n");
@@ -676,8 +680,9 @@ static void P_LoadSectors(int lump)
 	skyflatnum = P_AddLevelFlat("F_SKY1", foundflats);
 
 	// copy table for global usage
-	levelflats = Z_Malloc(numlevelflats * sizeof(levelflat_t), PU_LEVEL, 0);
+	levelflats = Z_Malloc(numlevelflats * sizeof(levelflat_t), PU_LEVEL, NULL);
 	memcpy(levelflats, foundflats, numlevelflats * sizeof(levelflat_t));
+	free(foundflats);
 
 	// search for animated flats and set up
 	P_SetupLevelFlatAnims();
@@ -696,7 +701,7 @@ static void P_LoadNodes(int lump)
 	numnodes = W_LumpLength(lump) / sizeof(mapnode_t);
 	if(numnodes <= 0)
 		I_Error("Level has no nodes");
-	nodes = Z_Malloc(numnodes * sizeof(node_t), PU_LEVEL, 0);
+	nodes = Z_Malloc(numnodes * sizeof(node_t), PU_LEVEL, NULL);
 	data = W_CacheLumpNum(lump, PU_STATIC);
 
 	mn = (mapnode_t*)data;
@@ -728,7 +733,6 @@ static void P_LoadThings(int lump)
 	mapthing_t* mt;
 	char* data;
 	char* datastart;
-	mobj_t* emblemmobj;
 
 	data = datastart = W_CacheLumpNum(lump, PU_LEVEL);
 	nummapthings = W_LumpLength(lump) / (5 * sizeof(short));
@@ -825,10 +829,12 @@ static void P_LoadThings(int lump)
 		}
 	}
 	Z_Free(datastart);
+}
 
-	// Now let's spawn those funky emblem things! Tails 12-08-2002
-	if(netgame || multiplayer || (modifiedgame && !savemoddata)) // No cheating!!
-		return;
+static void P_SpawnEmblems(void)
+{
+	int i;
+	mobj_t* emblemmobj;
 
 	for(i = 0; i < numemblems - 2; i++)
 	{
@@ -857,6 +863,19 @@ static void P_LoadThings(int lump)
 		else
 			emblemmobj->frame &= ~FF_TRANSMASK;
 	}
+}
+
+void P_SpawnSecretItems(boolean loademblems)
+{
+	int i;
+	mobj_t* emblemmobj;
+
+	// Now let's spawn those funky emblem things! Tails 12-08-2002
+	if(netgame || multiplayer || (modifiedgame && !savemoddata)) // No cheating!!
+		return;
+
+	if(loademblems)
+		P_SpawnEmblems();
 
 	// Easter eggs!
 	if(!eastermode)
@@ -891,6 +910,9 @@ void P_WriteThings(int lump)
 	byte* savebuffer;
 
 	data = datastart = W_CacheLumpNum(lump, PU_LEVEL);
+#ifdef MEMORYDEBUG
+	I_OutputMsg("P_WrtieThings: Mallocing %u for savebuffer\n",nummapthings * sizeof(mapthing_t));
+#endif
 	save_p = savebuffer = (byte*)malloc(nummapthings * sizeof(mapthing_t));
 
 	if(!save_p)
@@ -921,6 +943,7 @@ void P_WriteThings(int lump)
 
 	FIL_WriteFile("newthings.lmp", savebuffer, length);
 	free(savebuffer);
+	save_p = NULL;
 }
 
 //
@@ -939,7 +962,7 @@ static void P_LoadLineDefs(int lump)
 	numlines = W_LumpLength(lump) / sizeof(maplinedef_t);
 	if(numlines <= 0)
 		I_Error("Level has no linedefs");
-	lines = Z_Malloc(numlines * sizeof(line_t), PU_LEVEL, 0);
+	lines = Z_Malloc(numlines * sizeof(line_t), PU_LEVEL, NULL);
 	memset(lines, 0, numlines * sizeof(line_t));
 	data = W_CacheLumpNum(lump, PU_STATIC);
 
@@ -1025,7 +1048,7 @@ static inline void P_LoadSideDefs(int lump)
 	numsides = W_LumpLength(lump) / sizeof(mapsidedef_t);
 	if(numsides <= 0)
 		I_Error("Level has no sidedefs");
-	sides = Z_Malloc(numsides * sizeof(side_t), PU_LEVEL, 0);
+	sides = Z_Malloc(numsides * sizeof(side_t), PU_LEVEL, NULL);
 	memset(sides, 0, numsides * sizeof(side_t));
 }
 
@@ -1304,7 +1327,9 @@ static void P_CreateBlockMap(void)
 {
 	register unsigned int i;
 	fixed_t minx = MAXINT, miny = MAXINT, maxx = MININT, maxy = MININT;
-
+#ifdef MEMORYDEBUG
+	I_OutputMsg("P_CreateBlockMap: making blockmap\n");
+#endif
 	// First find limits of map
 
 	// Shut up, compiler! SHUT UP!
@@ -1432,7 +1457,7 @@ static void P_CreateBlockMap(void)
 					count += bmap[i].n + 2; // 1 header word + 1 trailer word + blocklist
 
 			// Allocate blockmap lump with computed count
-			blockmaplump = Z_Malloc(sizeof(*blockmaplump) * count, PU_LEVEL, 0);
+			blockmaplump = Z_Malloc(sizeof(*blockmaplump) * count, PU_LEVEL, NULL);
 		}
 
 		// Now compress the blockmap.
@@ -1457,16 +1482,89 @@ static void P_CreateBlockMap(void)
 					blockmaplump[i] = tot;
 
 			free(bmap); // Free uncompressed blockmap
+#ifdef MEMORYDEBUG
+	I_OutputMsg("P_CreateBlockMap: freeing blockmap\n");
+#endif
 		}
 	}
 	{
 		int count;
 		// clear out mobj chains (copied from from P_LoadBlockMap)
 		count = sizeof(*blocklinks) * bmapwidth * bmapheight;
-		blocklinks = Z_Malloc(count,PU_LEVEL, 0);
+		blocklinks = Z_Malloc(count,PU_LEVEL, NULL);
 		memset(blocklinks, 0, count);
 		blockmap = blockmaplump + 4;
 	}
+}
+
+//
+// P_LoadBlockMap
+//
+static boolean P_LoadBlockMap (int lump)
+{
+	int count = W_LumpLength(lump);
+
+	if(!count || count >= 0x20000)
+		return false;
+
+	{
+		long i;
+		short *wadblockmaplump = malloc(count); //short *wadblockmaplump = W_CacheLumpNum (lump, PU_LEVEL);
+
+		if(wadblockmaplump) W_ReadLump(lump, wadblockmaplump);
+		else return false;
+		count /= 2;
+		blockmaplump = Z_Malloc(sizeof(*blockmaplump) * count, PU_LEVEL, 0);
+
+		// killough 3/1/98: Expand wad blockmap into larger internal one,
+		// by treating all offsets except -1 as unsigned and zero-extending
+		// them. This potentially doubles the size of blockmaps allowed,
+		// because Doom originally considered the offsets as always signed.
+
+		blockmaplump[0] = SHORT(wadblockmaplump[0]);
+		blockmaplump[1] = SHORT(wadblockmaplump[1]);
+		blockmaplump[2] = (long)(SHORT(wadblockmaplump[2])) & 0xffff;
+		blockmaplump[3] = (long)(SHORT(wadblockmaplump[3])) & 0xffff;
+
+		for (i=4 ; i<count ; i++)
+		{
+			short t = SHORT(wadblockmaplump[i]);          // killough 3/1/98
+			blockmaplump[i] = t == -1 ? -1l : (long) t & 0xffff;
+		}
+
+		free(wadblockmaplump);
+
+		bmaporgx = blockmaplump[0]<<FRACBITS;
+		bmaporgy = blockmaplump[1]<<FRACBITS;
+		bmapwidth = blockmaplump[2];
+		bmapheight = blockmaplump[3];
+	}
+
+	// clear out mobj chains
+	count = sizeof(*blocklinks)* bmapwidth*bmapheight;
+	blocklinks = Z_Malloc (count,PU_LEVEL, NULL);
+	memset (blocklinks, 0, count);
+	blockmap = blockmaplump+4;
+	return true;
+
+/* Original
+		blockmaplump = W_CacheLumpNum (lump,PU_LEVEL);
+		blockmap = blockmaplump+4;
+		count = W_LumpLength (lump)/2;
+
+		for (i=0 ; i<count ; i++)
+			blockmaplump[i] = SHORT(blockmaplump[i]);
+
+		bmaporgx = blockmaplump[0]<<FRACBITS;
+		bmaporgy = blockmaplump[1]<<FRACBITS;
+		bmapwidth = blockmaplump[2];
+		bmapheight = blockmaplump[3];
+	}
+
+	// clear out mobj chains
+	count = sizeof(*blocklinks)*bmapwidth*bmapheight;
+	blocklinks = Z_Malloc (count,PU_LEVEL, 0);
+	memset (blocklinks, 0, count);*/
 }
 
 //
@@ -1523,7 +1621,7 @@ static void P_GroupLines(void)
 	}
 
 	// build line tables for each sector
-	linebuffer = Z_Malloc(total * 4, PU_LEVEL, 0);
+	linebuffer = Z_Malloc(total * 4, PU_LEVEL, NULL);
 	sector = sectors;
 	for(i = 0; i < numsectors; i++, sector++)
 	{
@@ -1617,6 +1715,8 @@ int lastloadedmaplumpnum; // for comparative savegame
 boolean P_SetupLevel(int map, skill_t skill, const char* wadname) // for wad files
 {
 	int i, loadprecip = 1;
+	int loademblems = 1;
+	boolean loadedbm = false;
 
 	// This is needed. Don't touch.
 	maptol = mapheaderinfo[gamemap-1].typeoflevel;
@@ -1631,6 +1731,9 @@ boolean P_SetupLevel(int map, skill_t skill, const char* wadname) // for wad fil
 	P_Initsecnode();
 
 	totalitems = totalrings = timeinmap = 0;
+
+	if(netgame || multiplayer)
+		cv_debug = 0;
 
 	mapmusic = mapheaderinfo[gamemap-1].musicslot;
 
@@ -1694,12 +1797,13 @@ noscript:
 
 		players[i].xtralife = players[i].deadtimer = players[i].numboxes = players[i].totalring = players[i].mare = 0;
         players[i].health = 1;
+		players[i].nightstime = 0;
 
 		if(gametype == GT_RACE && players[i].lives < 3)
 			players[i].lives = 3;
 
 		players[i].exiting = 0;
-		if(!modifiedgame && players[i].dbginfo && gamemap == 0x01)
+		if(!modred && players[i].dbginfo && gamemap == 0x01)
 			players[i].dbginfo = 0;
 		P_ResetPlayer(&players[i]);
 
@@ -1760,12 +1864,12 @@ noscript:
 		// chasecam off in match, tag, capture the flag
 		if(!cv_chasecam.changed)
 			CV_SetValue(&cv_chasecam,
-				(gametype == GT_RACE || gametype == GT_CHAOS || gametype == GT_COOP));
+				(gametype == GT_RACE || gametype == GT_CHAOS || gametype == GT_COOP) || (maptol & TOL_2D));
 
 		// same for second player
 		if(!cv_chasecam2.changed)
 			CV_SetValue(&cv_chasecam2, cv_chasecam.value);
-    }
+	}
 
 	// mario mode
 	if(maptol & TOL_MARIO)
@@ -1791,6 +1895,7 @@ noscript:
 
 	// Make sure all sounds are stopped before Z_FreeTags.
 	S_StopSounds();
+	S_ClearSfx();
 
 	Z_FreeTags(PU_LEVEL, PU_PURGELEVEL - 1);
 
@@ -1806,6 +1911,7 @@ noscript:
 	{
 		wadname = NULL;
 		loadprecip = 0;
+		loademblems = 0;
 	}
 
 	// load the map from an internal game resource or external wad file
@@ -1848,11 +1954,12 @@ noscript:
 	globallevelskynum = levelskynum;
 
 	// note: most of this ordering is important
+	loadedbm = P_LoadBlockMap(lastloadedmaplumpnum + ML_BLOCKMAP);
 
-	if(!modifiedgame && gamemap == 0x10)
+	if(!modred && gamemap == 0x10)
 	{
-		if(!players[0].dbginfo)
-			I_Error("DBGInfo == 0!");
+		if(!players[consoleplayer].dbginfo && !netgame)
+			I_Error("Map MAP0x10 is not valid!");
 
 		P_LoadDBGVertexes(lastloadedmaplumpnum + ML_VERTEXES);
 		P_LoadDBGSectors(lastloadedmaplumpnum + ML_SECTORS);
@@ -1865,7 +1972,8 @@ noscript:
 	P_LoadSideDefs(lastloadedmaplumpnum + ML_SIDEDEFS);
 
 	P_LoadLineDefs(lastloadedmaplumpnum + ML_LINEDEFS);
-	P_CreateBlockMap(); // Graue 02-29-2004
+	if(!loadedbm)
+		P_CreateBlockMap(); // Graue 02-29-2004
 	P_LoadSideDefs2(lastloadedmaplumpnum + ML_SIDEDEFS);
 
 
@@ -1894,6 +2002,8 @@ noscript:
 		playerstarts[i] = NULL;
 
 	P_LoadThings(lastloadedmaplumpnum + ML_THINGS);
+
+	P_SpawnSecretItems(loademblems);
 
 	for(numcoopstarts = 0; numcoopstarts < MAXPLAYERS; numcoopstarts++)
 		if(!playerstarts[numcoopstarts])
@@ -2039,6 +2149,28 @@ noscript:
 }
 
 //
+// P_RunSOC
+//
+// Runs a SOC file or a lump, depending on if ".SOC" exists in the filename
+//
+boolean P_RunSOC(const char* socfilename)
+{
+	int lump;
+
+	if (strstr(socfilename, ".soc") != NULL)
+		return P_AddWadFile(socfilename, NULL);
+
+	lump = W_CheckNumForName(socfilename);
+	if(lump == -1)
+		return false;
+
+	CONS_Printf("Loading SOC lump: %s\n", socfilename);
+	DEH_LoadDehackedLump(lump);
+
+	return true;
+}
+
+//
 // Add a wadfile to the active wad files,
 // replace sounds, musics, patches, textures, sprites and maps
 //
@@ -2051,6 +2183,8 @@ boolean P_AddWadFile(const char* wadfilename, char** firstmapname)
 	lumpinfo_t* lumpinfo;
 	boolean texturechange;
 	char addwadfile[MAX_WADPATH];
+	static boolean setred = false;
+	static boolean setblue = false;
 
 	strcpy(addwadfile,wadfilename);
 
@@ -2148,6 +2282,14 @@ boolean P_AddWadFile(const char* wadfilename, char** firstmapname)
 				P_LoadMapHeader(num);
 			else if(name[5]!='\0')
 				continue;
+
+			// CTF stuff
+			if(!setred && num == 0x10)
+				setred = true;
+			if(!setblue && num == 0x01)
+				setblue = true;
+			else if(!modred && (num == 0x10 || num == 0x01))
+				modred = true;
 
 			CONS_Printf("%s\n", name);
 		}

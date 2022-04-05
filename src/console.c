@@ -18,6 +18,9 @@
 
 #ifdef __GNUC__
 #include <unistd.h>
+#ifdef _XBOX
+#include <openxdk/debug.h>
+#endif
 #endif
 
 #include "doomdef.h"
@@ -352,8 +355,8 @@ static void CON_InputInit(void)
 static void CON_RecalcSize(void)
 {
 	size_t conw, oldcon_width, oldnumlines, i, oldcon_cy;
-	char tmp_buffer[CON_BUFFERSIZE];
-	char string[CON_BUFFERSIZE]; // BP: it is a line but who know
+	XBOXSTATIC char tmp_buffer[CON_BUFFERSIZE];
+	XBOXSTATIC char string[CON_BUFFERSIZE]; // BP: it is a line but who know
 
 	con_recalc = false;
 
@@ -540,41 +543,45 @@ boolean CON_Responder(event_t* ev)
 	}
 
 	// let go keyup events, don't eat them
-	if(ev->type != ev_keydown)
+	if(ev->type != ev_keydown && ev->type != ev_console)
 		return false;
 
 	key = ev->data1;
 
 	// check for console toggle key
-	if(key == gamecontrol[gc_console][0] || key == gamecontrol[gc_console][1])
+	if(ev->type != ev_console)
 	{
-		consoletoggle = true;
-		return true;
-	}
-
-	// check other keys only if console prompt is active
-	if(!consoleready && key < NUMINPUTS) // metzgermeister: boundary check!!
-	{
-		if(bindtable[key])
+		if(key == gamecontrol[gc_console][0] || key == gamecontrol[gc_console][1])
 		{
-			COM_BufAddText(bindtable[key]);
-			COM_BufAddText("\n");
+			consoletoggle = true;
 			return true;
 		}
-		return false;
+
+		// check other keys only if console prompt is active
+		if(!consoleready && key < NUMINPUTS) // metzgermeister: boundary check!!
+		{
+			if(bindtable[key])
+			{
+				COM_BufAddText(bindtable[key]);
+				COM_BufAddText("\n");
+				return true;
+			}
+			return false;
+		}
+
+		// escape key toggle off console
+		if(key == KEY_ESCAPE)
+		{
+			consoletoggle = true;
+			return true;
+		}
+
 	}
 
 	// eat shift only if console active
 	if(key == KEY_SHIFT)
 	{
 		shiftdown = true;
-		return true;
-	}
-
-	// escape key toggle off console
-	if(key == KEY_ESCAPE)
-	{
-		consoletoggle = true;
 		return true;
 	}
 
@@ -751,7 +758,7 @@ boolean CON_Responder(event_t* ev)
 	// allow people to use keypad in console (good for typing IP addresses) - Calum
 	if(key >= KEY_KEYPAD7 && key <= KEY_KPADDEL)
 	{
-		char keypad_translation[] = {'7','8','9','-',
+		XBOXSTATIC char keypad_translation[] = {'7','8','9','-',
 		                             '4','5','6','+',
 		                             '1','2','3',
 		                             '0','.'};
@@ -889,56 +896,67 @@ static void CON_Print(char* msg)
 	}
 }
 
-#ifdef LOGMESSAGES
 void CON_LogMessage(const char* msg)
 {
+#ifdef LOGMESSAGES
+	const boolean ls = (logstream != INVALID_HANDLE_VALUE);
+#endif
 	const char* p;
 
 	for(p = msg; *p != '\0'; p++)
-		if(*p == '\n' || *p >= ' ') // don't log CON_Print's control characters
+		if(*p == '\n' || *p >= ' ') // don't log or console print CON_Print's control characters
 		{
+#ifdef LOGMESSAGES
+			if(*p == '\n' && ( p == msg || *(p-1) != '\r') && ls)
+			{
 #ifdef _WINDOWS
-			if(*p == '\n' && ( p == msg || *(p-1) != '\r')) FPutChar(logstream, "\r");
-			FPutChar(logstream, p);
-#elif defined(SDLIO)
-			SDL_RWwrite(logstream, p, 1, 1);
+				FPutChar(logstream, "\r");
+#elif defined (_WIN32) || defined(_WIN64) || defined(_WIN32_WCE) || defined(PC_DOS)
+#ifdef SDLIO
+				SDL_RWwrite(logstream, "\r", 1, 1);
 #else
-			write(logstream, p, 1);
+				write(logstream, "\r", 1);
 #endif
+#endif
+			}
+#endif
+			I_OutputMsg("%c", *p);
 		}
 }
-#endif
 
 // Console print! Wahooo! Lots o fun!
 //
+
 void CONS_Printf(const char* fmt, ...)
 {
 	va_list argptr;
-	char txt[8192];
+	XBOXSTATIC char txt[8192];
 
 	va_start(argptr, fmt);
 	vsprintf(txt, fmt, argptr);
 	va_end(argptr);
 
 	// echo console prints to log file
-#ifdef LOGMESSAGES
-	if(logstream != INVALID_HANDLE_VALUE)
-		CON_LogMessage(txt);
-#endif
+#ifndef _arch_dreamcast
 	DEBFILE(txt);
+#endif
 
 	if(!con_started)
 	{
-#if !defined(_WINDOWS) && !(defined(__OS2__) && !defined(SDL))// && !defined(WATTCP)
-		I_OutputMsg("%s",txt);
+#if defined(_XBOX) && defined(__GNUC__)
+		if(!keyboard_started) debugPrint(txt);
 #endif
+#ifdef PC_DOS
+		CON_LogMessage(txt);
 		return;
+#endif
 	}
 	else
 		// write message in con text buffer
 		CON_Print(txt);
-#if (defined(SDL) || defined(LINUX)) && !defined(_arch_dreamcast)
-	I_OutputMsg("%s",txt);
+
+#ifndef PC_DOS
+	CON_LogMessage(txt);
 #endif
 
 	// make sure new text is visible
@@ -966,28 +984,19 @@ void CONS_Printf(const char* fmt, ...)
 //
 void CONS_Error(const char* msg)
 {
-#if (defined (_WIN32) && !defined(_WIN32_WCE)) || defined(_WIN64)
-#ifdef _WINDOWS
+#ifdef RPC_NO_WINDOWS_H
 	if(!graphics_started)
 	{
-		MessageBox(hWndMain, msg, "SRB2 Warning", MB_OK);
+		MessageBoxA(vid.WndParent, msg, "SRB2 Warning", MB_OK);
 		return;
 	}
-#endif
-#ifdef SDLMAIN
-	if(!graphics_started)
-	{
-		MessageBox(NULL, msg, "SRB2 Warning", MB_OK);
-		return;
-	}
-#endif
 #endif
 	CONS_Printf("\2%s", msg); // write error msg in different colour
 	CONS_Printf("Press ENTER to continue\n");
 
 	// dirty quick hack, but for the good cause
 	while(I_GetKey() != KEY_ENTER)
-		;
+		I_OsPolling();
 }
 
 //======================================================================
@@ -1076,11 +1085,12 @@ static void CON_DrawBackpic2(pic_t* pic, int startx, int destwidth)
 {
 	int x, y;
 	int v;
-	byte* src;
-	byte* dest;
+	byte *src, *dest;
+	const byte *deststop;
 	int frac, fracstep;
 
 	dest = screens[0]+startx;
+	deststop = screens[0] + vid.width * vid.height * vid.bpp;
 
 	for(y = 0; y < con_curlines; y++, dest += vid.width)
 	{
@@ -1099,12 +1109,16 @@ static void CON_DrawBackpic2(pic_t* pic, int startx, int destwidth)
 			fracstep = (SHORT(pic->width)<<16)/destwidth;
 			for(x = 0; x < destwidth; x += 4)
 			{
+				if(dest+x > deststop) break;
 				dest[x] = src[frac>>16];
 				frac += fracstep;
+				if(dest+x+1 > deststop) break;
 				dest[x+1] = src[frac>>16];
 				frac += fracstep;
+				if(dest+x+2 > deststop) break;
 				dest[x+2] = src[frac>>16];
 				frac += fracstep;
+				if(dest+x+3 > deststop) break;
 				dest[x+3] = src[frac>>16];
 				frac += fracstep;
 			}

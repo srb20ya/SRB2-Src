@@ -127,17 +127,17 @@ boolean I_InitNetwork (void)
 	return true;
 }
 
-FUNCNORETURN static void External_Driver_Get(void)
+FUNCNORETURN static ATTRNORETURN void External_Driver_Get(void)
 {
 	I_Error("External_Driver_Get not supported at this time");
 }
 
-FUNCNORETURN static void External_Driver_Send(void)
+FUNCNORETURN static ATTRNORETURN void External_Driver_Send(void)
 {
 	I_Error("External_Driver_Send not supported at this time");
 }
 
-FUNCNORETURN static void External_Driver_FreeNode(int nodenum)
+FUNCNORETURN static ATTRNORETURN void External_Driver_FreeNode(int nodenum)
 {
 	nodenum = 0;
 	I_Error("External_Driver_FreeNode not supported at this time");

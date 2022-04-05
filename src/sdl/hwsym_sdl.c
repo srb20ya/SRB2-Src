@@ -25,10 +25,22 @@
 #include "hwsym_sdl.h"
 #include "../doomdef.h"
 
+#if defined(_XBOX) && defined(_MSC_VER)
+#include <SDL.h>
+#else
 #include <SDL/SDL.h>
+#endif
 
-#if (SDL_MAJOR_VERSION > 1) || (SDL_MINOR_VERSION >= 3) || (SDL_MINOR_VERSION == 2 && SDL_PATCHLEVEL >= 6)
+#if defined(_XBOX) || defined(_arch_dreamcast)
+#define NOLOADSO
+#endif
+
+#if SDL_VERSION_ATLEAST(1,2,6) && !defined(NOLOADSO)
+#if defined(_XBOX) && defined(_MSC_VER)
+#include <SDL_loadso.h> // 1.2.6+
+#else
 #include <SDL/SDL_loadso.h> // 1.2.6+
+#endif
 #else //NOLOADSO
 #define NOLOADSO
 #endif

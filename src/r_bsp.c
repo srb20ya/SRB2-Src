@@ -822,7 +822,7 @@ void R_Prep3DFloors(sector_t*  sector)
 	{
 		if(sector->lightlist)
 			Z_Free(sector->lightlist);
-		sector->lightlist = Z_Malloc(sizeof(lightlist_t) * count, PU_LEVEL, 0);
+		sector->lightlist = Z_Malloc(sizeof(lightlist_t) * count, PU_LEVEL, NULL);
 		memset(sector->lightlist, 0, sizeof(lightlist_t) * count);
 		sector->numlights = count;
 	}

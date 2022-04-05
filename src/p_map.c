@@ -172,134 +172,47 @@ static void add_spechit(line_t* ld)
 
 static void P_DoSpring(mobj_t* spring, mobj_t* object)
 {
-	switch(spring->type)
+	spring->flags &= ~MF_SOLID; // De-solidify
+
+	if(spring->info->damage || (maptol & TOL_ADVENTURE && object->player && object->player->homing)) // Mimic SA
 	{
-		case MT_YELLOWDIAG: // Yellow diagonal spring (pointing up from ground)
-		case MT_REDDIAG: // Red diagonal spring (pointing up from ground)
-			spring->flags &= ~MF_SOLID; // De-solidify
-			object->momx = object->momy = object->momz = 0;
-			P_UnsetThingPosition(object);
-			object->x = spring->x;
-			object->y = spring->y;
-			object->z = spring->z + spring->height + 1;
-			P_SetThingPosition(object);
-			object->momz = spring->info->speed;
-			P_InstaThrustEvenIn2D(object, spring->angle, spring->info->damage);
-			P_SetMobjState(spring, spring->info->seestate);
-			spring->flags |= MF_SOLID; // Re-solidify
-			if(object->player)
-			{
-				if(!(object->player->cmd.forwardmove != 0 || object->player->cmd.sidemove != 0))
-				{
-					object->player->mo->angle = spring->angle;
+		object->momx = object->momy = 0;
+		P_UnsetThingPosition(object);
+		object->x = spring->x;
+		object->y = spring->y;
+		P_SetThingPosition(object);
+	}
 
-					if(object->player == &players[consoleplayer])
-						localangle = spring->angle;
-					else if(cv_splitscreen.value && object->player == &players[secondarydisplayplayer])
-						localangle2 = spring->angle;
-				}
+	if(spring->info->speed > 0)
+		object->z = spring->z + spring->height + 1;
+	else
+		object->z = spring->z - object->height - 1;
 
-				P_ResetPlayer(object->player);
-				P_SetPlayerMobjState(object, S_PLAY_PLG1);
-			}
-			break;
-		case MT_YELLOWDIAGDOWN: // Yellow diagonal spring (upside-down)
-		case MT_REDDIAGDOWN: // Yellow diagonal spring (upside-down)
-			spring->flags &= ~MF_SOLID; // De-solidify
-			object->momx = object->momy = object->momz = 0;
-			P_UnsetThingPosition(object);
-			object->x = spring->x;
-			object->y = spring->y;
-			object->z = spring->z - object->height - 1;
-			P_SetThingPosition(object);
-			object->momz = spring->info->speed;
-			P_InstaThrustEvenIn2D(object, spring->angle, spring->info->damage);
-			P_SetMobjState(spring, spring->info->seestate);
-			spring->flags |= MF_SOLID; // Re-solidify
-			if(object->player)
-			{
-				if(!(object->player->cmd.forwardmove != 0 || object->player->cmd.sidemove != 0))
-				{
-					object->player->mo->angle = spring->angle;
-					if(object->player==&players[consoleplayer])
-						localangle = spring->angle;
-					else if(cv_splitscreen.value && object->player==&players[secondarydisplayplayer])
-						localangle2 = spring->angle;
-				}
-				P_ResetPlayer(object->player);
-			}
-			break;
-		case MT_YELLOWSPRING: // Yellow vertical spring (pointing up)
-		case MT_REDSPRING: // Red vertical spring (pointing up)
-		case MT_BLUESPRING: // Blue vertical spring (pointing up) Graue 01-03-2004
-			object->z = spring->z + spring->height + 1;
-			object->momz = spring->info->speed;
-			P_SetMobjState(spring, spring->info->seestate);
-			if(object->player)
-			{
-				boolean homing = object->player->homing;
-				P_ResetPlayer(object->player);
-				P_SetPlayerMobjState(object, S_PLAY_PLG1);
+	object->momz = spring->info->speed;
 
-				if(maptol & TOL_ADVENTURE && homing) // Mimic SA
-				{
-					object->momx = object->momy = 0;
-					P_UnsetThingPosition(object);
-					object->x = spring->x;
-					object->y = spring->y;
-					P_SetThingPosition(object);
-				}
-				break;
-			}
-			break;
-		case MT_YELLOWSPRINGDOWN: // Yellow vertical spring (pointing down)
-		case MT_REDSPRINGDOWN: // Red vertical spring (pointing down)
-			object->momz = spring->info->speed;
-			P_SetMobjState(spring, spring->info->seestate);
-			if(object->player)
-			{
-				boolean homing = object->player->homing;
-				P_ResetPlayer(object->player);
-				P_SetPlayerMobjState(object, S_PLAY_FALL1);
+	if(spring->info->damage)
+		P_InstaThrustEvenIn2D(object, spring->angle, spring->info->damage);
 
-				if(maptol & TOL_ADVENTURE && homing) // Mimic SA
-				{
-					object->momx = object->momy = 0;
-					P_UnsetThingPosition(object);
-					object->x = spring->x;
-					object->y = spring->y;
-					P_SetThingPosition(object);
-				}
-			}
-			break;
-		default: // Must be a user-defined spring
-			spring->flags &= ~MF_SOLID; // De-solidify
-			object->momx = object->momy = object->momz = 0;
-			P_UnsetThingPosition(object);
-			object->x = spring->x;
-			object->y = spring->y;
-			object->z = spring->z;
-			P_SetThingPosition(object);
-			object->momz = spring->info->speed;
-			P_InstaThrustEvenIn2D(object, spring->angle, spring->info->damage);
-			P_SetMobjState(spring, spring->info->seestate);
-			spring->flags |= MF_SOLID; // Re-solidify
-			if(object->player)
-			{
-				if(!(object->player->cmd.forwardmove != 0 || object->player->cmd.sidemove != 0))
-				{
-					object->player->mo->angle = spring->angle;
+	P_SetMobjState(spring, spring->info->seestate);
+	spring->flags |= MF_SOLID; // Re-solidify
+	if(object->player)
+	{
+		if(spring->info->damage && !(object->player->cmd.forwardmove != 0 || object->player->cmd.sidemove != 0))
+		{
+			object->player->mo->angle = spring->angle;
 
-					if(object->player == &players[consoleplayer])
-						localangle = spring->angle;
-					else if(cv_splitscreen.value && object->player == &players[secondarydisplayplayer])
-						localangle2 = spring->angle;
-				}
+			if(object->player == &players[consoleplayer])
+				localangle = spring->angle;
+			else if(cv_splitscreen.value && object->player == &players[secondarydisplayplayer])
+				localangle2 = spring->angle;
+		}
 
-				P_ResetPlayer(object->player);
-				P_SetPlayerMobjState(object, S_PLAY_PLG1);
-			}
-			break;
+		P_ResetPlayer(object->player);
+
+		if(spring->info->speed > 0)
+			P_SetPlayerMobjState(object, S_PLAY_PLG1);
+		else
+			P_SetPlayerMobjState(object, S_PLAY_FALL1);
 	}
 }
 
@@ -577,6 +490,9 @@ static boolean PIT_CheckThing(mobj_t* thing)
 			}
 		}
 
+		if(gametype == GT_CTF && thing->player && !thing->player->ctfteam && !cv_solidspectator.value)
+			return true;
+
 		if(!(thing->flags & MF_SHOOTABLE))
 		{
 			// didn't do any damage
@@ -794,7 +710,7 @@ static boolean PIT_CheckThing(mobj_t* thing)
 			}
 		}
 
-		if(thing->z >= tmthing->z) // Stuff where da player don't gotta move
+		if(thing->z >= tmthing->z && !(thing->state == &states[S_PLAY_PAIN])) // Stuff where da player don't gotta move
 		{
 			switch(tmthing->type)
 			{
@@ -824,7 +740,7 @@ static boolean PIT_CheckThing(mobj_t* thing)
 
 	if(tmthing->player) // Is the moving/interacting object the player?
 	{
-		if(tmthing->z >= thing->z)
+		if(tmthing->z >= thing->z && !(tmthing->state == &states[S_PLAY_PAIN]))
 		{
 			switch(thing->type)
 			{
@@ -866,7 +782,7 @@ static boolean PIT_CheckThing(mobj_t* thing)
 				}
 			}
 			else if(thing->flags & MF_MONITOR
-				&& (tmthing->player->mfjumped || tmthing->player->mfspinning))
+				&& (tmthing->player->mfjumped || tmthing->player->mfspinning|| maptol & TOL_ADVENTURE))
 			{
 				// Going down? Then bounce back up.
 				if(tmthing->momz < 0)
@@ -1321,7 +1237,7 @@ static inline boolean P_CheckRailPosition(mobj_t* thing, fixed_t x, fixed_t y)
 #endif
 
 // P_CheckPosition optimized for the MT_HOOPCOLLIDE object. This needs to be as fast as possible!
-boolean P_CheckHoopPosition(mobj_t* hoopthing, fixed_t x, fixed_t y, fixed_t z, fixed_t radius)
+void P_CheckHoopPosition(mobj_t* hoopthing, fixed_t x, fixed_t y, fixed_t z, fixed_t radius)
 {
 	int i;
 	fixed_t blockdist;
@@ -1335,21 +1251,20 @@ boolean P_CheckHoopPosition(mobj_t* hoopthing, fixed_t x, fixed_t y, fixed_t z, 
 
 		if(abs(players[i].mo->x - x) >= blockdist ||
 			abs(players[i].mo->y - y) >= blockdist)
-			return true; // didn't hit it
+			continue; // didn't hit it
 
 		if(players[i].mo->z > z+radius || players[i].mo->z+players[i].mo->height < z-radius)
-			return true; // Still didn't hit it.
+			continue; // Still didn't hit it.
 
 		// check for pickup
 		if(hoopthing->flags & MF_SPECIAL)
 		{
 			// can remove thing
 			P_TouchSpecialThing(hoopthing, players[i].mo, true);
-			return false;
 		}
 	}
 
-	return true;
+	return;
 }
 
 //
@@ -1379,6 +1294,14 @@ static boolean P_CheckCameraPosition(fixed_t x, fixed_t y, camera_t* thiscam)
 	tmceilingz = tmsectorceilingz = newsubsec->sector->ceilingheight;
 	tmfloorff = tmceilingff = NULL;
 
+	// Cameras use the heightsec's heights rather then the actual sector heights.
+	// If you can see through it, why not move the camera through it too?
+	if(newsubsec->sector->heightsec >= 0)
+	{
+		tmfloorz = tmsectorfloorz = tmdropoffz = sectors[newsubsec->sector->heightsec].floorheight;
+		tmceilingz = tmsectorceilingz = sectors[newsubsec->sector->heightsec].ceilingheight;
+	}
+
 	// Check list of fake floors and see if tmfloorz/tmceilingz need to be altered.
 	if(newsubsec->sector->ffloors)
 	{
@@ -1388,7 +1311,7 @@ static boolean P_CheckCameraPosition(fixed_t x, fixed_t y, camera_t* thiscam)
 
 		for(rover = newsubsec->sector->ffloors; rover; rover = rover->next)
 		{
-			if(!(rover->flags & FF_SOLID) || !(rover->flags & FF_EXISTS))
+			if(!(rover->flags & FF_SOLID) || !(rover->flags & FF_EXISTS) || !(rover->flags & FF_RENDERALL))
 				continue;
 
 			delta1 = thiscam->z - (*rover->bottomheight
@@ -2314,8 +2237,16 @@ stairstep:
 
 	P_HitSlideLine(bestslideline); // clip the moves
 
-	mo->momx = tmxmove;
-	mo->momy = tmymove;
+	if(!twodlevel)
+	{
+		mo->momx = tmxmove;
+		mo->momy = tmymove;
+	}
+	else
+	{
+		tmxmove = 0;
+		tmymove = 0;
+	}
 
 	if(!P_TryMove(mo, mo->x + tmxmove, mo->y + tmymove, true))
 		goto retry;
@@ -2611,6 +2542,7 @@ static boolean PTR_AimTraverse(intercept_t* in)
 fixed_t P_AimLineAttack(mobj_t* t1, angle_t angle, fixed_t distance)
 {
 	fixed_t x2, y2;
+	const fixed_t baseaiming = 10*FRACUNIT/16;
 
 #ifdef PARANOIA
 	if(!t1)
@@ -2620,15 +2552,19 @@ fixed_t P_AimLineAttack(mobj_t* t1, angle_t angle, fixed_t distance)
 	angle >>= ANGLETOFINESHIFT;
 	shootthing = t1;
 
+	topslope = baseaiming;
+	bottomslope = -baseaiming;
+
 	if(t1->player)
 	{
-		fixed_t cosineaiming = finecosine[t1->player->aiming>>ANGLETOFINESHIFT];
-		int aiming = ((int)t1->player->aiming)>>ANGLETOFINESHIFT;
+		const angle_t aiming = t1->player->aiming>>ANGLETOFINESHIFT;
+		const fixed_t cosineaiming = finecosine[aiming];
+		const fixed_t slopeaiming = finetangent[(FINEANGLES/4+aiming) & FINEMASK];
 		x2 = t1->x + FixedMul(FixedMul(distance, finecosine[angle]), cosineaiming);
 		y2 = t1->y + FixedMul(FixedMul(distance, finesine[angle]), cosineaiming);
 
-		topslope = 100*FRACUNIT/160+finetangent[(2048+aiming) & FINEMASK];
-		bottomslope = -100*FRACUNIT/160+finetangent[(2048+aiming) & FINEMASK];
+		topslope += slopeaiming;
+		bottomslope += slopeaiming;
 	}
 	else
 	{
@@ -2638,8 +2574,6 @@ fixed_t P_AimLineAttack(mobj_t* t1, angle_t angle, fixed_t distance)
 		//added:15-02-98: Fab comments...
 		// Doom's base engine says that at a distance of 160,
 		// the 2d graphics on the plane x, y correspond 1/1 with plane units
-		topslope = 100*FRACUNIT/160;
-		bottomslope = -100*FRACUNIT/160;
 	}
 
 	shootz = lastz = t1->z + (t1->height>>1) + 8*FRACUNIT;
@@ -2831,7 +2765,10 @@ static boolean PIT_ChangeSector(mobj_t* thing)
 							&& (crumbler->type == elevateBounce
 							|| crumbler->type == elevateContinuous))
 						{
-							P_DamageMobj(thing, crumbler->player->mo, crumbler->player->mo, 10000);
+							if(gametype == GT_CTF && thing->player && !thing->player->ctfteam)
+								P_DamageMobj(thing, NULL, NULL, 42000); // Respawn crushed spectators
+							else
+								P_DamageMobj(thing, crumbler->player->mo, crumbler->player->mo, 10000);
 							return true;
 						}
 					}
@@ -2840,6 +2777,11 @@ static boolean PIT_ChangeSector(mobj_t* thing)
 		}
 
 		// Instant-death, but no one to blame
+		if(gametype == GT_CTF && thing->player && !thing->player->ctfteam)
+			P_DamageMobj(thing, NULL, NULL, 42000); // Respawn crushed spectators
+		else
+			P_DamageMobj(thing, NULL, NULL, 10000);
+
 		P_DamageMobj(thing, NULL, NULL, 10000);
 	}
 
@@ -2931,7 +2873,7 @@ void P_Initsecnode(void)
 // P_GetSecnode() retrieves a node from the freelist. The calling routine
 // should make sure it sets all fields properly.
 
-static msecnode_t* P_GetSecnode()
+static msecnode_t* P_GetSecnode(void)
 {
 	msecnode_t* node;
 
@@ -2945,7 +2887,7 @@ static msecnode_t* P_GetSecnode()
 	return(node);
 }
 
-static mprecipsecnode_t* P_GetPrecipSecnode()
+static mprecipsecnode_t* P_GetPrecipSecnode(void)
 {
 	mprecipsecnode_t* node;
 
@@ -3403,6 +3345,9 @@ static void P_FakeZMovement(mobj_t* mo)
 	int dist;
 	int delta;
 
+	if(!mo->health)
+		return;
+
 	// Intercept the stupid 'fall through 3dfloors' bug Tails 03-17-2002
 	if(mo->subsector->sector->ffloors)
 	{
@@ -3449,7 +3394,7 @@ static void P_FakeZMovement(mobj_t* mo)
 	if(mo->flags & MF_FLOAT && mo->target && mo->type != MT_EGGMOBILE
 		&& mo->type != MT_EGGMOBILE2 && mo->type != MT_RING && mo->type != MT_COIN) // Tails
 	{ // float down towards target if too close
-		if(!(mo->flags2&MF2_SKULLFLY) && !(mo->flags&MF_INFLOAT))
+		if(!(mo->flags2&MF2_SKULLFLY) && !(mo->flags2&MF2_INFLOAT))
 		{
 			dist = P_AproxDistance(mo->x-mo->target->x, mo->y-mo->target->y);
 			delta = (mo->target->z + (mo->height>>1)) - mo->z;

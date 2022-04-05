@@ -107,7 +107,7 @@ extern boolean (*I_NetCanSend)(void);
 */
 extern void (*I_NetFreeNodenum)(int nodenum);
 
-/**	\brief	open a connection with spécified address
+/**	\brief	open a connection with spï¿½ified address
 
 	\param	address	address to connect to
 
@@ -124,6 +124,11 @@ extern boolean (*I_NetOpenSocket)(void);
 /**	\brief close all connections no more allow geting any packet
 */
 extern void (*I_NetCloseSocket)(void);
+
+
+extern boolean (*I_Ban) (int node);
+extern void (*I_ClearBans)(void);
+extern boolean *bannednode;
 
 /// \brief Called by D_SRB2Main to be defined by extern network driver
 boolean I_InitNetwork(void);

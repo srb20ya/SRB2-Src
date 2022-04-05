@@ -185,7 +185,7 @@ void ST_doPaletteStuff(void)
 {
 	int palette;
 
-	if(stplyr->bonuscount)
+	if(stplyr && stplyr->bonuscount)
 	{
 		palette = (stplyr->bonuscount+7)>>3;
 
@@ -533,11 +533,16 @@ static void ST_DrawNightsOverlayNum(int x /* right border */, int y, int num,
 	byte* colormap;
 	int flags = 0;
 
-	flags = (flags & ~MF_TRANSLATION) | (colornum<<MF_TRANSSHIFT);
+	if(colornum == 0)
+		colormap = colormaps;
+	else
+	{
+		// Uses the player colors.
+		flags = (flags & ~MF_TRANSLATION) | (colornum<<MF_TRANSSHIFT);
 
-	// Uses the player colors.
-	colormap = (byte*)defaulttranslationtables - 256
-		+ ((flags & MF_TRANSLATION)>>(MF_TRANSSHIFT-8));
+		colormap = (byte*)defaulttranslationtables - 256
+			+ ((flags & MF_TRANSLATION)>>(MF_TRANSSHIFT-8));
+	}
 
 	// special case for 0
 	if(!num)
@@ -592,7 +597,7 @@ static void ST_drawDebugInfo(void)
 	sprintf(smomy, "%d", stplyr->rmomy >> FRACBITS);
 	sprintf(smomz, "%d", stplyr->mo->momz >> FRACBITS);
 	sprintf(sspeed, "%d", stplyr->speed);
-	sprintf(sfloorz, "%d", stplyr->mo->ceilingz >> FRACBITS);
+	sprintf(sfloorz, "%d", stplyr->mo->floorz >> FRACBITS);
 	sprintf(spmomz, "%d", stplyr->mo->pmomz >> FRACBITS);
 	sprintf(scability, "%d", stplyr->charability);
 	sprintf(scharsped, "%d", stplyr->normalspeed);
@@ -619,7 +624,7 @@ static void ST_drawDebugInfo(void)
 	V_DrawString(296, 16, 0, smomz);
 	V_DrawString(240, 24, 0, "SPEED =");
 	V_DrawString(296, 24, 0, sspeed);
-	V_DrawString(232, 32, 0, "CEILGZ=");
+	V_DrawString(232, 32, 0, "FLOORZ=");
 	V_DrawString(288, 32, 0, sfloorz);
 	V_DrawString(240, 40, 0, "PMOMZ =");
 	V_DrawString(296, 40, 0, spmomz);
@@ -944,7 +949,7 @@ static void ST_drawNiGHTSHUD(void)
 
 			amount = (origamount - stplyr->capsule->health);
 
-			amount = (int)(amount * ((float)orblength/origamount));
+			amount = (amount * orblength)/origamount;
 
 			if(amount > 0)
 			{
@@ -978,7 +983,7 @@ static void ST_drawNiGHTSHUD(void)
 			origamount = stplyr->capsule->spawnpoint->angle & 1023;
 
 			amount = (origamount - stplyr->capsule->health);
-			amount = (int)(amount * ((float)length/origamount));
+			amount = (amount * length)/origamount;
 
 			if(amount > 0)
 				V_DrawFill(16, STRINGY(8) + 35, amount, 3, 197);
@@ -1171,8 +1176,9 @@ static void ST_drawCTFHUD(void)
 	}
 	else
 	{
-		V_DrawCenteredString(BASEVIDWIDTH/2, STRINGY(88), V_TRANSLUCENT, "You are a spectator.");
-		V_DrawCenteredString(BASEVIDWIDTH/2, STRINGY(104), V_TRANSLUCENT, "Jump on a team base to choose.");
+		V_DrawCenteredString(BASEVIDWIDTH/2, STRINGY(84), V_TRANSLUCENT, "You are a spectator.");
+		V_DrawCenteredString(BASEVIDWIDTH/2, STRINGY(100), V_TRANSLUCENT, "Jump on a team base to choose.");
+		V_DrawCenteredString(BASEVIDWIDTH/2, STRINGY(116), V_TRANSLUCENT, "(Press Fire to Respawn)");
 	}
 }
 
@@ -1185,12 +1191,15 @@ static void ST_drawChaosHUD(void)
 
 static void ST_drawSpecialStageHUD(void)
 {
-	if(cv_splitscreen.value)
-		ST_DrawOverlayNum(SCX(hudinfo[HUD_SS_TOTALRINGS_SPLIT].x), SCY(hudinfo[HUD_SS_TOTALRINGS_SPLIT].y), totalrings, tallnum);
-	else
-		ST_DrawOverlayNum(SCX(hudinfo[HUD_SS_TOTALRINGS].x), SCY(hudinfo[HUD_SS_TOTALRINGS].y), totalrings, tallnum);
+	if(totalrings > 0)
+	{
+		if(cv_splitscreen.value)
+			ST_DrawOverlayNum(SCX(hudinfo[HUD_SS_TOTALRINGS_SPLIT].x), SCY(hudinfo[HUD_SS_TOTALRINGS_SPLIT].y), totalrings, tallnum);
+		else
+			ST_DrawOverlayNum(SCX(hudinfo[HUD_SS_TOTALRINGS].x), SCY(hudinfo[HUD_SS_TOTALRINGS].y), totalrings, tallnum);
+	}
 
-	if(leveltime < 5*TICRATE)
+	if(leveltime < 5*TICRATE && totalrings > 0)
 	{
 		V_DrawScaledPatch(hudinfo[HUD_GETRINGS].x, (int)(SCY(hudinfo[HUD_GETRINGS].y)/vid.fdupy), V_TRANSLUCENT, getall);
 		ST_DrawOverlayNum(SCX(hudinfo[HUD_GETRINGSNUM].x), SCY(hudinfo[HUD_GETRINGSNUM].y), totalrings, tallnum);
@@ -1262,24 +1271,24 @@ static void ST_overlayDrawer(void)
 	else
 		splity = 0;
 
-	if(stplyr->linkcount)
+	if(stplyr->linkcount > 1)
 	{
 		int colornum;
 
-		colornum = (stplyr->linkcount / 5)%14;
+		colornum = ((stplyr->linkcount-1) / 5)%14;
 
 		if(cv_splitscreen.value)
 		{
-			ST_DrawNightsOverlayNum(SCX(256), SCY(160), stplyr->linkcount, nightsnum, colornum);
+			ST_DrawNightsOverlayNum(SCX(256), SCY(160), (stplyr->linkcount-1), nightsnum, colornum);
 			V_DrawMappedPatch(SCX(264), SCY(160), V_NOSCALESTART, nightslink,
-				(byte*)defaulttranslationtables - 256 + ((((0 & ~MF_TRANSLATION)
+				colornum == 0 ? colormaps : (byte*)defaulttranslationtables - 256 + ((((0 & ~MF_TRANSLATION)
 				| (colornum<<MF_TRANSSHIFT)) & MF_TRANSLATION) >> (MF_TRANSSHIFT-8)));
 		}
 		else
 		{
-			ST_DrawNightsOverlayNum(SCX(160), SCY(176), stplyr->linkcount, nightsnum, colornum);
+			ST_DrawNightsOverlayNum(SCX(160), SCY(176), (stplyr->linkcount-1), nightsnum, colornum);
 			V_DrawMappedPatch(SCX(168), SCY(176), V_NOSCALESTART, nightslink,
-				(byte*)defaulttranslationtables - 256 + ((((0 & ~MF_TRANSLATION)
+				colornum == 0 ? colormaps : (byte*)defaulttranslationtables - 256 + ((((0 & ~MF_TRANSLATION)
 				| (colornum<<MF_TRANSSHIFT)) & MF_TRANSLATION) >> (MF_TRANSSHIFT-8)));
 		}
 	}

@@ -57,10 +57,8 @@ static memzone_t* mainzone;
 
 static void Command_Memfree_f(void);
 
-#ifdef _WIN32_WCE
-static byte mb_used = 4;
-#elif defined(DC)
-static byte mb_used = 12;
+#if defined(_WIN32_WCE) || defined(DC)
+static byte mb_used = 6; // sounds need 2.5 MB!
 #else
 static byte mb_used = 32;
 #endif
@@ -84,10 +82,10 @@ void Z_Init(void)
 		if(free < 6)
 			free = total>>21;
 #ifdef _WIN32_WCE
-		mb_used = (byte)min(max(free, mb_used), 10); // min 4MB max 10MB
+		mb_used = (byte)min(max(free, mb_used), 10); // min 6MB max 10MB
 #elif defined(DC)
-		if(!nofmod)
-			mb_used = (byte)min(max(free, mb_used), 16); // min 12MB max 16MB
+//		if(!nofmod)
+//			mb_used = (byte)min(max(free, mb_used), 8); // min 5MB max 8MB
 #elif defined(SDL)
 		if(!nosound)
 			mb_used = (byte)min(max(free, mb_used), 48); // min 32MB max 48MB, for all the static sfxs
@@ -421,7 +419,7 @@ void Z_DumpHeap(int lowtag, int hightag)
 
 	if(!mainzone)
 	{
-		CONS_Printf("There no ZMem Heap to dump");
+		CONS_Printf("There no ZMem Heap to dump\n");
 		return;
 	}
 
@@ -467,7 +465,7 @@ void Z_FileDumpHeap(FILE* f)
 
 	if(!mainzone)
 	{
-		fprintf(f, "There no ZMem Heap to dump");
+		fprintf(f, "There no ZMem Heap to dump to file\n");
 		return;
 	}
 
@@ -512,7 +510,7 @@ void Z_CheckHeap(int i)
 
 	if(!mainzone)
 	{
-		CONS_Printf("There no ZMem Heap to check");
+		CONS_Printf("There no ZMem Heap to check\n");
 		return;
 	}
 
@@ -533,7 +531,7 @@ void Z_CheckHeap(int i)
 
 		if(block->next->prev != block)
 			I_Error("Z_CheckHeap: next block from %d doesn't have proper back link %d\n"
-				"next->tag is %d\nnext->size is %zd\nblock->tag is %d\nblock->size is %zd\n",
+				"next->tag is %d\nnext->size is %u\nblock->tag is %d\nblock->size is %u\n",
 				blocknumon, i, block->next->tag, block->next->size, block->tag, block->size);
 
         if(!block->user && !block->next->user)

@@ -31,14 +31,14 @@
 	
 */
 
-void ShowEndTxt()
+void ShowEndTxt(void)
 {
-#ifndef _WIN32_WCE
+#if !(defined(_WIN32_WCE) || defined(_XBOX) || defined(_arch_dreamcast))
 	int i;
 	unsigned short j, att = 0;
 	int nlflag = 1;
 #if defined(_WIN32) || defined(_WIN64)
-	HANDLE contextout = GetStdHandle(STD_OUTPUT_HANDLE);
+	HANDLE co = GetStdHandle(STD_OUTPUT_HANDLE);
 	CONSOLE_SCREEN_BUFFER_INFO backupcon;
 	COORD resizewin = {80,-1};
 #endif
@@ -60,7 +60,7 @@ void ShowEndTxt()
 	data = text = W_CacheLumpNum(endoomnum, PU_CACHE);
 
 #if defined(_WIN32) || defined(_WIN64)
-	if(contextout == (HANDLE)(-1)) // test if it a good handle
+	if(co == (HANDLE)(-1) || GetFileType(co) != FILE_TYPE_CHAR) // test if it a good handle
 	{
 		Z_Free(data);
 		return;
@@ -68,10 +68,10 @@ void ShowEndTxt()
 	else
 	{
 		backupcon.wAttributes = FOREGROUND_RED|FOREGROUND_GREEN|FOREGROUND_BLUE; // Just in case
-		GetConsoleScreenBufferInfo(contextout, &backupcon); //Store old state
+		GetConsoleScreenBufferInfo(co, &backupcon); //Store old state
 		resizewin.Y = backupcon.dwSize.Y;
 		if(backupcon.dwSize.X < resizewin.X)
-			SetConsoleScreenBufferSize(contextout, resizewin);
+			SetConsoleScreenBufferSize(co, resizewin);
 	}
 	for (i=1; i<=80*25; i++) // print 80x25 text and deal with the attributes too
 	{
@@ -79,19 +79,19 @@ void ShowEndTxt()
 		if (j != att) // attribute changed?
 		{
 			att = j; // save current attribute
-			SetConsoleTextAttribute(contextout, j); //set fg and bg color for buffer
+			SetConsoleTextAttribute(co, j); //set fg and bg color for buffer
 		}
 
-		putchar(*text++ & 0xff); // now the text
+		printf("%c",*text++ & 0xff); // now the text
 
 		if (nlflag && !(i % 80) && backupcon.dwSize.X > resizewin.X) // do we need a nl?
 		{
 			att = backupcon.wAttributes;
-			SetConsoleTextAttribute(contextout, att); // all attributes off
+			SetConsoleTextAttribute(co, att); // all attributes off
 			printf("\n");
 		}
 	}
-	SetConsoleTextAttribute(contextout, backupcon.wAttributes); // all attributes off
+	SetConsoleTextAttribute(co, backupcon.wAttributes); // all attributes off
 #else
 	/* print 80x25 text and deal with the attributes too */
 	for (i=1; i<=80*25; i++) {
@@ -209,7 +209,7 @@ void ShowEndTxt()
 		}
 
 		/* now the text */
-		putchar(*text++ & 0xff);
+		printf("%c",*text++ & 0xff);
 
 		/* do we need a nl? */
 		if (nlflag)

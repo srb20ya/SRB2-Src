@@ -123,7 +123,7 @@ static float recalc_pitch(int doom_pitch)
 FUNCPRINTF void DBG_Printf(const char* lpFmt, ... )
 {
 #ifdef DEBUG_TO_FILE
-	char    str[4096];
+	char    str[4096] = "";
 	va_list arglist;
 
 	va_start(arglist, lpFmt);

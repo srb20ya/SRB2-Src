@@ -284,7 +284,7 @@ void R_LoadTextures(void)
 	pnames = W_CacheLumpName("PNAMES", PU_STATIC);
 	nummappatches = LONG(*((int*)pnames));
 	name_p = pnames+4;
-	patchlookup = alloca(nummappatches*sizeof(*patchlookup));
+	patchlookup = malloc(nummappatches*sizeof(*patchlookup));
 
 	for(i = 0; i < nummappatches; i++)
 	{
@@ -317,7 +317,7 @@ void R_LoadTextures(void)
 	if(textures)
 		Z_Free(textures);
 
-	textures = Z_Malloc(numtextures*4*5, PU_STATIC, 0);
+	textures = Z_Malloc(numtextures*4*5, PU_STATIC, NULL);
 
 	texturecolumnofs = (void*)((int*)textures + numtextures);
 	texturecache = (void*)((int*)textures + numtextures*2);
@@ -345,7 +345,7 @@ void R_LoadTextures(void)
 		mtexture = (maptexture_t*)((byte*)maptex + offset);
 
 		texture = textures[i] = Z_Malloc(sizeof(texture_t)
-			+ sizeof(texpatch_t)*(SHORT(mtexture->patchcount)-1), PU_STATIC, 0);
+			+ sizeof(texpatch_t)*(SHORT(mtexture->patchcount)-1), PU_STATIC, NULL);
 
 		texture->width = SHORT(mtexture->width);
 		texture->height = SHORT(mtexture->height);
@@ -372,6 +372,7 @@ void R_LoadTextures(void)
 		textureheight[i] = texture->height<<FRACBITS;
 	}
 
+	free(patchlookup);
 	Z_Free(maptex1);
 	if(maptex2)
 		Z_Free(maptex2);
@@ -384,7 +385,7 @@ void R_LoadTextures(void)
 	if(texturetranslation)
 		Z_Free(texturetranslation);
 
-	texturetranslation = Z_Malloc((numtextures+1)*4, PU_STATIC, 0);
+	texturetranslation = Z_Malloc((numtextures+1)*4, PU_STATIC, NULL);
 
 	for(i = 0; i < numtextures; i++)
 		texturetranslation[i] = i;
@@ -408,7 +409,7 @@ static inline int R_CheckNumForNameList(char* name, lumplist_t* list, int listsi
 static lumplist_t* colormaplumps;
 static int numcolormaplumps;
 
-static inline void R_InitExtraColormaps()
+static inline void R_InitExtraColormaps(void)
 {
 	int startnum, endnum, cfile, clump;
 
@@ -442,7 +443,7 @@ static inline void R_InitExtraColormaps()
 static lumplist_t* flats;
 static int numflatlists;
 
-static void R_InitFlats()
+static void R_InitFlats(void)
 {
 	int startnum, endnum, cfile, clump;
 
@@ -525,10 +526,10 @@ static void R_InitSpriteLumps(void)
 	// FIXME: find a better solution for adding new sprites dynamically
 	numspritelumps = 0;
 
-	spritewidth = Z_Malloc(MAXSPRITELUMPS*4, PU_STATIC, 0);
-	spriteoffset = Z_Malloc(MAXSPRITELUMPS*4, PU_STATIC, 0);
-	spritetopoffset = Z_Malloc(MAXSPRITELUMPS*4, PU_STATIC, 0);
-	spriteheight = Z_Malloc(MAXSPRITELUMPS*4, PU_STATIC, 0);
+	spritewidth = Z_Malloc(MAXSPRITELUMPS*4, PU_STATIC, NULL);
+	spriteoffset = Z_Malloc(MAXSPRITELUMPS*4, PU_STATIC, NULL);
+	spritetopoffset = Z_Malloc(MAXSPRITELUMPS*4, PU_STATIC, NULL);
+	spriteheight = Z_Malloc(MAXSPRITELUMPS*4, PU_STATIC, NULL);
 }
 
 //
@@ -540,7 +541,7 @@ static void R_InitColormaps(void)
 
 	// Load in the light tables, now 64k aligned for smokie...
 	lump = W_GetNumForName("COLORMAP");
-	colormaps = Z_MallocAlign(W_LumpLength (lump), PU_STATIC, 0, 16);
+	colormaps = Z_MallocAlign(W_LumpLength (lump), PU_STATIC, NULL, 16);
 	W_ReadLump(lump, colormaps);
 
 	// Init Boom colormaps.
@@ -589,7 +590,7 @@ int R_ColormapNumForName(char *name)
 	foundcolormaps[num_extra_colormaps] = lump;
 
 	// aligned on 8 bit for asm code
-	extra_colormaps[num_extra_colormaps].colormap = Z_MallocAlign (W_LumpLength (lump), PU_LEVEL, 0, 16);
+	extra_colormaps[num_extra_colormaps].colormap = Z_MallocAlign (W_LumpLength (lump), PU_LEVEL, NULL, 16);
 	W_ReadLump(lump, extra_colormaps[num_extra_colormaps].colormap);
 
 	// We set all params of the colormap to normal because there
@@ -889,7 +890,7 @@ void R_CreateColormap2(char *p1, char *p2, char *p3)
 #define ABS2(x) ((x) < 0 ? -(x) : (x))
 	if(rendermode == render_soft)
 	{
-		colormap_p = Z_MallocAlign((256 * 34) + 10, PU_LEVEL, 0, 16);
+		colormap_p = Z_MallocAlign((256 * 34) + 10, PU_LEVEL, NULL, 16);
 		extra_colormaps[mapnum].colormap = (unsigned char *)colormap_p;
 
 		for(p = 0; p < 34; p++)
@@ -1010,7 +1011,7 @@ static void R_Init8to16(void)
 	}
 
 	// test a big colormap
-	hicolormaps = Z_Malloc(32768, PU_STATIC, 0);
+	hicolormaps = Z_Malloc(32768, PU_STATIC, NULL);
 	for(i = 0; i < 16384; i++)
 		hicolormaps[i] = (short)(i<<1);
 }
@@ -1119,7 +1120,7 @@ void R_PrecacheLevel(void)
 	//
 	// no need to precache all software textures in 3D mode
 	// (note they are still used with the reference software view)
-	texturepresent = alloca(numtextures);
+	texturepresent = malloc(numtextures);
 	memset(texturepresent, 0, numtextures);
 
 	for(j = 0; j < numsides; j++)
@@ -1149,11 +1150,12 @@ void R_PrecacheLevel(void)
 		// pre-caching individual patches that compose textures became obsolete,
 		// since we cache entire composite textures
 	}
+	free(texturepresent);
 
 	//
 	// Precache sprites.
 	//
-	spritepresent = alloca(numsprites);
+	spritepresent = malloc(numsprites);
 	memset(spritepresent, 0, numsprites);
 
 	for(th = thinkercap.next; th != &thinkercap; th = th->next)
@@ -1179,6 +1181,7 @@ void R_PrecacheLevel(void)
 			}
 		}
 	}
+	free(spritepresent);
 
 	// FIXME: this is no more correct with glide render mode
 	if(devparm)

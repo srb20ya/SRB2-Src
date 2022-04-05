@@ -21,6 +21,7 @@
 #include <stdlib.h>
 #include <stdarg.h>
 
+#include "../d_clisrv.h"
 #include "../i_system.h"
 #include "../m_argv.h"
 #include "../v_video.h"
@@ -120,11 +121,14 @@ void I_StartupGraphics(void)
 		rendermode = render_soft;
 #endif
 
-	VID_Init();
+	if(dedicated)
+		rendermode = render_none;
+	else
+		VID_Init();
 
 	// register exit code for graphics
 	I_AddExitFunc(I_ShutdownGraphics);
-	graphics_started = TRUE;
+	if(!dedicated) graphics_started = true;
 }
 
 // ------------------
@@ -137,6 +141,8 @@ void I_ShutdownGraphics(void)
 		return;
 
 	CONS_Printf("I_ShutdownGraphics()\n");
+
+	//FreeConsole();
 
 	// release windowed startup stuff
 	if(hDCMain)
@@ -174,7 +180,7 @@ void I_ShutdownGraphics(void)
 #endif
 		CloseDirectDraw();
 
-	graphics_started = FALSE;
+	graphics_started = false;
 }
 
 // --------------
@@ -197,6 +203,9 @@ static int fpsgraph[FPSPOINTS];
 void I_FinishUpdate(void)
 {
 	int i;
+
+	if(rendermode == render_none)
+		return;
 
 	// display a graph of ticrate 
 	if(cv_ticrate.value)
@@ -318,7 +327,7 @@ void I_LoadingScreen(LPCSTR msg)
 			rect.top = rect.bottom - 32; // put msg on bottom of window
 		SetBkMode(hDCMain, TRANSPARENT );
 		SetTextColor(hDCMain, RGB(0x00,0x00,0x00));
-		DrawText(hDCMain, msg, -1, &rect, DT_WORDBREAK|DT_CENTER);
+		DrawTextA(hDCMain, msg, -1, &rect, DT_WORDBREAK|DT_CENTER);
 	}
 }
 
@@ -738,6 +747,9 @@ int VID_SetMode(int modenum)
 	vmode_t* pnewmode;
 	vmode_t* poldmode;
 
+	if(dedicated)
+		return 0;
+
 	CONS_Printf("VID_SetMode(%d)\n", modenum);
 
 	// if mode 0 (windowed) we must not be fullscreen already,
@@ -829,9 +841,7 @@ int VID_SetMode(int modenum)
 // ========================================================================
 static BOOL VID_FreeAndAllocVidbuffer(viddef_t* lvid)
 {
-	int vidbuffersize;
-
-	vidbuffersize = (lvid->width * lvid->height * lvid->bpp * NUMSCREENS);
+	const DWORD vidbuffersize = (lvid->width * lvid->height * lvid->bpp * NUMSCREENS);
 
 	// free allocated buffer for previous video mode
 	if(lvid->buffer)
@@ -842,6 +852,7 @@ static BOOL VID_FreeAndAllocVidbuffer(viddef_t* lvid)
 	if(!lvid->buffer)
 		return FALSE;
 
+	ZeroMemory(lvid->buffer, vidbuffersize);
 #ifdef DEBUG
 	CONS_Printf("VID_FreeAndAllocVidbuffer done, vidbuffersize: %x\n",vidbuffersize);
 #endif

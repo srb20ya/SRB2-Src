@@ -41,20 +41,28 @@
 #endif
 
 #ifndef NONET
-#if defined(_WIN32) || defined(_WIN32_WCE) || defined(_WIN64)
+#if (defined(_WIN32) || defined(_WIN32_WCE) || defined(_WIN64)) && !defined(_XBOX)
 #include <winsock.h>
 #ifdef USEIPX
 #include <wsipx.h>
 #endif
 #else
 #if !defined(SCOUW2) && !defined(SCOUW7) && !defined(__OS2__)
+#ifdef _arch_dreamcast
+#include <lwip/inet.h>
+#else
 #include <arpa/inet.h>
 #endif
+#endif
 
+#ifdef _arch_dreamcast
+#include <kos/net.h> 
+#else
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netdb.h>
 #include <sys/ioctl.h>
+#endif
 #include <errno.h>
 #include <time.h>
 
@@ -64,17 +72,19 @@
 	#include <sys/time.h>
 	#ifdef __GLIBC__
 		#include <netipx/ipx.h>
-	#else
-		#ifdef USEIPX
-			#ifdef FREEBSD
-				#include <netipx/ipx.h>
-			#elif defined(__CYGWIN__)
-				#include <wsipx.h>
-			#else
-				#include <linux/ipx.h>
-			#endif
-		#endif // USEIPX
-	#endif // glibc
+	#elif defined(_arch_dreamcast)
+	#include <lwip/lwip.h>
+	#define ioctl lwip_ioctl
+	#include "sdl/SRB2DC/dchelp.h"
+	#elif defined(USEIPX)
+		#ifdef FREEBSD
+			#include <netipx/ipx.h>
+		#elif defined(__CYGWIN__)
+			#include <wsipx.h>
+		#else
+			#include <linux/ipx.h>
+		#endif
+	#endif // USEIPX
 	#ifndef __CYGWIN__
 	typedef struct sockaddr_ipx SOCKADDR_IPX, *PSOCKADDR_IPX;
 	#endif
@@ -192,11 +202,13 @@ typedef unsigned int SOCKET_TYPE;
 
 static SOCKET_TYPE mysocket = BADSOCKET;
 
-static int numbans = 0;
-boolean bannednode[MAXNETNODES+1]; /// \note do we really need the +1?
+static size_t numbans = 0;
+boolean SOCK_bannednode[MAXNETNODES+1]; /// \note do we really need the +1?
 int init_tcp_driver = 0;
 
 unsigned short sock_port = (IPPORT_USERRESERVED + 0x1d); // 5029
+
+#ifndef NONET
 
 #ifdef WATTCP
 static void wattcp_outch(char s)
@@ -210,8 +222,7 @@ static void wattcp_outch(char s)
 }
 #endif
 
-#ifndef NONET
-static char* SOCK_AddrToStr(mysockaddr_t* sk)
+static const char* SOCK_AddrToStr(mysockaddr_t* sk)
 {
 	static char s[50];
 	if(sk->ip.sin_family == AF_INET)
@@ -308,11 +319,11 @@ static signed char getfreenode(void)
 #ifndef NONET
 static void SOCK_Get(void)
 {
-	int i, j, c;
+	int j, c;
 #if defined (WATTCP) || defined(_WIN32) || defined(__APPLE_CC__) || defined(_WIN64)
 	int fromlen;
 #else
-	size_t fromlen;
+	socklen_t fromlen;
 #endif
 	mysockaddr_t fromaddress;
 
@@ -338,14 +349,14 @@ static void SOCK_Get(void)
 			/// Later, hmmm, SIO_UDP_CONNRESET turned off should fix this
 		}
 #endif
-		I_Error("SOCK_Get: %s\n", strerror(errno));
+		I_Error("SOCK_Get error #%d: %s\n", errno, strerror(errno));
 	}
 
 	// find remote node number
-	for(i = 0; i < MAXNETNODES; i++)
-		if(SOCK_cmpaddr(&fromaddress, &(clientaddress[i])))
+	for(j = 0; j < MAXNETNODES; j++)
+		if(SOCK_cmpaddr(&fromaddress, &(clientaddress[j])))
 		{
-			doomcom->remotenode = (short)i; // good packet from a game player
+			doomcom->remotenode = (short)j; // good packet from a game player
 			doomcom->datalength = (short)c;
 			return;
 		}
@@ -356,6 +367,7 @@ static void SOCK_Get(void)
 	j = getfreenode();
 	if(j > 0)
 	{
+		size_t i;
 		memcpy(&clientaddress[j], &fromaddress, fromlen);
 		DEBFILE(va("New node detected: node:%d address:%s\n", j,
 				SOCK_AddrToStr(&clientaddress[j])));
@@ -366,12 +378,12 @@ static void SOCK_Get(void)
 		for(i = 0; i < numbans; i++)
 			if(SOCK_cmpaddr(&fromaddress, &banned[i]))
 			{
-				bannednode[j] = true;
+				SOCK_bannednode[j] = true;
 				DEBFILE("This dude has been banned\n");
 				break;
 			}
 		if(i == numbans)
-			bannednode[j] = false;
+			SOCK_bannednode[j] = false;
 		return;
 	}
 
@@ -411,8 +423,8 @@ static void SOCK_Send(void)
 		(struct sockaddr*)&clientaddress[doomcom->remotenode], sizeof(struct sockaddr));
 
 	if(c == ERRSOCKET && errno != ECONNREFUSED && errno != EWOULDBLOCK)
-		I_Error("SOCK_Send sending to node %d (%s): %s", doomcom->remotenode,
-			SOCK_AddrToStr(&clientaddress[doomcom->remotenode]), strerror(errno));
+		I_Error("SOCK_Send, error sending to node %d (%s) #%d: %s", doomcom->remotenode,
+			SOCK_AddrToStr(&clientaddress[doomcom->remotenode]), errno ,strerror(errno));
 }
 #endif
 
@@ -449,21 +461,37 @@ static SOCKET_TYPE UDP_Socket(void)
 #if defined (WATTCP) || defined(_WIN32) || defined(__APPLE_CC__) || defined(_WIN64)
 	int j;
 #else
-	size_t j;
+	socklen_t j;
 #endif
 
 	// allocate a socket
 	s = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP);
 	if(s == (SOCKET_TYPE)ERRSOCKET || s == BADSOCKET)
-		I_Error("UDP_Socket: Can't create socket: %s", strerror(errno));
+		I_Error("UDP_Socket error #%d: Can't create socket: %s", errno, strerror(errno));
+
+#if defined(_WIN32) || defined(_WIN64)
+	{
+		unsigned long falseval = false; // Alam_GBC: disable the new UDP connection reset behavior for Win2k and up
+		ioctl(s, SIO_UDP_CONNRESET, &falseval);
+	}
+#endif
 
 	memset(&address, 0, sizeof(address));
 	address.sin_family = AF_INET;
-	address.sin_addr.s_addr = INADDR_ANY;
+	address.sin_addr.s_addr = INADDR_NONE;
+	if(M_CheckParm("-bindaddr"))
+	{
+		if(!M_IsNextParm())
+			I_Error("syntax: -bindaddr <ip-address>");
+		address.sin_addr.s_addr = inet_addr(M_GetNextParm());
+	}
+	if(address.sin_addr.s_addr == INADDR_NONE)
+		address.sin_addr.s_addr = INADDR_ANY;
 
 	//Hurdler: I'd like to put a server and a client on the same computer
 	//BP: in fact for client we can use any free port we want i have read
 	//    in some doc that connect in udp can do it for us...
+	address.sin_port = htons(0); //????
 	if(M_CheckParm("-clientport"))
 	{
 		if(!M_IsNextParm())
@@ -476,22 +504,16 @@ static SOCKET_TYPE UDP_Socket(void)
 	if(bind(s, (struct sockaddr*)&address, sizeof(address)) == ERRSOCKET)
 	{
 #if defined(_WIN32) || defined(_WIN64)
-		if(errno == 10048)
+		if(errno == WSAEADDRINUSE)
 			I_Error("UDP_Socket error: The address and port SRB2 had attempted to bind to is already in use.\n"
 				"\nThis isn't a normal error, and probably indicates that something network-related\n"
 				"on your computer is configured improperly.");
 #endif
-		I_Error("UDP_Socket error: %s", strerror(errno));
+		I_Error("UDP_Socket error #%d: %s", errno, strerror(errno));
 	}
 
 	// make it non blocking
 	ioctl(s, FIONBIO, &trueval);
-#if defined(_WIN32) || defined(_WIN64)
-	{
-		unsigned long falseval = false; // Alam_GBC: disable the new UDP connection reset behavior for Win2k and up
-		ioctl(s, SIO_UDP_CONNRESET, &falseval);
-	}
-#endif
 
 	// make it broadcastable
 	setsockopt(s, SOL_SOCKET, SO_BROADCAST, (char*)&trueval, sizeof(trueval));
@@ -541,13 +563,13 @@ static SOCKET_TYPE IPX_Socket(void)
 #if defined(__APPLE_CC__) || defined(WATTCP) || defined(_WIN32) || defined(_WIN64)
 	int j;
 #else
-	size_t j;
+	socklen_t j;
 #endif
 
 	// allocate a socket
 	s = socket(AF_IPX, SOCK_DGRAM, NSPROTO_IPX);
 	if(s == (SOCKET_TYPE)ERRSOCKET || s == BADSOCKET)
-		I_Error("IPX_socket: Can't create socket: %s", strerror(errno));
+		I_Error("IPX_socket error #%d: Can't create socket: %s", errno, strerror(errno));
 
 	memset(&address, 0, sizeof(address));
 #if defined(LINUX) && !defined(__CYGWIN__)
@@ -558,7 +580,7 @@ static SOCKET_TYPE IPX_Socket(void)
 	address.sa_socket = htons(sock_port);
 #endif // linux
 	if(bind(s, (struct sockaddr*)&address, sizeof(address)) == ERRSOCKET)
-		I_Error("IPX_Bind: %s", strerror(errno));
+		I_Error("IPX_Bind error #%d: %s", errno, strerror(errno));
 
 	// make it non blocking
 	ioctl(s, FIONBIO, &trueval);
@@ -618,6 +640,11 @@ void I_InitTcpDriver(void)
 		WSADATA winsockdata;
 		if(WSAStartup(MAKEWORD(1,1),&winsockdata))
 			I_Error("No Tcp/Ip driver detected");
+#endif
+#ifdef _arch_dreamcast 
+		return;
+		net_init();
+		lwip_kos_init();
 #endif
 #ifdef __DJGPP__
 #ifdef WATTCP // Alam_GBC: survive bootp, dhcp, rarp and wattcp/pktdrv from failing to load
@@ -703,6 +730,10 @@ void I_ShutdownTcpDriver(void)
 #if defined(_WIN32) || defined(_WIN64)
 		WSACleanup();
 #endif
+#ifdef _arch_dreamcast
+		lwip_kos_shutdown();
+		//net_shutdown();
+#endif
 #ifdef __DJGPP__
 #ifdef WATTCP // wattcp
 		//_outch = NULL;
@@ -750,7 +781,10 @@ static signed char SOCK_NetMakeNode(const char *hostname)
 
 		newnode = getfreenode();
 		if(newnode == -1)
+		{
+			free(localhostname);
 			return -1;
+		}
 		// find ip of the server
 		clientaddress[newnode].ip.sin_family = AF_INET;
 		clientaddress[newnode].ip.sin_port = portnum;
@@ -767,10 +801,14 @@ static signed char SOCK_NetMakeNode(const char *hostname)
 				free(localhostname);
 				return -1;
 			}
-			clientaddress[newnode].ip.sin_addr.s_addr = *(int*)hostentry->h_addr_list[0];
+			clientaddress[newnode].ip.sin_addr.s_addr = *((unsigned int*)hostentry->h_addr_list[0]);
 		}
 		CONS_Printf("Resolved %s\n",
+#ifdef _arch_dreamcast
+			inet_ntoa(*(u32_t*)&clientaddress[newnode].ip.sin_addr.s_addr));
+#else
 			inet_ntoa(*(struct in_addr*)&clientaddress[newnode].ip.sin_addr.s_addr));
+#endif
 		free(localhostname);
 
 		return newnode;
@@ -801,7 +839,8 @@ static boolean SOCK_OpenSocket(void)
 	I_NetCanSend = SOCK_CanSend;
 #endif
 
-	// build the socket
+	// build the socket but close it first
+	SOCK_CloseSocket();
 #ifdef USEIPX
 	if(ipx)
 	{
@@ -819,7 +858,7 @@ static boolean SOCK_OpenSocket(void)
 	return (boolean)(mysocket != (SOCKET_TYPE)ERRSOCKET && mysocket != BADSOCKET);
 }
 
-boolean I_Ban(int node)
+static boolean SOCK_Ban(int node)
 {
 #ifdef NONET
 	node = 0;
@@ -833,7 +872,7 @@ boolean I_Ban(int node)
 	return true;
 }
 
-void I_ClearBans(void)
+static void SOCK_ClearBans(void)
 {
 	numbans = 0;
 }
@@ -852,7 +891,12 @@ boolean I_InitTcpNetwork(void)
 		return false;
 
 	if(M_CheckParm("-udpport"))
-		sock_port = (unsigned short)atoi(M_GetNextParm());
+	{
+		if(M_IsNextParm())
+			sock_port = (unsigned short)atoi(M_GetNextParm());
+		else
+			sock_port = 0;
+	}
 
 	// parse network game options,
 	if(M_CheckParm("-server") || dedicated)
@@ -916,6 +960,9 @@ boolean I_InitTcpNetwork(void)
 	}
 
 	I_NetOpenSocket = SOCK_OpenSocket;
+	I_Ban = SOCK_Ban;
+	I_ClearBans = SOCK_ClearBans;
+	bannednode = SOCK_bannednode;
 
 	return ret;
 }

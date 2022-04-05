@@ -40,7 +40,7 @@
 #include "fabdxlib.h"
 #include "win_main.h"
 #include "win_dbg.h"
-#include "../I_sound.h" // midi pause/unpause
+#include "../i_sound.h" // midi pause/unpause
 #include "../g_input.h" // KEY_MOUSEWHEELxxx
 
 // MSWheel support for Win95/NT3.51
@@ -101,6 +101,11 @@ static LRESULT CALLBACK MainWndproc( HWND hWnd, UINT message, WPARAM wParam, LPA
 				I_ResumeSong(0);
 			else if (!paused)
 				I_PauseSong(0);
+			{
+				HANDLE ci = GetStdHandle(STD_INPUT_HANDLE);
+				if(ci != INVALID_HANDLE_VALUE && GetFileType(ci) == FILE_TYPE_CHAR)
+					appActive = true;
+			}
 			InvalidateRect (hWnd, NULL, TRUE);
 			break;
 	
@@ -118,7 +123,7 @@ static LRESULT CALLBACK MainWndproc( HWND hWnd, UINT message, WPARAM wParam, LPA
 				RECT        rect;
 				HDC hdc = BeginPaint (hWnd, &ps);
 				GetClientRect (hWnd, &rect);
-				DrawText (hdc, "Game Paused", -1, &rect,
+				DrawText (hdc, TEXT("Game Paused"), -1, &rect,
 					DT_SINGLELINE | DT_CENTER | DT_VCENTER);
 				EndPaint (hWnd, &ps);
 				return 0;
@@ -248,14 +253,25 @@ static LRESULT CALLBACK MainWndproc( HWND hWnd, UINT message, WPARAM wParam, LPA
 }
 
 
+static inline VOID OpenTextConsole(void)
+{
+	const BOOL tco = M_CheckParm("-console") != 0;
+	const BOOL dtc = M_CheckParm("-detachconsole") != 0;
+	dedicated = M_CheckParm("-dedicated") != 0;
+	if(!(dedicated || tco))
+		return;
+	if(dtc) FreeConsole();
+	AllocConsole();
+	return;
+}
+
 //
 // Do that Windows initialization stuff...
 //
-static HWND OpenMainWindow (HINSTANCE hInstance, int nCmdShow, char* wTitle)
+static HWND OpenMainWindow (HINSTANCE hInstance, int nCmdShow, LPSTR wTitle)
 {
 	HWND        hWnd;
 	WNDCLASS    wc;
-	BOOL        rc;
 
 	// Set up and register window class
 	nCmdShow = 0;
@@ -267,29 +283,28 @@ static HWND OpenMainWindow (HINSTANCE hInstance, int nCmdShow, char* wTitle)
 	wc.hIcon         = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_DLICON1));
 	windowCursor     = LoadCursor(NULL, IDC_WAIT); //LoadCursor(hInstance, MAKEINTRESOURCE(IDC_DLCURSOR1));
 	wc.hCursor       = windowCursor;
-	wc.hbrBackground = (HBRUSH )GetStockObject(BLACK_BRUSH);
+	wc.hbrBackground = (HBRUSH)GetStockObject(BLACK_BRUSH);
 	wc.lpszMenuName  = NULL;
-	wc.lpszClassName = "SRB2WC";
-	rc = RegisterClass(&wc);
-	if( !rc )
+	wc.lpszClassName = TEXT("SRB2WC");
+	if( !RegisterClass(&wc) )
 		return false;
 
 	// Create a window
 	// CreateWindowEx - seems to create just the interior, not the borders
 
-	hWnd = CreateWindowEx(
+	hWnd = CreateWindowExA(
 #ifdef _DEBUG
            0,     //ExStyle
 #else
-           WS_EX_TOPMOST,     //ExStyle
+           dedicated?0:WS_EX_TOPMOST,     //ExStyle
 #endif
 	       "SRB2WC",                         //Classname
 	       wTitle,                           //Windowname
 	       WS_CAPTION|WS_POPUP|WS_SYSMENU,   //dwStyle       //WS_VISIBLE|WS_POPUP for bAppFullScreen
 	       0,
 	       0,
-	       320,  //GetSystemMetrics(SM_CXSCREEN),
-	       200,  //GetSystemMetrics(SM_CYSCREEN),
+	       dedicated?0:320,  //GetSystemMetrics(SM_CXSCREEN),
+	       dedicated?0:200,  //GetSystemMetrics(SM_CYSCREEN),
 	       NULL,                             //hWnd Parent
 	       NULL,                             //hMenu Menu
 	       hInstance,
@@ -299,7 +314,7 @@ static HWND OpenMainWindow (HINSTANCE hInstance, int nCmdShow, char* wTitle)
 }
 
 
-static inline BOOL tlErrorMessage(const char *err)
+static inline BOOL tlErrorMessage(const TCHAR *err)
 {
 	/* make the cursor visible */
 	SetCursor(LoadCursor( NULL, IDC_ARROW ));
@@ -310,7 +325,7 @@ static inline BOOL tlErrorMessage(const char *err)
 	printf("Error %s..\n", err);
 	fflush(stdout);
 
-	MessageBox( hWndMain, err, "ERROR", MB_OK );
+	MessageBox( hWndMain, err, TEXT("ERROR"), MB_OK );
 	return FALSE;
 }
 
@@ -322,20 +337,18 @@ static inline BOOL tlErrorMessage(const char *err)
 static  char*   myWargv[MAXCMDLINEARGS+1];
 static  char    myCmdline[512];
 
-static void     GetArgcArgv (LPCSTR cmdline)
+static VOID     GetArgcArgv (LPSTR cmdline)
 {
-	char*   token;
-	int     i, len;
-	char    cSep;
+	LPSTR   token;
+	size_t  i = 0, len;
+	char    cSep = ' ';
 	BOOL    bCvar = FALSE, prevCvar = FALSE;
 
 	// split arguments of command line into argv
 	strncpy (myCmdline, cmdline, 511);      // in case window's cmdline is in protected memory..for strtok
-	len = lstrlen (myCmdline);
+	len = strlen (myCmdline);
 
 	myargc = 0;
-	i = 0;
-	cSep = ' ';
 	while( myargc < MAXCMDLINEARGS )
 	{
 		// get token
@@ -391,7 +404,7 @@ static void     GetArgcArgv (LPCSTR cmdline)
 }
 
 
-static inline void MakeCodeWritable(void)
+static inline VOID MakeCodeWritable(VOID)
 {
 #ifdef USEASM
 	// Disable write-protection of code segment
@@ -413,11 +426,11 @@ static inline void MakeCodeWritable(void)
 // -----------------------------------------------------------------------------
 static int WINAPI HandledWinMain(HINSTANCE hInstance,
                           HINSTANCE hPrevInstance,
-                          LPSTR     lpCmdLine,
-                          int       nCmdShow)
+                          LPSTR lpCmdLine,
+                          int nCmdShow)
 {
 	int             i;
-	LPTSTR          args;
+	LPSTR          args;
 
 	lpCmdLine = NULL;
 	hPrevInstance = NULL;
@@ -425,15 +438,17 @@ static int WINAPI HandledWinMain(HINSTANCE hInstance,
 	// DEBUG!!! - set logstream to NULL to disable debug log
 	logstream = INVALID_HANDLE_VALUE;
 
-	logstream = CreateFile ("log.txt", GENERIC_WRITE, 0, NULL, CREATE_ALWAYS,
+	logstream = CreateFile (TEXT("log.txt"), GENERIC_WRITE, 0, NULL, CREATE_ALWAYS,
 	                        FILE_ATTRIBUTE_NORMAL, NULL);  //file flag writethrough?
 #endif
 
 	// fill myargc,myargv for m_argv.c retrieval of cmdline arguments
 	CONS_Printf ("GetArgcArgv() ...\n");
-	args = GetCommandLine();
+	args = GetCommandLineA();
 	CONS_Printf ("lpCmdLine is '%s'\n", args);
 	GetArgcArgv(args);
+	// Create a text console window
+	OpenTextConsole();
 
 	CONS_Printf ("Myargc: %d\n", myargc);
 	for (i=0;i<myargc;i++)
@@ -447,7 +462,7 @@ static int WINAPI HandledWinMain(HINSTANCE hInstance,
 	if ( (hWndMain = OpenMainWindow(hInstance,nCmdShow,
 				va("SRB2"VERSIONSTRING))) == NULL )
 	{
-		tlErrorMessage("Couldn't open window");
+		tlErrorMessage(TEXT("Couldn't open window"));
 		return FALSE;
 	}
 
@@ -480,7 +495,7 @@ int WINAPI WinMain (HINSTANCE hInstance,
 	LoadLibrary("exchndl.dll");
 #endif
 #ifdef NO_SEH_MINGW
-	__try1(EXCEPTION_CONTINUE_SEARCH)
+	__try1(RecordExceptionInfo( GetExceptionInformation()/*, "main thread", lpCmdLine*/))
 #else
 	__try
 #endif
@@ -493,7 +508,7 @@ int WINAPI WinMain (HINSTANCE hInstance,
 	__except ( RecordExceptionInfo( GetExceptionInformation()/*, "main thread", lpCmdLine*/) )
 #endif
 	{
-		//Do nothing here.
+		SetUnhandledExceptionFilter(EXCEPTION_CONTINUE_SEARCH); //Do nothing here.
 	}
 
 	return Result;

@@ -1325,6 +1325,7 @@ void R_StoreWallRange( int   start, int   stop)
     ds_p->maskedtexturecol = NULL;
     ds_p->numthicksides = numthicksides = 0;
     ds_p->thicksidecol = NULL;
+    ds_p->tsilheight = 0;
 
     for(i = 0; i < MAXFFLOORS; i++)
     {

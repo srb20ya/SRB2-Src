@@ -5,6 +5,29 @@
 	};
 	objectVersion = 38;
 	objects = {
+		840CE6B009198AA7000C01D8 = {
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				840CE6B309198ABB000C01D8,
+				840CE6B409198ABB000C01D8,
+			);
+			isa = PBXCopyFilesBuildPhase;
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		840CE6B309198ABB000C01D8 = {
+			fileRef = 84C4E04B08620A46000C01D8;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		840CE6B409198ABB000C01D8 = {
+			fileRef = 84C4E04C08620A46000C01D8;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
 		841776FE085A0C64000C01D8 = {
 			children = (
 				84C4E00D0862063C000C01D8,
@@ -1553,13 +1576,6 @@
 			path = ../../byteptr.h;
 			refType = 2;
 		};
-		841779DB085A138F000C01D8 = {
-			buildActionMask = 2147483647;
-			files = (
-			);
-			isa = PBXHeadersBuildPhase;
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		841779DC085A138F000C01D8 = {
 			buildActionMask = 2147483647;
 			files = (
@@ -1666,7 +1682,6 @@
 				84177A95085A19E3000C01D8,
 				84177A96085A19E6000C01D8,
 				8490D438085DF57B000C01D8,
-				84F202CC08A92AA0000C01D8,
 			);
 			isa = PBXSourcesBuildPhase;
 			runOnlyForDeploymentPostprocessing = 0;
@@ -1681,39 +1696,30 @@
 				84C4E04A086209FF000C01D8,
 				84C4E04F08620A46000C01D8,
 				84C4E05008620A46000C01D8,
-				84F202C908A92A5D000C01D8,
 			);
 			isa = PBXFrameworksBuildPhase;
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		841779DF085A138F000C01D8 = {
-			buildActionMask = 2147483647;
-			files = (
-			);
-			isa = PBXRezBuildPhase;
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		841779E0085A138F000C01D8 = {
 			buildPhases = (
-				841779DB085A138F000C01D8,
 				841779DC085A138F000C01D8,
 				841779DD085A138F000C01D8,
 				841779DE085A138F000C01D8,
-				841779DF085A138F000C01D8,
 			);
 			buildSettings = {
+				DEBUGGING_SYMBOLS = NO;
 				FRAMEWORK_SEARCH_PATHS = "\"$(LOCAL_LIBRARY_DIR)/Frameworks\"";
 				HEADER_SEARCH_PATHS = "\"$(LOCAL_LIBRARY_DIR)/Frameworks/SDL_mixer.framework/Versions/A/Headers\" \"$(LOCAL_LIBRARY_DIR)/Frameworks/OpenAL.framework/Versions/A/Headers\" \"$(LOCAL_LIBRARY_DIR)/Frameworks/SDL.framework/Headers\"";
 				INSTALL_PATH = "$(HOME)/Applications";
 				JAVA_COMPILER_DEBUGGING_SYMBOLS = NO;
 				OPTIMIZATION_CFLAGS = "-O2";
-				OTHER_CFLAGS = "-DMAC_ALERT -DSDLMAIN -DHAVE_MIXER -D__BIG_ENDIAN__ -DSTDC_HEADERS -DSDL -DHW3SOUND -DSTATIC3DS -fno-strict-aliasing -ffloat-store";
+				OTHER_CFLAGS = "-DMAC_ALERT -DSDLMAIN -DHAVE_MIXER -D__BIG_ENDIAN__ -DSTDC_HEADERS -DSDL -fno-strict-aliasing -ffloat-store";
 				OTHER_REZFLAGS = "";
 				PREBINDING = NO;
 				PRODUCT_NAME = Srb2;
 				SECTORDER_FLAGS = "";
 				USE_GCC3_PFE_SUPPORT = NO;
-				WARNING_CFLAGS = "-Wmost -Wno-four-char-constants -Wno-unknown-pragmas";
+				WARNING_CFLAGS = "-Wmost -Wno-four-char-constants -Wno-unknown-pragmas -Wno-long-double";
 				WRAPPER_EXTENSION = app;
 			};
 			dependencies = (
@@ -1740,7 +1746,7 @@
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>Sonic RoboBlast 2</string>
+	<string>Sonic Robo Blast 2</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
@@ -1748,7 +1754,7 @@
 	<key>CFBundleSignature</key>
 	<string>????</string>
 	<key>CFBundleVersion</key>
-	<string>1.09 Beta</string>
+	<string>1.09</string>
 	<key>NSMainNibFile</key>
 	<string>SDL_Main.nib</string>
 	<key>NSPrincipalClass</key>
@@ -1770,13 +1776,6 @@
 			isa = PBXGroup;
 			name = Products;
 			refType = 4;
-		};
-		841779E4085A13B1000C01D8 = {
-			buildActionMask = 2147483647;
-			files = (
-			);
-			isa = PBXHeadersBuildPhase;
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 		841779E5085A13B1000C01D8 = {
 			buildActionMask = 2147483647;
@@ -1884,7 +1883,6 @@
 				8490D446085E060A000C01D8,
 				8490D447085E060B000C01D8,
 				8490D448085E067E000C01D8,
-				84F202CB08A92AA0000C01D8,
 			);
 			isa = PBXSourcesBuildPhase;
 			runOnlyForDeploymentPostprocessing = 0;
@@ -1904,33 +1902,25 @@
 			isa = PBXFrameworksBuildPhase;
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		841779E8085A13B1000C01D8 = {
-			buildActionMask = 2147483647;
-			files = (
-			);
-			isa = PBXRezBuildPhase;
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		841779E9085A13B1000C01D8 = {
 			buildPhases = (
-				841779E4085A13B1000C01D8,
+				840CE6B009198AA7000C01D8,
 				841779E5085A13B1000C01D8,
 				841779E6085A13B1000C01D8,
 				841779E7085A13B1000C01D8,
-				841779E8085A13B1000C01D8,
 			);
 			buildSettings = {
 				FRAMEWORK_SEARCH_PATHS = "\"$(LOCAL_LIBRARY_DIR)/Frameworks\"";
 				HEADER_SEARCH_PATHS = "\"$(LOCAL_LIBRARY_DIR)/Frameworks/SDL.framework/Versions/A/Headers\" \"$(LOCAL_LIBRARY_DIR)/Frameworks/SDL_mixer.framework/Versions/A/Headers\"";
 				INSTALL_PATH = "$(HOME)/Applications";
 				OPTIMIZATION_CFLAGS = "-O0";
-				OTHER_CFLAGS = "-DMAC_ALERT -DSDLMAIN -DHAVE_MIXER -D__BIG_ENDIAN__ -DSTDC_HEADERS -DSDL -DHW3SOUND -DSTATIC3DS -fno-strict-aliasing -fno-exceptions -DPARANOIA -ffloat-store";
+				OTHER_CFLAGS = "-DMAC_ALERT -DSDLMAIN -DHAVE_MIXER -D__BIG_ENDIAN__ -DSTDC_HEADERS -DSDL -fno-strict-aliasing -fno-exceptions -DPARANOIA -ffloat-store";
 				OTHER_REZFLAGS = "";
 				PREBINDING = NO;
 				PRODUCT_NAME = Srb2Debug;
 				SECTORDER_FLAGS = "";
 				USE_GCC3_PFE_SUPPORT = NO;
-				WARNING_CFLAGS = "-Wmost -Wno-four-char-constants -Wno-unknown-pragmas";
+				WARNING_CFLAGS = "-Wmost -Wno-four-char-constants -Wno-unknown-pragmas -Wno-long-double";
 				WRAPPER_EXTENSION = app;
 			};
 			dependencies = (
@@ -1957,7 +1947,7 @@
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>Sonic RoboBlast 2</string>
+	<string>Sonic Robo Blast 2</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
@@ -1965,7 +1955,7 @@
 	<key>CFBundleSignature</key>
 	<string>????</string>
 	<key>CFBundleVersion</key>
-	<string>1.09 Beta</string>
+	<string>1.09 Debug</string>
 	<key>NSMainNibFile</key>
 	<string>SDL_Main.nib</string>
 	<key>NSPrincipalClass</key>
@@ -3091,7 +3081,7 @@
 		84C4E01908620674000C01D8 = {
 			isa = PBXFileReference;
 			name = srb2.wad;
-			path = ../../../data/srb2.wad;
+			path = ../../../data/srb2.srb;
 			refType = 2;
 		};
 		84C4E01B08620674000C01D8 = {
@@ -3388,30 +3378,12 @@
 			settings = {
 			};
 		};
-		84F202C908A92A5D000C01D8 = {
-			fileRef = 84F202C708A92A5D000C01D8;
-			isa = PBXBuildFile;
-			settings = {
-			};
-		};
 		84F202CA08A92AA0000C01D8 = {
 			fileEncoding = 30;
 			isa = PBXFileReference;
 			name = s_openal.c;
-			path = /Users/admin/src/srb2/src/hardware/s_openal/s_openal.c;
-			refType = 0;
-		};
-		84F202CB08A92AA0000C01D8 = {
-			fileRef = 84F202CA08A92AA0000C01D8;
-			isa = PBXBuildFile;
-			settings = {
-			};
-		};
-		84F202CC08A92AA0000C01D8 = {
-			fileRef = 84F202CA08A92AA0000C01D8;
-			isa = PBXBuildFile;
-			settings = {
-			};
+			path = ../../hardware/s_openal/s_openal.c;
+			refType = 2;
 		};
 	};
 	rootObject = 84177702085A0C64000C01D8;

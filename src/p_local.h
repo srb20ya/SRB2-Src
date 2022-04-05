@@ -149,12 +149,13 @@ void P_InstaThrustEvenIn2D(mobj_t* mo, angle_t angle, fixed_t move);
 boolean P_LookForEnemies(player_t* player);
 boolean P_NukeEnemies(player_t* player);
 void P_HomingAttack(mobj_t* source, mobj_t* enemy); /// \todo doesn't belong in p_user
+void P_DoJump(player_t* player, boolean soundandstate);
 boolean P_RingNearby(player_t* player);
 void P_LookForRings(player_t* player);
 void P_LightDash(mobj_t* source, mobj_t* enemy);
 boolean PIT_NukeEnemies(mobj_t* thing);
 boolean P_TransferToNextMare(player_t* player);
-void P_FindEmerald(player_t* player);
+void P_FindEmerald(void);
 void P_TransferToAxis(player_t* player, int axisnum);
 
 // client prediction
@@ -239,7 +240,7 @@ boolean P_TeleportMove(mobj_t* thing, fixed_t x, fixed_t y, fixed_t z);
 void P_SlideMove(mobj_t* mo);
 void P_BounceMove(mobj_t* mo);
 boolean P_CheckSight(mobj_t* t1, mobj_t* t2);
-boolean P_CheckHoopPosition(mobj_t* hoopthing, fixed_t x, fixed_t y, fixed_t z, fixed_t radius);
+void P_CheckHoopPosition(mobj_t* hoopthing, fixed_t x, fixed_t y, fixed_t z, fixed_t radius);
 
 boolean P_CheckSector(sector_t* sector, boolean crunch);
 
@@ -280,11 +281,12 @@ typedef struct BasicFF_s
 	const player_t *player; ///< Player of Rumble
 	//All
 	unsigned long Duration; ///< The total duration of the effect, in microseconds
-	long Gain; //< /The gain to be applied to the effect, in the range from 0 through 10,000.
+	long Gain; ///< /The gain to be applied to the effect, in the range from 0 through 10,000.
 	//All, CONSTANTFORCE –10,000 to 10,000
 	long Magnitude; ///< Magnitude of the effect, in the range from 0 through 10,000.
 } BasicFF_t;
 
+void P_ForceFeed(const player_t* player, int attack, int fade, tic_t duration, int period);
 void P_ForceConstant(const BasicFF_t *FFInfo);
 void P_RampConstant(const BasicFF_t *FFInfo, int Start, int End);
 boolean P_DamageMobj(mobj_t* target, mobj_t* inflictor, mobj_t* source, int damage);

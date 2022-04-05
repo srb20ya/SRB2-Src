@@ -25,6 +25,7 @@
 #define NEWCORONAS
 
 #define DL_MAX_LIGHT 256 // maximum number of lights (extra lights are ignored)
+#define NUMLIGHTFREESLOTS 32 // Free light slots (for SOCs)
 
 void HWR_InitLight(void);
 void HWR_DL_AddLight(gr_vissprite_t* spr, GlidePatch_t* patch);
@@ -79,6 +80,14 @@ typedef enum
 	JETLIGHT_L,
 	GOOPLIGHT_L,
 	STREETLIGHT_L,
+
+	// free slots for SOCs at run-time --------------------
+	FREESLOT0_L,
+	//
+	// ... 32 free lights here ...
+	//
+	LASTFREESLOT_L=(FREESLOT0_L+NUMLIGHTFREESLOTS-1),
+	// end of freeslots ---------------------------------------------
 	NUMLIGHTS
 } lightspritenum_t;
 
