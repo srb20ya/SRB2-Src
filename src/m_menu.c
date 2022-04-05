@@ -1992,7 +1992,7 @@ static menuitem_t MultiPlayerMenu[] =
 	{IT_CALL | IT_STRING, NULL, "TWO PLAYER GAME",        M_Splitscreen,          50},
 	{IT_CALL | IT_STRING, NULL, "NETWORK OPTIONS",        M_NetOption,            70},
 	{IT_CALL | IT_STRING, NULL, "SETUP PLAYER",           M_SetupMultiPlayer,     90},
-	{IT_CALL | IT_STRING, NULL, "SETUP PLAYER 2",         M_SetupMultiPlayerBis, 100},
+	{IT_CALL | IT_STRING | IT_DISABLED, NULL, "SETUP PLAYER 2",         M_SetupMultiPlayerBis, 100},
 	{IT_CALL | IT_STRING, NULL, "END GAME",               M_EndGame,             120},
 };
 
@@ -5880,11 +5880,11 @@ static void M_SaveGame(int choice)
 		return;
 	}
 
-	if(netgame) // Tails 04-25-2001
-	{ // Tails 04-25-2001
-		M_StartMessage("You can't save network games!\nPress a key\n",NULL,MM_NOTHING); // Tails 04-25-2001
-		return; // Tails 04-25-2001
-	} // Tails 04-25-2001
+	if(netgame)
+	{
+		M_StartMessage("You can't save network games!\nPress a key\n",NULL,MM_NOTHING);
+		return;
+	}
 
 	if(demoplayback || demorecording)
 	{
@@ -5994,7 +5994,8 @@ static void M_EndGameResponse(int ch)
 
 	currentMenu->lastOn = itemOn;
 	M_ClearMenus(true);
-	Command_ExitGame_f();
+	//Command_ExitGame_f();
+	G_SetExitGameFlag();
 }
 
 void M_EndGame(int choice)
@@ -6039,7 +6040,8 @@ void M_ExitGameResponse(int ch)
 	if(ch != 'y' && ch != KEY_ENTER)
 		return;
 
-	Command_ExitGame_f();
+	//Command_ExitGame_f();
+	G_SetExitGameFlag();
 }
 
 void M_QuitResponse(int ch)

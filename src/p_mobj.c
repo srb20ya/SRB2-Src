@@ -1062,7 +1062,7 @@ static void P_ZMovement(mobj_t* mo)
 				if(maptol & TOL_NIGHTS)
 					mo->momz = -FixedDiv(mo->momz,10*FRACUNIT);
 				else
-					mo->momz = -FixedMul(mo->momz,(20*FRACUNIT)/17);
+					mo->momz = -FixedMul(mo->momz,(17*FRACUNIT)/20);
 			}
 			else if(!(tmfloorthing) || (((tmfloorthing->flags & MF_PUSHABLE) || (tmfloorthing->flags2 & MF2_STANDONME)) || tmfloorthing->type == MT_PLAYER || tmfloorthing->type == MT_FLOORSPIKE))
 				mo->momz = 0;
@@ -2232,16 +2232,19 @@ static void CalculatePrecipFloor(precipmobj_t* mobj)
 
 void P_RecalcPrecipInSector(sector_t* sector)
 {
+#if 0
 	/// \todo Why doesn't this work?!
 	precipmobj_t* precipthing;
 
-	//if(!sector || !sector->preciplist)
+	if(!sector || !sector->preciplist)
 		return;
 
 	for(precipthing = sector->preciplist; precipthing; precipthing = precipthing->snext)
 	{
 		CalculatePrecipFloor(precipthing);
 	}
+#endif
+	sector = NULL; //killing VC++ C4100 Warning
 }
 
 void P_SnowThinker(precipmobj_t* mobj)
@@ -4359,92 +4362,126 @@ static inline fixed_t P_Rand(void)
 	return (t-FRACUNIT/2)<<FRACBITS;
 }
 
+static inline boolean P_ObjectInWater(sector_t* sector, fixed_t z)
+{
+	if(sector->ffloors)
+	{
+		ffloor_t* rover;
+
+		for(rover = sector->ffloors; rover; rover = rover->next)
+		{
+			if(!(rover->flags & FF_EXISTS))
+				continue;
+
+			if(rover->flags & FF_SWIMMABLE)
+			{
+				if(*rover->topheight >= z
+					&& *rover->bottomheight <= z)
+					return true;
+			}
+		}
+	}
+	return false;
+}
+
 void P_SpawnPrecipitation(void)
 {
-	const int preloop = 1048576;
-	int i;
-	fixed_t x, y, height;
+	const int preloop = 32768;
+	int i = 0;
+	fixed_t x = 0, y = 0, height;
+	boolean heightonly = false;
+	subsector_t* precipsector = NULL;
 
 	if(cv_snow.value)
 	{
 		const int snowloop = preloop / cv_numsnow.value;
 		byte z = 0;
-		subsector_t* snowsector;
 
-		for(i = 0; i < snowloop; i++)
+		while(i < snowloop)
 		{
-			x = P_Rand();
-			y = P_Rand();
+			if(!heightonly)
+			{
+				x = P_Rand();
+				y = P_Rand();
+			}
 			height = P_Rand();
 
-			snowsector = R_IsPointInSubsector(x, y);
+			if(!heightonly)
+			{
+				precipsector = R_IsPointInSubsector(x, y);
 
-			if(!snowsector)
+				if(!precipsector)
+					continue;
+
+				if(!(maptol & TOL_NIGHTS) && !(precipsector->sector->ceilingpic == skyflatnum))
+					continue;
+
+				if(!(precipsector->sector->floorheight <= precipsector->sector->ceilingheight - (32<<FRACBITS)))
+					continue;
+			}
+
+			if(height < precipsector->sector->floorheight ||
+				height >= precipsector->sector->ceilingheight)
+			{
+				heightonly = true;
+				continue;
+			}
+
+			heightonly = false;
+
+			if(P_ObjectInWater(precipsector->sector, height))
 				continue;
 
-			if(maptol & TOL_NIGHTS) // Spawn snow from normal ceilings
-			{
-				if(snowsector->sector->floorheight <= snowsector->sector->ceilingheight - 32)
-					// don't do it if sector height is less than 32
-				{
-					while(height < snowsector->sector->floorheight ||
-						height >= snowsector->sector->ceilingheight)
-						height = P_Rand();
-
-					z = M_Random(); //P_Random();
-					if(z < 64)
-						P_SetPrecipMobjState(P_SpawnSnowMobj(x, y, height, MT_SNOWFLAKE), S_SNOW3);
-					else if(z < 144)
-						P_SetPrecipMobjState(P_SpawnSnowMobj(x, y, height, MT_SNOWFLAKE), S_SNOW2);
-					else
-						P_SpawnSnowMobj(x, y, height, MT_SNOWFLAKE);
-				}
-			}
+			z = M_Random(); //P_Random();
+			if(z < 64)
+				P_SetPrecipMobjState(P_SpawnSnowMobj(x, y, height, MT_SNOWFLAKE), S_SNOW3);
+			else if(z < 144)
+				P_SetPrecipMobjState(P_SpawnSnowMobj(x, y, height, MT_SNOWFLAKE), S_SNOW2);
 			else
-			{
-				if(snowsector->sector->ceilingpic == skyflatnum &&
-					snowsector->sector->floorheight <= snowsector->sector->ceilingheight - 32)
-					// don't do it if sector height is less than 32
-				{
-					while(height < snowsector->sector->floorheight ||
-						height >= snowsector->sector->ceilingheight)
-						height = P_Rand();
+				P_SpawnSnowMobj(x, y, height, MT_SNOWFLAKE);
 
-					z = M_Random();
-					if(z < 64)
-						P_SetPrecipMobjState(P_SpawnSnowMobj(x, y, height, MT_SNOWFLAKE), S_SNOW3);
-					else if(z < 144)
-						P_SetPrecipMobjState(P_SpawnSnowMobj(x, y, height, MT_SNOWFLAKE), S_SNOW2);
-					else
-						P_SpawnSnowMobj(x, y, height, MT_SNOWFLAKE);
-				}
-			}
+			i++;
 		}
 	}
 	else if(cv_storm.value || cv_rain.value)
 	{
 		const int rainloop = preloop / cv_raindensity.value;
-		subsector_t* rainsector;
 
-		for(i = 0; i < rainloop; i++)
+		while(i < rainloop)
 		{
-			x = P_Rand();
-			y = P_Rand();
+			if(!heightonly)
+			{
+				x = P_Rand();
+				y = P_Rand();
+			}
 			height = P_Rand();
 
-			rainsector = R_IsPointInSubsector(x, y);
+			if(!heightonly)
+			{
+				precipsector = R_IsPointInSubsector(x, y);
 
-			if(!rainsector)
+				if(!precipsector)
+					continue;
+
+				if(!(precipsector->sector->ceilingpic == skyflatnum && precipsector->sector->floorheight < precipsector->sector->ceilingheight))
+					continue;
+			}
+
+			if(height < precipsector->sector->floorheight ||
+					height >= precipsector->sector->ceilingheight)
+			{
+				heightonly = true;
+				continue;
+			}
+
+			heightonly = false;
+
+			if(P_ObjectInWater(precipsector->sector, height))
 				continue;
 
-			if(rainsector->sector->ceilingpic == skyflatnum && rainsector->sector->floorheight < rainsector->sector->ceilingheight)
-			{
-				while(height < rainsector->sector->floorheight ||
-					height >= rainsector->sector->ceilingheight)
-					height = P_Rand();
+			P_SpawnRainMobj(x, y, height, MT_RAIN);
 
-				P_SpawnRainMobj(x, y, height, MT_RAIN);
-			}
+			i++;
 		}
 	}
 }
@@ -4601,7 +4638,6 @@ void P_SpawnPlayer(mapthing_t* mthing, int playernum)
 	player_t* p;
 	fixed_t x, y, z;
 	mobj_t* mobj;
-	int i;
 
 	// not playing?
 	if(!playeringame[playernum])
@@ -4659,18 +4695,7 @@ void P_SpawnPlayer(mapthing_t* mthing, int playernum)
 	p->viewheight = cv_viewheight.value<<FRACBITS;
 	p->viewz = p->mo->z + p->viewheight;
 
-	if(server && (p == &players[consoleplayer]))
-	{
-		p->bonustime = 0;
-	}
-	else
-	{
-		for(i=0; i<MAXPLAYERS; i++)
-		{
-			if(players[i].bonustime)
-				p->bonustime = 1;
-		}
-	}
+	p->bonustime = 0;
 
 	if(playernum == consoleplayer)
 	{

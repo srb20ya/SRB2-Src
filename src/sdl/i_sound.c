@@ -111,7 +111,7 @@
 //  mixing buffer, and the samplerate of the raw data.
 
 // Needed for calling the actual sound output.
-#if defined(_WIN32_WCE) || defined(Dc)
+#if defined(_WIN32_WCE) || defined(DC)
 #define NUM_CHANNELS            MIX_CHANNELS
 #else
 #define NUM_CHANNELS            MIX_CHANNELS*4

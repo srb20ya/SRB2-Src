@@ -407,9 +407,9 @@ void I_OutputMsg(const char *fmt, ...)
 	if(logstream != INVALID_HANDLE_VALUE)
 	{
 #ifdef SDLIO
-		SDL_RWwrite(logstream, txt, len, 1);
+		SDL_RWwrite(logstream, txt, (int)len, 1);
 #else
-		write(logstream, txt, len);
+		write(logstream, txt, (unsigned int)len);
 #endif
 	}
 #endif

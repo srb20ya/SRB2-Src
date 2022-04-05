@@ -743,10 +743,10 @@ void HU_Drawer(void)
 			HU_DrawRankings();
 		else if(gametype == GT_COOP)
 		{
+			HU_DrawCoopOverlay();
+
 			if(multiplayer || netgame)
 				HU_DrawRankings();
-
-			HU_DrawCoopOverlay();
 		}
 	}
 

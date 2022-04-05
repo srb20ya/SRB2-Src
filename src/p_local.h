@@ -139,7 +139,7 @@ void P_ResetScore(player_t* player);
 
 void P_PlayerThink(player_t* player);
 void P_DoPlayerExit(player_t* player);
-void P_NightserizePlayer(player_t* player, int time, boolean nextmare);
+void P_NightserizePlayer(player_t* player, int time);
 
 void P_InstaThrust(mobj_t* mo, angle_t angle, fixed_t move);
 fixed_t P_ReturnThrustX(mobj_t* mo, angle_t angle, fixed_t move);
@@ -155,6 +155,7 @@ void P_LookForRings(player_t* player);
 void P_LightDash(mobj_t* source, mobj_t* enemy);
 boolean PIT_NukeEnemies(mobj_t* thing);
 boolean P_TransferToNextMare(player_t* player);
+byte P_FindLowestMare(void);
 void P_FindEmerald(void);
 void P_TransferToAxis(player_t* player, int axisnum);
 

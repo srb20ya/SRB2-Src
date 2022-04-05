@@ -363,13 +363,16 @@ void S_StartSoundAtVolume(const void* origin_p, int sfx_id, int volume)
 		listener.z = camera.z;
 		listener.angle = camera.angle;
 	}
-	else
+	else if(listenmobj)
 	{
 		listener.x = listenmobj->x;
 		listener.y = listenmobj->y;
 		listener.z = listenmobj->z;
 		listener.angle = listenmobj->angle;
 	}
+	else if(origin)
+		return;
+
 	if(listenmobj2)
 	{
 		if(cv_chasecam2.value)
@@ -622,6 +625,16 @@ void S_UpdateSounds(void)
 	mobj_t* listenmobj2 = NULL;
 	if(cv_splitscreen.value) listenmobj2 = players[secondarydisplayplayer].mo;
 
+	// Update sound/music volumes, if changed manually at console
+	if(actualsfxvolume != cv_soundvolume.value)
+		S_SetSfxVolume (cv_soundvolume.value);
+	if(actualdigmusicvolume != cv_digmusicvolume.value)
+		S_SetDigMusicVolume (cv_digmusicvolume.value);
+	if(actualmidimusicvolume != cv_midimusicvolume.value)
+		S_SetMIDIMusicVolume (cv_midimusicvolume.value);
+
+	if(gamestate != GS_LEVEL) return;		// We're done now, if we're not in a level.
+
 	if(dedicated || nosound)
 		return;
 
@@ -632,13 +645,14 @@ void S_UpdateSounds(void)
 		listener.z = camera.z;
 		listener.angle = camera.angle;
 	}
-	else
+	else if(listenmobj)
 	{
 		listener.x = listenmobj->x;
 		listener.y = listenmobj->y;
 		listener.z = listenmobj->z;
 		listener.angle = listenmobj->angle;
 	}
+
 	if(listenmobj2)
 	{
 		if(cv_chasecam2.value)
@@ -656,14 +670,6 @@ void S_UpdateSounds(void)
 			listener2.angle = listenmobj2->angle;
 		}
 	}
-
-	// Update sound/music volumes, if changed manually at console
-	if(actualsfxvolume != cv_soundvolume.value)
-		S_SetSfxVolume (cv_soundvolume.value);
-	if(actualdigmusicvolume != cv_digmusicvolume.value)
-		S_SetDigMusicVolume (cv_digmusicvolume.value);
-	if(actualmidimusicvolume != cv_midimusicvolume.value)
-		S_SetMIDIMusicVolume (cv_midimusicvolume.value);
 
 #ifdef HW3SOUND
 	if(hws_mode != HWS_DEFAULT_MODE)
@@ -1217,7 +1223,7 @@ void S_StartSoundName(void *mo, char *soundname)
 			return;
 		}
 
-		soundnum = S_AddSoundFx(soundname, false, -1);
+		soundnum = S_AddSoundFx(soundname, false, -1, false);
 		newsounds[i] = soundnum;
 	}
 

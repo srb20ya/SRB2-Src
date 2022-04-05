@@ -110,13 +110,14 @@ static void LightDash_OnChange(void);
 static void SonicCD_OnChange(void);
 static void TimeAttacked_OnChange(void);
 static void SplitScreen_OnChange(void);
+static void Shadow_OnChange(void);
 
 consvar_t cv_tailspickup = {"tailspickup", "On", CV_NETVAR, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_chasecam = {"chasecam", "On", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_chasecam2 = {"chasecam2", "On", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_homing = {"homing", "Off", CV_NETVAR|CV_NOSHOWHELP|CV_CALL, CV_OnOff, Homing_OnChange, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_lightdash = {"lightdash", "Off", CV_NETVAR|CV_NOSHOWHELP|CV_CALL, CV_OnOff, LightDash_OnChange, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_shadow = {"shadow", "Off", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_shadow = {"shadow", "Off", 0, CV_OnOff, Shadow_OnChange, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_numsnow = {"numsnow", "Moderate", CV_SAVE, precipdensity_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_raindensity = {"raindensity", "Heavy", CV_SAVE, precipdensity_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_storm = {"storm", "Off", CV_NOSHOWHELP, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
@@ -165,6 +166,16 @@ static void LightDash_OnChange(void)
 
 	if(cv_lightdash.value)
 		CV_SetValue(&cv_lightdash, false);
+}
+
+static void Shadow_OnChange(void)
+{
+	if(!cv_debug)
+	{
+		CONS_Printf("Devmode must be enabled.\n");
+		CV_StealthSetValue(&cv_shadow, 0);
+		return;
+	}
 }
 
 static void SonicCD_OnChange(void)

@@ -468,6 +468,13 @@ static void D_Display(void)
 	M_Drawer(); // menu is drawn even on top of everything
 	NetUpdate(); // send out any new accumulation
 
+	// It's safe to end the game now.
+	if(G_GetExitGameFlag())
+	{
+		Command_ExitGame_f();
+		G_ClearExitGameFlag();
+	}
+
 	//
 	// normal update
 	//

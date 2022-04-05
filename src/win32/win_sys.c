@@ -308,12 +308,14 @@ static inline BOOL I_ReadyConsole(HANDLE ci)
 
 static inline VOID I_GetConsoleEvents(VOID)
 {
+	event_t ev = {0,0,0,0};
 	HANDLE ci = GetStdHandle(STD_INPUT_HANDLE);
 	HANDLE co = GetStdHandle(STD_OUTPUT_HANDLE);
-	event_t ev = {0,0,0,0};
+	CONSOLE_SCREEN_BUFFER_INFO CSBI;
 	INPUT_RECORD input;
-	DWORD gotinput;
-	while(I_ReadyConsole(ci) && ReadConsoleInput(ci, &input, 1, &gotinput) && gotinput)
+	DWORD t;
+
+	while(I_ReadyConsole(ci) && ReadConsoleInput(ci, &input, 1, &t) && t)
 	{
 		if(input.EventType == KEY_EVENT && input.Event.KeyEvent.bKeyDown)
 		{
@@ -326,21 +328,33 @@ static inline VOID I_GetConsoleEvents(VOID)
 				case VK_RETURN:
 					ev.data1 = KEY_ENTER;
 					break;
+				case VK_TAB:
+					ev.data1 = KEY_NULL;
+					break;
 				default:
 					ev.data1 = MapVirtualKey(input.Event.KeyEvent.wVirtualKeyCode,2); // convert in to char
 			}
 			if(co != (HANDLE)-1 && GetFileType(co) == FILE_TYPE_CHAR)
 			{
+				if(ev.data1)
+				{
 #ifdef _UNICODE
-				WriteConsole(co, &input.Event.KeyEvent.uChar.UnicodeChar, 1, &gotinput, NULL);
+					WriteConsole(co, &input.Event.KeyEvent.uChar.UnicodeChar, 1, &t, NULL);
 #else
-				WriteConsole(co, &input.Event.KeyEvent.uChar.AsciiChar, 1 , &gotinput, NULL);
+					WriteConsole(co, &input.Event.KeyEvent.uChar.AsciiChar, 1 , &t, NULL);
 #endif
+				}
+				if(input.Event.KeyEvent.wVirtualKeyCode == VK_BACK
+					&& GetConsoleScreenBufferInfo(co,&CSBI))
+				{
+					WriteConsoleOutputCharacter(co, " ",1, CSBI.dwCursorPosition, &t);
+				}
 			}
 			if(ev.data1) D_PostEvent(&ev);
 		}
 	}
 }
+
 // ----------
 // I_GetEvent
 // Post new events for all sorts of user-input

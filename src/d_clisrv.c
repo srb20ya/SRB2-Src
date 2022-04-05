@@ -1245,7 +1245,7 @@ void SV_ResetServer(void)
 //
 void D_QuitNetGame(void)
 {
-	if(!netgame)
+	if(!netgame || !netbuffer)
 		return;
 
 	DEBFILE("===========================================================================\n"
@@ -1273,6 +1273,7 @@ void D_QuitNetGame(void)
 	}
 
 	D_CloseConnection();
+	adminplayer = -1;
 
 	DEBFILE("===========================================================================\n"
 	        "                         Log finish\n"
@@ -1484,7 +1485,6 @@ boolean SV_SpawnServer(void)
 void SV_StopServer(void)
 {
 	tic_t i;
-	int j;
 
 	if(gamestate == GS_INTERMISSION)
 		Y_EndIntermission();
@@ -1501,10 +1501,6 @@ void SV_StopServer(void)
 	maketic = gametic+1;
 	neededtic = maketic;
 	serverrunning = false;
-
-	// Reset the players when stopping the game.
-	for(j = 0; j < MAXPLAYERS; j++)
-		memset(&players[j], 0, sizeof(players[j]));
 }
 
 // called at singleplayer start and stopdemo

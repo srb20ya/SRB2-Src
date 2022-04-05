@@ -255,13 +255,18 @@ static LRESULT CALLBACK MainWndproc( HWND hWnd, UINT message, WPARAM wParam, LPA
 
 static inline VOID OpenTextConsole(void)
 {
+	HANDLE ci;
 	const BOOL tco = M_CheckParm("-console") != 0;
-	const BOOL dtc = M_CheckParm("-detachconsole") != 0;
 	dedicated = M_CheckParm("-dedicated") != 0;
 	if(!(dedicated || tco))
 		return;
-	if(dtc) FreeConsole();
 	AllocConsole();
+	ci = GetStdHandle(STD_INPUT_HANDLE);
+	if(ci != (HANDLE)-1 && GetFileType(ci) == FILE_TYPE_CHAR)
+	{
+		const DWORD CM = ENABLE_LINE_INPUT|ENABLE_ECHO_INPUT|ENABLE_PROCESSED_INPUT;
+		SetConsoleMode(ci,CM); //default mode but no ENABLE_MOUSE_INPUT
+	}
 	return;
 }
 

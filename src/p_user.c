@@ -295,25 +295,59 @@ void P_ResetScore(player_t* player)
 	player->scoreadd = 0;
 }
 
+//
+// P_FindLowestMare
+//
+// Returns the lowest open mare available
+//
+byte P_FindLowestMare(void)
+{
+	thinker_t* th;
+	mobj_t* mo2;
+	byte mare = 255;
+
+	// scan the thinkers
+	// to find the egg capsule with the lowest mare
+	for(th = thinkercap.next; th != &thinkercap ; th=th->next)
+	{
+		if(th->function.acp1 != (actionf_p1)P_MobjThinker)
+			continue;
+
+		mo2 = (mobj_t*)th;
+
+		if(mo2->type == MT_EGGCAPSULE && mo2->health > 0)
+		{
+			const byte threshold = (byte)mo2->threshold;
+			if(mare == 255)
+				mare = threshold;
+			else if(threshold < mare)
+				mare = threshold;
+		}
+	}
+
+	if(cv_debug)
+		CONS_Printf("Lowest mare found: %i\n", mare);
+
+	return mare;
+}
+
+//
 // P_TransferToNextMare
 //
 // Transfers the player to the next Mare.
+// (Finds the lowest mare # for capsules that have not been destroyed).
 // Returns true if successful, false if there is no other mare.
+//
 boolean P_TransferToNextMare(player_t* player)
 {
 	thinker_t* th;
 	mobj_t* mo2;
-	int first = 0;
-	mobj_t* closestaxis;
-	int axisnum;
-	int mare;
+	mobj_t* closestaxis = NULL;
+	int lowestaxisnum = -1;
+	byte mare = P_FindLowestMare();
 
-	if(!player->mo->target)
-		return false;
-
-	axisnum = player->mo->target->health;
-	mare = player->mare + 1;
-	closestaxis = NULL;
+	if(cv_debug)
+		CONS_Printf("Mare is %i\n", mare);
 
 	// scan the thinkers
 	// to find the closest axis point
@@ -324,34 +358,23 @@ boolean P_TransferToNextMare(player_t* player)
 
 		mo2 = (mobj_t*)th;
 
-		if(first == 0)
+		if(mo2->type == MT_AXIS1
+			|| mo2->type == MT_AXIS2
+			|| mo2->type == MT_AXIS3
+			|| mo2->type == MT_AXIS1A
+			|| mo2->type == MT_AXIS2A
+			|| mo2->type == MT_AXIS3A)
 		{
-			if(mo2->type == MT_AXIS1
-				|| mo2->type == MT_AXIS2
-				|| mo2->type == MT_AXIS3
-				|| mo2->type == MT_AXIS1A
-				|| mo2->type == MT_AXIS2A
-				|| mo2->type == MT_AXIS3A)
+			fixed_t dist1, dist2;
+
+			if(mo2->threshold == mare)
 			{
-				if(mo2->health == axisnum && mo2->threshold == mare)
+				if(closestaxis == NULL)
 				{
 					closestaxis = mo2;
-					first++;
+					lowestaxisnum = mo2->health;
 				}
-			}
-		}
-		else
-		{
-			if(mo2->type == MT_AXIS1
-				|| mo2->type == MT_AXIS2
-				|| mo2->type == MT_AXIS3
-				|| mo2->type == MT_AXIS1A
-				|| mo2->type == MT_AXIS2A
-				|| mo2->type == MT_AXIS3A)
-			{
-				fixed_t dist1, dist2;
-
-				if(mo2->health == axisnum && mo2->threshold == mare)
+				else if(mo2->health < lowestaxisnum)
 				{
 					dist1 = R_PointToDist2(player->mo->x, player->mo->y, mo2->x, mo2->y)-mo2->info->radius;
 					dist2 = R_PointToDist2(player->mo->x, player->mo->y, closestaxis->x, closestaxis->y)-closestaxis->info->radius;
@@ -518,7 +541,7 @@ static void P_DeNightserizePlayer(player_t* player)
 // P_NightserizePlayer
 //
 // NiGHTS Time!
-void P_NightserizePlayer(player_t* player, int time, boolean nextmare)
+void P_NightserizePlayer(player_t* player, int time)
 {
 	player->nightsmode = true;
 
@@ -529,9 +552,6 @@ void P_NightserizePlayer(player_t* player, int time, boolean nextmare)
 	player->running = 0;
 	player->spinning = 0;
 	player->homing = 0;
-
-	if(!nextmare)
-		player->mo->target = NULL;
 
 	player->mo->fuse = 0;
 	player->speed = 0;
@@ -565,7 +585,15 @@ void P_NightserizePlayer(player_t* player, int time, boolean nextmare)
 	if(player->drillmeter < 40*20)
 		player->drillmeter = 40*20;
 
-	P_TransferToAxis(player, 1);
+	if(P_TransferToNextMare(player) == false)
+	{
+		int i;
+
+		player->mo->target = NULL;
+
+		for(i=0; i<MAXPLAYERS; i++)
+			P_DoPlayerExit(&players[i]);
+	}
 }
 
 //
@@ -1582,9 +1610,14 @@ static void P_MovePlayer(player_t* player)
 					player->capsule->momz = 5*FRACUNIT;
 
 					for(i=0; i<MAXPLAYERS; i++)
-						players[i].bonustime = 3*TICRATE;
+					{
+						if(players[i].mare == player->mare)
+						{
+							players[i].bonustime = 3*TICRATE;
+							player->bonuscount = 10;
+						}
+					}
 
-					player->bonuscount = 10;
 					{
 						fixed_t z;
 
@@ -1606,9 +1639,14 @@ static void P_MovePlayer(player_t* player)
 					player->capsule->momz = 5*FRACUNIT;
 
 					for(i=0; i<MAXPLAYERS; i++)
-						players[i].bonustime = 3*TICRATE;
+					{
+						if(players[i].mare == player->mare)
+						{
+							players[i].bonustime = 3*TICRATE;
+							player->bonuscount = 10;
+						}
+					}
 
-					player->bonuscount = 10;
 					{
 						fixed_t z;
 
@@ -3927,9 +3965,9 @@ static void P_MovePlayer(player_t* player)
 	}
 
 	// Spinning and Spindashing
-	if(player->charspin && cmd->buttons & BT_USE && !player->exiting && !(player->mo->state == &states[S_PLAY_PAIN] && player->powers[pw_flashing])) // subsequent revs
+	if(player->charspin && !player->exiting && !(player->mo->state == &states[S_PLAY_PAIN] && player->powers[pw_flashing])) // subsequent revs
 	{
-		if(player->speed < 5 && !player->mo->momz && onground && !player->usedown && !player->mfspinning)
+		if((cmd->buttons & BT_USE) && player->speed < 5 && !player->mo->momz && onground && !player->usedown && !player->mfspinning)
 		{
 			P_ResetScore(player);
 			player->mo->momx = player->cmomx;
@@ -3940,7 +3978,7 @@ static void P_MovePlayer(player_t* player)
 			P_SetPlayerMobjState(player->mo, S_PLAY_ATK1);
 			player->usedown = true;
 		}
-		else if(player->mfstartdash)
+		else if((cmd->buttons & BT_USE) && player->mfstartdash)
 		{
 			player->dashspeed += FRACUNIT/NEWTICRATERATIO;
 
@@ -3962,7 +4000,7 @@ static void P_MovePlayer(player_t* player)
 		// If not moving up or down, and travelling faster than a speed of four while not holding
 		// down the spin button and not spinning.
 		// AKA Just go into a spin on the ground, you idiot. ;)
-		else if(!player->climbing && !player->mo->momz && player->mo->z == player->mo->floorz && player->speed > 4 && !player->usedown && !player->mfspinning)
+		else if((cmd->buttons & BT_USE || (twodlevel && cmd->forwardmove < -20)) && !player->climbing && !player->mo->momz && player->mo->z == player->mo->floorz && player->speed > 4 && !player->usedown && !player->mfspinning)
 		{
 			P_ResetScore(player);
 			player->mfspinning = 1;
@@ -4071,7 +4109,7 @@ static void P_MovePlayer(player_t* player)
 				case 1:
 					// If currently in the air from a jump, and you pressed the
 					// button again and have the ability to fly, do so!
-					if(!(player->powers[pw_tailsfly]) && (player->mfjumped))
+					if(!player->thokked && !(player->powers[pw_tailsfly]) && (player->mfjumped))
 					{
 						P_SetPlayerMobjState(player->mo, S_PLAY_ABL1); // Change to the flying animation
 
@@ -4081,6 +4119,7 @@ static void P_MovePlayer(player_t* player)
 							player->powers[pw_tailsfly] = tailsflytics + 1; // Set the fly timer
 
 						player->mfjumped = player->mfspinning = player->mfstartdash = 0;
+						player->thokked = true;
 					}
 					// If currently flying, give an ascend boost.
 					else if(player->powers[pw_tailsfly])
@@ -4097,9 +4136,10 @@ static void P_MovePlayer(player_t* player)
 
 				case 2:
 					// Now Knuckles-type abilities are checked.
-					if(player->mfjumped)
+					if(player->mfjumped && !player->thokked)
 					{
 						player->gliding = 1;
+						player->thokked = true;
 						player->glidetime = 0;
 						P_SetPlayerMobjState(player->mo, S_PLAY_ABL1);
 						P_InstaThrust(player->mo, player->mo->angle, 20*FRACUNIT/NEWTICRATERATIO);
@@ -4586,6 +4626,12 @@ static void P_MovePlayer(player_t* player)
 
 		if(player->climbing == 0)
 			P_SetPlayerMobjState(player->mo, S_PLAY_ATK1);
+
+		if(player->climbing && player->mo->z <= player->mo->floorz)
+		{
+			P_ResetPlayer(player);
+			P_SetPlayerMobjState(player->mo, S_PLAY_STND);
+		}
 	}
 
 	if(player->climbing > 1)
@@ -4831,7 +4877,7 @@ dontteeter:
 	// check for fire
 	if(cmd->buttons & BT_ATTACK || cmd->buttons & BT_FIRENORMAL)
 	{
-		if(gametype == GT_CTF && !player->ctfteam)
+		if(gametype == GT_CTF && !player->ctfteam && !player->powers[pw_flashing] && !player->jumpdown)
 			P_DamageMobj(player->mo, NULL, NULL, 42000);
 
 		player->bustercount++;
@@ -5502,7 +5548,6 @@ bustupdone:
 	{
 		fixed_t oldx;
 		fixed_t oldy;
-		boolean climbed = false;
 
 		oldx = player->mo->x;
 		oldy = player->mo->y;
@@ -5523,7 +5568,6 @@ bustupdone:
 				P_ResetPlayer(player);
 				player->climbing = 5;
 				player->mo->momx = player->mo->momy = player->mo->momz = 0;
-				climbed = true;
 			}
 			else if(node->m_sector->ffloors)
 			{
@@ -5538,7 +5582,6 @@ bustupdone:
 							P_ResetPlayer(player);
 							player->climbing = 5;
 							player->mo->momx = player->mo->momy = player->mo->momz = 0;
-							climbed = true;
 						}
 					}
 				}
@@ -5621,11 +5664,24 @@ bustupdone:
 
 							player->mo->momz = newmom;
 
+							if(player->mfspinning)
+							{
+								player->mfspinning = 0;
+								player->mfjumped = 1;
+								player->thokked = 1;
+							}
 						}
 						else
 						{
 							player->mo->momx = -FixedMul(player->mo->momx,linedist);
 							player->mo->momy = -FixedMul(player->mo->momy,linedist);
+							
+							if(player->mfspinning)
+							{
+								player->mfspinning = 0;
+								player->mfjumped = 1;
+								player->thokked = 1;
+							}
 						}
 
 						if(player->mfspinning && player->speed < 1 && player->mo->momz)
@@ -6795,7 +6851,7 @@ void P_PlayerThink(player_t* player)
 		else if(countdown == 1 && !player->exiting)
 		{
 			player->lives = 1;
-			if(player->playerstate == PST_DEAD) // Already dead.. decided not to get back up.
+			if(player->playerstate == PST_DEAD && player->lives > 0) // Already dead.. decided not to get back up.
 			{
 				if((cv_splitscreen.value && player == &players[secondarydisplayplayer]) || player == &players[consoleplayer])
 				{

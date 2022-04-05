@@ -49,7 +49,7 @@ typedef union
 		patch_t* pringbonus; // RING BONUS
 		patch_t* ptotal; // TOTAL
 		char passed1[13]; // KNUCKLES GOT
-		char passed2[12]; // THROUGH ACT
+		char passed2[16]; // THROUGH THE ACT
 		int passedx1, passedx2;
 		int gotlife; // Player # that got an extra life
 	} coop;
@@ -640,11 +640,17 @@ void Y_Ticker(void)
 	{
 		if(!intertic) // first time only
 			S_ChangeMusic(mus_racent, true); // loop it
+
+		// If a player has left or joined, recalculate scores.
+		if(data.match.numplayers != doomcom->numplayers)
+			Y_CalculateMatchWinners();
 	}
 	else if(inttype == int_race || inttype == int_timerace) // race
 	{
 		if(!intertic) // first time only
 			S_ChangeMusic(mus_racent, true); // loop it
+
+		// Don't bother recalcing for race. It doesn't make as much sense.
 	}
 }
 
@@ -786,16 +792,17 @@ void Y_StartIntermission(void)
 			if(strlen(skins[players[consoleplayer].skin].name) <= 8)
 			{
 				sprintf(data.coop.passed1, "%s GOT", skins[players[consoleplayer].skin].name);
-				data.coop.passedx1 = 62 + (176 - V_LevelNameWidth(data.coop.passed1))/2;
 				if(mapheaderinfo[gamemap-1].actnum)
 				{
 					strcpy(data.coop.passed2, "THROUGH ACT");
+					data.coop.passedx1 = 62 + (176 - V_LevelNameWidth(data.coop.passed1))/2;
 					data.coop.passedx2 = 62 + (176 - V_LevelNameWidth(data.coop.passed2))/2;
 				}
 				else
 				{
 					strcpy(data.coop.passed2, "THROUGH THE ACT");
-					data.coop.passedx2 = 62 + (240 - V_LevelNameWidth(data.coop.passed2))/2;
+					data.coop.passedx1 = (BASEVIDWIDTH - V_LevelNameWidth(data.coop.passed1))/2;
+					data.coop.passedx2 = (BASEVIDWIDTH - V_LevelNameWidth(data.coop.passed2))/2;
 				}
 				// The above value is not precalculated because it needs only be computed once
 				// at the start of intermission, and precalculating it would preclude mods

@@ -52,7 +52,8 @@ typedef enum
 } skinsound_t;
 
 // free sfx for S_AddSoundFx()
-#define NUMSFXFREESLOTS (32*NUMSKINSOUNDS)
+#define NUMSFXFREESLOTS 800 // Matches SOC Editor.
+#define NUMSKINSFXSLOTS (32*NUMSKINSOUNDS)
 
 //
 // SoundFX struct.
@@ -1363,12 +1364,14 @@ typedef enum
 	sfx_lastfreeslot=(sfx_freeslot0+NUMSFXFREESLOTS-1),
 	// end of freeslots ---------------------------------------------
 
+	sfx_skinsoundslot0,
+	sfx_lastskinsoundslot=(sfx_skinsoundslot0+NUMSKINSFXSLOTS-1),
 	NUMSFX
 } sfxenum_t;
 
 
 void S_InitRuntimeSounds(void);
-int S_AddSoundFx(const char* name, int singularity, int pitch);
+int S_AddSoundFx(const char* name, int singularity, int pitch, boolean skinsound);
 void S_RemoveSoundFx(int id);
 
 #endif

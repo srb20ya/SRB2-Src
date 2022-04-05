@@ -1998,7 +1998,7 @@ static void Sk_SetDefaultValue(skin_t* skin)
 	strcpy(skin->ability, "0");
 	strcpy(skin->highres, "0");
 
-	for(i = 0; i < sfx_freeslot0; i++)
+	for(i = 0; i < sfx_skinsoundslot0; i++)
 		if(S_sfx[i].skinsound != -1)
 			skin->soundsid[S_sfx[i].skinsound] = i;
 	memcpy(&skins[0].spritedef, &sprites[SPR_PLAY], sizeof(spritedef_t));
@@ -2449,7 +2449,7 @@ void R_AddSkins(int wadnum)
 			{
 				int found = false;
 				// copy name of sounds that are remapped for this skin
-				for(i = 0; i < sfx_freeslot0; i++)
+				for(i = 0; i < sfx_skinsoundslot0; i++)
 				{
 					if(!S_sfx[i].name)
 						continue;
@@ -2457,7 +2457,7 @@ void R_AddSkins(int wadnum)
 						!stricmp(S_sfx[i].name, token+2))
 					{
 						skins[numskins].soundsid[S_sfx[i].skinsound] =
-							S_AddSoundFx(value+2,S_sfx[i].singularity,S_sfx[i].pitch);
+							S_AddSoundFx(value+2,S_sfx[i].singularity,S_sfx[i].pitch, true);
 						found = true;
 					}
 				}

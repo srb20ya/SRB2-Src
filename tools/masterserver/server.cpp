@@ -392,11 +392,11 @@ static void sendRSS10ServersList(int id)
     sendHttpLine(id, "<items> <rdf:Seq>");
     if (!p)
     {
-        sendHttpLine(id, "<rdf:li rdf:resource=\"http://srb2.kicks-ass.net/srb2ms_status.php#00000000000000000000000\" />");
+        sendHttpLine(id, "<rdf:li rdf:resource=\"http://srb2.servegame.org/srb2ms_status.php#00000000000000000000000\" />");
     }
     else while (p)
     {
-        sendHttpLine(id, "<rdf:li rdf:resource=\"http://srb2.kicks-ass.net/srb2ms_status.php#%23s\" />",p->getGuid());
+        sendHttpLine(id, "<rdf:li rdf:resource=\"http://srb2.servegame.org/srb2ms_status.php#%23s\" />",p->getGuid());
         p = (CServerItem *) servers_list.getNext();
     }
     
@@ -406,11 +406,11 @@ static void sendRSS10ServersList(int id)
 
     if (!p)
     {
-        sendHttpLine(id, "<item rdf:about=\"http://srb2.kicks-ass.net/srb2ms_status.php#00000000000000000000000\"><title>No servers</title><dc:description>I'm sorry, but no servers are running now</dc:description></item>");
+        sendHttpLine(id, "<item rdf:about=\"http://srb2.servegame.org/srb2ms_status.php#00000000000000000000000\"><title>No servers</title><dc:description>I'm sorry, but no servers are running now</dc:description></item>");
     }
     else while (p)
     {
-        sendHttpLine(id, "<item rdf:about=\"http://srb2.kicks-ass.net/srb2ms_status.php#%23s\"><title>%s</title><dc:description>| IP: %15s | Port: %5s | Version: %s</dc:description><dc:date>%24s</dc:date><guid isPermaLink=\"false\">%23s</guid></item>", p->getGuid(), p->getName(), p->getIP(), p->getPort(), p->getVersion(), p->getRegtime(), p->getGuid());
+        sendHttpLine(id, "<item rdf:about=\"http://srb2.servegame.org/srb2ms_status.php#%23s\"><title>%s</title><dc:description>| IP: %15s | Port: %5s | Version: %s</dc:description><dc:date>%24s</dc:date><guid isPermaLink=\"false\">%23s</guid></item>", p->getGuid(), p->getName(), p->getIP(), p->getPort(), p->getVersion(), p->getRegtime(), p->getGuid());
         p = (CServerItem *) servers_list.getNext();
     }
 }

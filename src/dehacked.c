@@ -271,7 +271,7 @@ static void readPlayer(MYFILE* f, int num)
 			{
 				char* playertext = NULL;
 
-				if(!slotfound && !(slotfound = findFreeSlot(&num)))
+				if(!slotfound && (slotfound = findFreeSlot(&num)) == false)
 					return;
 
 				for(i = 0; i < MAXLINELEN-3; i++)
@@ -312,7 +312,7 @@ static void readPlayer(MYFILE* f, int num)
 
 			if(!strcmp(word, "PLAYERNAME"))
 			{
-				if(!slotfound && !(slotfound = findFreeSlot(&num)))
+				if(!slotfound && (slotfound = findFreeSlot(&num)) == false)
 					return;
 				strncpy(description[num].text, word2, 63);
 				PlayerMenu[num].text = description[num].text;
@@ -321,7 +321,7 @@ static void readPlayer(MYFILE* f, int num)
 				; // NO SCREWING UP MY MENU, FOOL!
 			else if(!strcmp(word, "PICNAME"))
 			{
-				if(!slotfound && !(slotfound = findFreeSlot(&num)))
+				if(!slotfound && (slotfound = findFreeSlot(&num)) == false)
 					return;
 				strncpy(&description[num].picname[0], word2, 9);
 			}
@@ -340,7 +340,7 @@ static void readPlayer(MYFILE* f, int num)
 					Because of this, you are allowed to edit any previous entrys you like, but only if you
 					signal that you are purposely doing so by disabling and then reenabling the slot.
 				*/
-				if(i != IT_DISABLED && !slotfound && !(slotfound = findFreeSlot(&num)))
+				if(i != IT_DISABLED && !slotfound && (slotfound = findFreeSlot(&num)) == false)
 					return;
 
 				PlayerMenu[num].status = (short)i;
@@ -348,7 +348,7 @@ static void readPlayer(MYFILE* f, int num)
 			else if(!strcmp(word, "SKINNAME"))
 			{
 				// Send to free slot.			{
-				if(!slotfound && !(slotfound = findFreeSlot(&num)))
+				if(!slotfound && (slotfound = findFreeSlot(&num)) == false)
 					return;
 				strcpy(description[num].skinname, word2);
 			}

@@ -117,6 +117,8 @@ boolean twodlevel;
 // Map Header Information
 mapheader_t mapheaderinfo[NUMMAPS];
 
+boolean exitgame = false;
+
 unsigned short emeralds;
 int token; // Number of tokens collected in a level
 int tokenlist; // List of tokens collected
@@ -1635,6 +1637,15 @@ void G_PlayerReborn(int player)
 	
 	if(gametype == GT_COOP)
 		P_FindEmerald(); // scan for emeralds to hunt for
+
+	// If NiGHTS, find lowest mare to start with.
+	p->mare = P_FindLowestMare();
+
+	if(cv_debug)
+		CONS_Printf("Current mare is %i\n", p->mare);
+
+	if(p->mare == 255)
+		p->mare = 0;
 }
 
 //
@@ -1849,7 +1860,7 @@ void G_DoReborn(int playernum)
 
 			players[i].mo->player = NULL;
 			players[i].mo->flags2 &= ~MF2_DONTDRAW;
-			P_SetPlayerMobjState(players[i].mo, S_DISS);
+			P_SetMobjState(players[i].mo, S_DISS);
 		}
 		G_DoLoadLevel(true);
 	}
@@ -2858,4 +2869,27 @@ boolean G_CheckDemoStatus(void)
 	}
 
 	return false;
+}
+
+/* These functions handle the exitgame flag. Before, when the user
+   chose to end a game, it happened immediately, which could cause
+   crashes if the game was in the middle of something. Now, a flag
+   is set, and the game can then be stopped when it's safe to do
+   so.
+*/
+
+// Used as a callback function.
+void G_SetExitGameFlag(void)
+{
+	exitgame = true;
+}
+
+void G_ClearExitGameFlag(void)
+{
+	exitgame = false;
+}
+
+boolean G_GetExitGameFlag(void)
+{
+	return exitgame;
 }

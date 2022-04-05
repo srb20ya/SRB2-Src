@@ -121,4 +121,8 @@ boolean G_Responder(event_t* ev);
 
 void G_AddPlayer(int playernum);
 
+void G_SetExitGameFlag(void);
+void G_ClearExitGameFlag(void);
+boolean G_GetExitGameFlag(void);
+
 #endif

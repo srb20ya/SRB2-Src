@@ -138,14 +138,28 @@ int main(int argc, char **argv)
 	I_StartupSystem();
 #if defined(_WIN32) || defined(_WIN64) || defined(__CYGWIN__)
 #ifndef _XBOX
-	if(M_CheckParm("-detachconsole"))
-		FreeConsole();
-#ifdef SDLMAIN
-	if(M_CheckParm("-console"))
-#else
-	if(!M_CheckParm("-noconsole"))
-#endif
-		AllocConsole();
+	{
+		HANDLE ci;
+		const int ded = M_CheckParm("-dedicated");
+	#ifdef SDLMAIN
+		if(M_CheckParm("-console") || ded)
+			AllocConsole();
+	#else
+		if(M_CheckParm("-detachconsole"))
+		{
+			FreeConsole();
+			AllocConsole();
+		}
+		else if(M_CheckParm("-noconsole") && !ded)
+			FreeConsole();
+	#endif
+		ci = GetStdHandle(STD_INPUT_HANDLE);
+		if(ci != (HANDLE)-1 && GetFileType(ci) == FILE_TYPE_CHAR)
+		{
+			const DWORD CM = ENABLE_LINE_INPUT|ENABLE_ECHO_INPUT|ENABLE_PROCESSED_INPUT;
+			SetConsoleMode(ci,CM); //default mode but no ENABLE_MOUSE_INPUT
+		}
+	}
 #if defined(__MINGW32__) || defined(__MINGW64__)
 	LoadLibrary("exchndl.dll");
 #endif

@@ -2086,13 +2086,20 @@ void A_JetbThink(mobj_t* actor)
 
 void A_JetgShoot(mobj_t* actor)
 {
+	fixed_t dist;
+
 	if(!actor->target)
 		return;
 
 	if(actor->reactiontime)
 		return;
 
-	if(P_AproxDistance(P_AproxDistance(actor->target->x - actor->x, actor->target->y - actor->y), actor->target->z - actor->z) > actor->info->painchance*FRACUNIT)
+	dist = P_AproxDistance(P_AproxDistance(actor->target->x - actor->x, actor->target->y - actor->y), actor->target->z - actor->z);
+
+	if(dist > actor->info->painchance*FRACUNIT)
+		return;
+
+	if(dist < 64*FRACUNIT)
 		return;
 
 	A_FaceTarget(actor);
@@ -2109,10 +2116,14 @@ void A_JetgShoot(mobj_t* actor)
 
 void A_ShootBullet(mobj_t* actor)
 {
+	fixed_t dist;
+
 	if(!actor->target)
 		return;
 
-	if(P_AproxDistance(P_AproxDistance(actor->target->x - actor->x, actor->target->y - actor->y), actor->target->z - actor->z) > actor->info->painchance*FRACUNIT)
+	dist = P_AproxDistance(P_AproxDistance(actor->target->x - actor->x, actor->target->y - actor->y), actor->target->z - actor->z);
+
+	if(dist > actor->info->painchance*FRACUNIT)
 		return;
 
 	A_FaceTarget(actor);

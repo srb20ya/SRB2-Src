@@ -771,7 +771,7 @@ static void SendNameAndColor(void)
 
 	WRITEBYTE(p, extrainfo);
 
-	WRITESTRINGN(p, cv_playername.string, MAXPLAYERNAME);
+	WRITESTRINGN(p, cv_playername.string, MAXPLAYERNAME-1);
 	*(p-1) = 0; // finish the string
 
 	// Don't change skin if the server doesn't want you to.
@@ -844,7 +844,7 @@ static void SendNameAndColor2(void)
 
 	WRITEBYTE(p, extrainfo);
 
-	WRITESTRINGN(p,cv_playername2.string,MAXPLAYERNAME);
+	WRITESTRINGN(p,cv_playername2.string,MAXPLAYERNAME-1);
 	*(p-1) = 0; // finish the string
 
 	// Don't change skin if the server doesn't want you to.
@@ -2183,6 +2183,9 @@ static void Command_Nodes_f(void)
   */
 static void Command_Playintro_f(void)
 {
+	if(netgame)
+		return;
+
 	F_StartIntro();
 }
 
@@ -2492,7 +2495,7 @@ void D_GameTypeChanged(int lastgametype)
 static void Playerspeed_OnChange(void)
 {
 	// If you've got a grade less than 2, you can't use this.
-	if(grade < 2 && cv_playerspeed.value != 1)
+	if((grade&7) < 2 && cv_playerspeed.value != 1)
 		CV_SetValue(&cv_playerspeed, 1);
 
 	if(cv_playerspeed.value != 65536) // Only if changed
@@ -2510,8 +2513,12 @@ static void Playerspeed_OnChange(void)
 static void Ringslinger_OnChange(void)
 {
 	// If you've got a grade less than 3, you can't use this.
-	if(grade < 3 && cv_ringslinger.value)
-		CV_Set(&cv_ringslinger, "No");
+	if((grade&7) < 3 && !netgame && cv_ringslinger.value)
+	{
+		CONS_Printf("You haven't earned this yet.\n");
+		CV_StealthSetValue(&cv_ringslinger, 0);
+		return;
+	}
 
 	if(cv_ringslinger.value) // Only if it's been turned on
 	{
@@ -2527,10 +2534,10 @@ static void Ringslinger_OnChange(void)
 
 static void Startrings_OnChange(void)
 {
-	// If you've got a grade less than 5, you can't use this.
-	if((grade < 5 || (!netgame && !cv_debug)) && cv_startrings.value)
+	if((grade&7) < 5 && !netgame && cv_startrings.value)
 	{
-		CV_SetValue(&cv_startrings, 0);
+		CONS_Printf("You haven't earned this yet.\n");
+		CV_StealthSetValue(&cv_startrings, 0);
 		return;
 	}
 
@@ -2548,10 +2555,10 @@ static void Startrings_OnChange(void)
 
 static void Startlives_OnChange(void)
 {
-	// If you've got a grade less than 4, you can't use this.
-	if((grade < 4 || (!netgame && !cv_debug)) && cv_startlives.value)
+	if((grade&7) < 4 && !netgame && cv_startlives.value)
 	{
-		CV_SetValue(&cv_startlives, 0);
+		CONS_Printf("You haven't earned this yet.\n");
+		CV_StealthSetValue(&cv_startlives, 0);
 		return;
 	}
 
@@ -2566,10 +2573,10 @@ static void Startlives_OnChange(void)
 
 static void Startcontinues_OnChange(void)
 {
-	// If you've got a grade less than 4, you can't use this.
-	if((grade < 4 || (!netgame && !cv_debug)) && cv_startcontinues.value)
+	if((grade&7) < 4 && !netgame && cv_startcontinues.value)
 	{
-		CV_SetValue(&cv_startcontinues, 0);
+		CONS_Printf("You haven't earned this yet.\n");
+		CV_StealthSetValue(&cv_startcontinues, 0);
 		return;
 	}
 
@@ -2584,11 +2591,14 @@ static void Startcontinues_OnChange(void)
 
 static void Gravity_OnChange(void)
 {
-	gravity = cv_gravity.value;
-	if(!(grade & 2) || netgame)
+	if((grade&7) < 2 && !netgame)
+	{
+		CONS_Printf("You haven't earned this yet.\n");
+		CV_StealthSet(&cv_gravity, cv_gravity.defaultvalue);
 		return;
-	else if(cv_gravity.value != FRACUNIT/2)
-		CV_Set(&cv_gravity, "0.5");
+	}
+
+	gravity = cv_gravity.value;
 }
 
 static void Command_ExitLevel_f(void)
@@ -2640,6 +2650,12 @@ static void Command_Displayplayer_f(void)
 
 static void Command_Skynum_f(void)
 {
+	if(!cv_debug)
+	{
+		CONS_Printf("Devmode must be enabled to activate this.\nIf you want to change the sky interactively on a map, use the linedef executor feature instead.\n");
+		return;
+	}
+
 	if(COM_Argc() != 2)
 	{
 		CONS_Printf("skynum <sky#>: change the sky\n");
@@ -2651,6 +2667,8 @@ static void Command_Skynum_f(void)
 		CONS_Printf("Can't use this in a multiplayer game, sorry!\n");
 		return;
 	}
+
+	CONS_Printf("Previewing sky %d...\n", COM_Argv(1));
 
 	P_SetupLevelSky(atoi(COM_Argv(1)));
 }
@@ -2691,9 +2709,9 @@ static void Command_Load_f(void)
 		return;
 	}
 
-	if(!(server || admin))
+	if(netgame)
 	{
-		CONS_Printf("Only server can do a load game\n");
+		CONS_Printf("You can't load in a netgame!\n");
 		return;
 	}
 
@@ -2740,9 +2758,21 @@ static void Command_Save_f(void)
 		return;
 	}
 
-	if(!(server || admin))
+	if((gamemap >= sstage_start) && (gamemap <= sstage_end))
 	{
-		CONS_Printf("Only server can do a save game\n");
+		CONS_Printf("You can't save while in a special stage!\n");
+		return;
+	}
+
+	if(!netgame && !multiplayer && players[consoleplayer].lives <= 0)
+	{
+		CONS_Printf("You can't save a game over!\n");
+		return;
+	}
+
+	if(netgame)
+	{
+		CONS_Printf("You can't save network games!\n");
 		return;
 	}
 

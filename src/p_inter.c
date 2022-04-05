@@ -452,14 +452,8 @@ void P_TouchSpecialThing(mobj_t* special, mobj_t* toucher, boolean heightcheck)
 					toucher->tracer = P_SpawnMobj(toucher->x, toucher->y, toucher->z, MT_NIGHTSCHAR);
 				}
 	
-				P_NightserizePlayer(player, special->health, true);
+				P_NightserizePlayer(player, special->health);
 				S_StartSound(toucher, sfx_ideya);
-	
-				if(P_TransferToNextMare(player) == false)
-				{
-					for(i=0; i<MAXPLAYERS; i++)
-						P_DoPlayerExit(&players[i]);
-				}
 				return;
 			}
 			if(!player->nightsmode)
@@ -472,7 +466,7 @@ void P_TouchSpecialThing(mobj_t* special, mobj_t* toucher, boolean heightcheck)
 	
 				S_StartSound(toucher, sfx_supert);
 				toucher->tracer = P_SpawnMobj(toucher->x, toucher->y, toucher->z, MT_NIGHTSCHAR);
-				P_NightserizePlayer(player, special->health, false);
+				P_NightserizePlayer(player, special->health);
 			}
 			return;
 		case MT_NIGHTSPARKLE:

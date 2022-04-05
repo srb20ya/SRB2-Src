@@ -1278,7 +1278,7 @@ sfxinfo_t S_sfx[NUMSFX] =
   // initialized to NULL
 };
 
-char freeslotnames[sfx_freeslot0+NUMSFXFREESLOTS][7];
+char freeslotnames[sfx_freeslot0+NUMSFXFREESLOTS+NUMSKINSFXSLOTS][7];
 
 // Prepare free sfx slots to add sfx at run time
 void S_InitRuntimeSounds (void)
@@ -1287,7 +1287,7 @@ void S_InitRuntimeSounds (void)
 	int value;
 	char soundname[7];
 
-    for (i=sfx_freeslot0; i<=sfx_lastfreeslot; i++)
+    for (i=sfx_freeslot0; i<=sfx_lastskinsoundslot; i++)
 	{
 		value = (i+1)-sfx_freeslot0;
 
@@ -1297,6 +1297,8 @@ void S_InitRuntimeSounds (void)
 			sprintf(soundname, "fre0%d", value);
 		else if (value < 1000)
 			sprintf(soundname, "fre%d", value);
+		else
+			sprintf(soundname, "fr%d", value);
 
 		strcpy(freeslotnames[value-1], soundname);
 
@@ -1315,11 +1317,17 @@ void S_InitRuntimeSounds (void)
 
 // Add a new sound fx into a free sfx slot.
 //
-int S_AddSoundFx (const char *name, int singularity, int pitch)
+int S_AddSoundFx (const char *name, int singularity, int pitch, boolean skinsound)
 {
     int i;
+	int slot;
 
-    for(i=sfx_freeslot0;i<NUMSFX;i++)
+	if(skinsound)
+		slot = sfx_skinsoundslot0;
+	else
+		slot = sfx_freeslot0;
+
+    for(i=slot;i<NUMSFX;i++)
     {
         if(!S_sfx[i].priority)
         {
@@ -1346,7 +1354,7 @@ int S_AddSoundFx (const char *name, int singularity, int pitch)
 void S_RemoveSoundFx (int id)
 {
     if(id>=sfx_freeslot0 &&
-        id<=sfx_lastfreeslot &&
+        id<=sfx_lastskinsoundslot &&
         S_sfx[id].zname)
     {
         Z_Free(S_sfx[id].zname);

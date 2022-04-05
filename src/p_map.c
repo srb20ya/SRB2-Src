@@ -2244,7 +2244,7 @@ stairstep:
 	}
 	else
 	{
-		tmxmove = 0;
+		mo->momx = tmxmove;
 		tmymove = 0;
 	}
 
@@ -2508,6 +2508,9 @@ static boolean PTR_AimTraverse(intercept_t* in)
 
 	if(th->flags & MF_MONITOR)
 		return true; // don't autoaim at monitors
+
+	if(gametype == GT_CTF && th->player && !th->player->ctfteam)
+		return true; // don't autoaim at spectators
 
 	// check angles to see if the thing can be aimed at
 	dist = FixedMul(attackrange, in->frac);
