@@ -1700,6 +1700,33 @@ void P_SetupLevelSky(int skynum)
 static char* maplumpname;
 int lastloadedmaplumpnum; // for comparative savegame
 
+//
+// P_LoadThingsOnly
+//
+// "Reloads" a level, but only reloads all of the mobjs.
+//
+void P_LoadThingsOnly(void)
+{
+	// Search through all the thinkers.
+	mobj_t* mo;
+	thinker_t* think;
+
+	for(think = thinkercap.next; think != &thinkercap; think = think->next)
+	{
+		if(think->function.acp1 != (actionf_p1)P_MobjThinker)
+			continue; // not a mobj thinker
+
+		mo = (mobj_t*)think;
+
+		if(mo)
+			P_RemoveMobj(mo);
+	}
+
+	P_LoadThings(lastloadedmaplumpnum + ML_THINGS);
+
+	P_SpawnSecretItems(true);
+}
+
 /** Loads a level from a lump or external wad.
   *
   * \param map     Map number.
@@ -2254,6 +2281,11 @@ boolean P_AddWadFile(const char* wadfilename, char** firstmapname)
 	//
 	// search for texturechange replacements
 	//
+
+	// Reload it all anyway, just in case they
+	// added some textures but didn't insert a
+	// TEXTURE1/PNAMES/etc. list.
+	texturechange = true;
 	if(texturechange) // initialized in the sound check
 		R_LoadTextures(); // numtexture changes
 	else

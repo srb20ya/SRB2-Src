@@ -346,6 +346,9 @@ boolean P_TransferToNextMare(player_t* player)
 	int lowestaxisnum = -1;
 	byte mare = P_FindLowestMare();
 
+	if(mare == 255)
+		return false;
+
 	if(cv_debug)
 		CONS_Printf("Mare is %i\n", mare);
 
@@ -5522,6 +5525,10 @@ dontteeter:
 						// or have Knuckles's abilities
 						if(!(rover->flags & FF_SHATTER) && !(player->mfspinning && spinonfloor) &&
 							player->charability != 2)
+							continue;
+
+						// Only Knuckles can break this rock...
+						if(!(rover->flags & FF_SHATTER) && (rover->flags & FF_ONLYKNUX) && !(player->charability == 2))
 							continue;
 
 						// Height checks

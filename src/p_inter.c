@@ -931,6 +931,8 @@ void P_TouchSpecialThing(mobj_t* special, mobj_t* toucher, boolean heightcheck)
 		case MT_EMERALD8:
 			P_SpawnMobj(special->x, special->y, special->z, MT_SPARK);
 			emeralds |= special->info->speed;
+			if(special->info->deathsound != sfx_None)
+				sound = special->info->deathsound;
 			break;
 	
 	// start bubble grab Tails 03-07-2000

@@ -525,6 +525,7 @@ static void readlevelheader(MYFILE* f, int num)
 			else if(!strcmp(word, "COUNTDOWN"))           mapheaderinfo[num-1].countdown = (short)i;
 			else if(!strcmp(word, "HIDDEN"))              mapheaderinfo[num-1].hideinmenu = i;
 			else if(!strcmp(word, "NOSSMUSIC"))           mapheaderinfo[num-1].nossmusic = i;
+			else if(!strcmp(word, "NORELOAD"))            mapheaderinfo[num-1].noreload = i;
 			else
 				deh_error("Level header %d: unknown word '%s'\n", num, word);
 		}

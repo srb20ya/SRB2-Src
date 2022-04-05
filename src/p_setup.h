@@ -53,6 +53,7 @@ extern mapthing_t* mapthings;
 
 void P_SetupLevelSky(int skynum);
 void P_SpawnSecretItems(boolean loademblems);
+void P_LoadThingsOnly(void);
 boolean P_SetupLevel(int map, skill_t skill, const char* mapname);
 boolean P_AddWadFile(const char* wadfilename, char** firstmapname);
 boolean P_RunSOC(const char* socfilename);

@@ -119,6 +119,11 @@ static  HWND    hWnd          = NULL;
 static  BOOL    WasFullScreen = FALSE;
 static void UnSetRes(void);
 
+#ifdef USE_WGL_SWAP
+PFNWGLEXTSWAPCONTROLPROC wglSwapIntervalEXT = NULL;
+PFNWGLEXTGETSWAPINTERVALPROC wglGetSwapIntervalEXT = NULL;
+#endif
+
 #define MAX_VIDEO_MODES   32
 static  vmode_t     video_modes[MAX_VIDEO_MODES];
 int     oglflags = 0;
@@ -250,7 +255,7 @@ int SetupPixelFormat( int WantColorBits, int WantStencilBits, int WantDepthBits 
 // -----------------+
 static int SetRes( viddef_t *lvid, vmode_t *pcurrentmode )
 {
-	char *renderer;
+	LPCVOID renderer;
 	BOOL WantFullScreen = !(lvid->u.windowed);  //(lvid->u.windowed ? 0 : CDS_FULLSCREEN );
 
 	pcurrentmode = NULL;
@@ -336,7 +341,7 @@ static int SetRes( viddef_t *lvid, vmode_t *pcurrentmode )
 	// Get info and extensions.
 	//BP: why don't we make it earlier ?
 	//Hurdler: we cannot do that before intialising gl context
-	renderer = strdup((const char *)glGetString(GL_RENDERER));
+	renderer = glGetString(GL_RENDERER);
 	DBG_Printf("Vendor     : %s\n", glGetString(GL_VENDOR) );
 	DBG_Printf("Renderer   : %s\n", renderer );
 	DBG_Printf("Version    : %s\n", glGetString(GL_VERSION) );
@@ -345,16 +350,19 @@ static int SetRes( viddef_t *lvid, vmode_t *pcurrentmode )
 	// BP: disable advenced feature that don't work on somes hardware
 	// Hurdler: Now works on G400 with bios 1.6 and certified drivers 6.04
 	if( strstr(renderer, "810" ) )   oglflags |= GLF_NOZBUFREAD;
-	free(renderer);
 	DBG_Printf("oglflags   : 0x%X\n", oglflags );
 
 #ifdef USE_PALETTED_TEXTURE
-	usePalettedTexture = isExtAvailable("GL_EXT_paletted_texture");
-	if( usePalettedTexture )
+	if( isExtAvailable("GL_EXT_paletted_texture",gl_extensions) )
 	{
 		glColorTableEXT=(PFNGLCOLORTABLEEXTPROC)wglGetProcAddress("glColorTableEXT");
-		if (glColorTableEXT==NULL)
-			usePalettedTexture = 0;
+	}
+#endif
+#ifdef USE_WGL_SWAP
+	if( isExtAvailable("WGL_EXT_swap_control",gl_extensions))
+	{
+		wglSwapIntervalEXT = (PFNWGLEXTSWAPCONTROLPROC)wglGetProcAddress("wglSwapIntervalEXT");
+		wglGetSwapIntervalEXT = (PFNWGLEXTGETSWAPINTERVALPROC)wglGetProcAddress("wglGetSwapIntervalEXT");
 	}
 #endif
 
@@ -533,14 +541,30 @@ EXPORT void HWRAPI( Shutdown ) ( void )
 // -----------------+
 EXPORT void HWRAPI( FinishUpdate ) ( int waitvbl )
 {
+#ifdef USE_WGL_SWAP
+	int oldwaitvbl = 0;
+#else
+	waitvbl = 0;
+#endif
 	// DBG_Printf ("FinishUpdate()\n");
 #ifdef DEBUG_TO_FILE
 	if( (++nb_frames)==2 )  // on ne commence pas à la première frame
 		my_clock = clock();
 #endif
-	waitvbl = 0;
-	// TODO: implement waitvbl
+
+#ifdef USE_WGL_SWAP
+	if(wglGetSwapIntervalEXT)
+		oldwaitvbl = wglGetSwapIntervalEXT();
+	if(oldwaitvbl != waitvbl && wglSwapIntervalEXT)
+		wglSwapIntervalEXT(waitvbl);
+#endif
+
 	SwapBuffers( hDC );
+
+#ifdef USE_WGL_SWAP
+	if(oldwaitvbl != waitvbl && wglSwapIntervalEXT)
+		wglSwapIntervalEXT(oldwaitvbl);
+#endif
 }
 
 
@@ -561,7 +585,7 @@ EXPORT void HWRAPI( SetPalette ) ( RGBA_t* pal, RGBA_t *gamma )
 		myPaletteData[i].s.alpha = pal[i].s.alpha; 
 	}
 #ifdef USE_PALETTED_TEXTURE
-	if (usePalettedTexture)
+	if (glColorTableEXT)
 	{
 		for (i=0; i<256; i++)
 		{

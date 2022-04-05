@@ -948,7 +948,6 @@ void D_SetDoomcom(void)
 	memset(doomcom, 0, sizeof(doomcom_t));
 	doomcom->id = DOOMCOM_ID;
 	doomcom->numplayers = doomcom->numnodes = 1;
-	doomcom->deathmatch = false;
 	doomcom->gametype = 0;
 	doomcom->consoleplayer = 0;
 	doomcom->extratics = 0;

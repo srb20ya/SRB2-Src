@@ -1728,7 +1728,11 @@ void P_MobjCheckWater(mobj_t* mobj)
 							mobj->player->powers[pw_fireshield] = false;
 						}
 
-						mobj->player->powers[pw_ringshield] = false;
+						if(mobj->player->powers[pw_ringshield])
+						{
+							mobj->player->powers[pw_ringshield] = false;
+							mobj->player->bonuscount = 1;
+						}
 					}
 					if(mobj->player->powers[pw_underwater] <= 0
 						&& !(mobj->player->powers[pw_watershield])
@@ -4411,13 +4415,22 @@ void P_SpawnPrecipitation(void)
 				precipsector = R_IsPointInSubsector(x, y);
 
 				if(!precipsector)
+				{
+					i++;
 					continue;
+				}
 
 				if(!(maptol & TOL_NIGHTS) && !(precipsector->sector->ceilingpic == skyflatnum))
+				{
+					i++;
 					continue;
+				}
 
 				if(!(precipsector->sector->floorheight <= precipsector->sector->ceilingheight - (32<<FRACBITS)))
+				{
+					i++;
 					continue;
+				}
 			}
 
 			if(height < precipsector->sector->floorheight ||
@@ -4430,7 +4443,10 @@ void P_SpawnPrecipitation(void)
 			heightonly = false;
 
 			if(P_ObjectInWater(precipsector->sector, height))
+			{
+				i++;
 				continue;
+			}
 
 			z = M_Random(); //P_Random();
 			if(z < 64)
@@ -4461,10 +4477,16 @@ void P_SpawnPrecipitation(void)
 				precipsector = R_IsPointInSubsector(x, y);
 
 				if(!precipsector)
+				{
+					i++;
 					continue;
+				}
 
 				if(!(precipsector->sector->ceilingpic == skyflatnum && precipsector->sector->floorheight < precipsector->sector->ceilingheight))
+				{
+					i++;
 					continue;
+				}
 			}
 
 			if(height < precipsector->sector->floorheight ||
@@ -4477,7 +4499,10 @@ void P_SpawnPrecipitation(void)
 			heightonly = false;
 
 			if(P_ObjectInWater(precipsector->sector, height))
+			{
+				i++;
 				continue;
+			}
 
 			P_SpawnRainMobj(x, y, height, MT_RAIN);
 

@@ -151,7 +151,6 @@ typedef struct
 	ULONG subversion;
 	byte numberofplayer;
 	byte maxplayer;
-	byte deathmatch;
 	byte gametype;
 	byte modifiedgame;
 	tic_t time;

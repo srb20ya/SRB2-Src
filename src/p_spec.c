@@ -1024,6 +1024,48 @@ void P_LinedefExecute(int tag, mobj_t* actor, sector_t* caller)
 
 		specialtype = lines[masterline].special;
 
+		// Special handling for some executors
+		if(caller)
+		{
+			if(caller->special == 967)
+			{
+				if(lines[masterline].flags & ML_NOCLIMB)
+				{
+					if(!((ALL7EMERALDS) && (emeralds & EMERALD8)))
+						return;
+				}
+				else if(!(ALL7EMERALDS))
+					return;
+			}
+			else if(caller->special == 968)
+			{
+				int dist;
+				byte mare;
+
+				if(!(maptol & TOL_NIGHTS))
+					return;
+
+				dist = P_AproxDistance(lines[masterline].dx, lines[masterline].dy)>>FRACBITS;
+				mare = P_FindLowestMare();
+
+				if(lines[masterline].flags & ML_NOCLIMB)
+				{
+					if(!(mare <= dist))
+						return;
+				}
+				else if(lines[masterline].flags & ML_BLOCKMONSTERS)
+				{
+					if(!(mare >= dist))
+						return;
+				}
+				else
+				{
+					if(!(mare == dist))
+						return;
+				}
+			}
+		}
+
 		// Special type 97 only works once when you hit floor
 		if(specialtype == 97 && actor && !(actor->eflags & (MF_JUSTHITFLOOR | MF_JUSTSTEPPEDDOWN)))
 			return;
@@ -1133,7 +1175,7 @@ void P_LinedefExecute(int tag, mobj_t* actor, sector_t* caller)
 		if(specialtype == 98)
 		{
 			lines[masterline].special = 0; // Clear it out
-			if(caller && caller->special >= 971 && caller->special <= 975)
+			if(caller && ((caller->special >= 971 && caller->special <= 975) || caller->special == 967 || caller->special == 968))
 				caller->special = 0; // Clear that out, too, so this function doesn't get run forever
 		}
 	}
@@ -1830,6 +1872,8 @@ static void P_ProcessSpecialSector(player_t* player, sector_t* sector, boolean r
 			for(i = 0; i < MAXPLAYERS; i++)
 				if(playeringame[i] && players[i].mo && (gametype != GT_COOP || players[i].lives > 0) && players[i].mo->subsector->sector != sector)
 					return;
+		case 967: // Linedef executor (7 Emeralds)
+		case 968: // Linedef executor (NiGHTS Mare)
 		case 974: // Linedef executor that doesn't require touching floor
 		case 975: // Linedef executor
 			P_LinedefExecute(sector->tag, player->mo, sector);
@@ -2372,6 +2416,8 @@ void P_PlayerInSpecialSector(player_t* player)
 	{
 		case 6: // Space countdown
 		case 10: // Instant kill
+		case 967: // Linedef executor (7 Emeralds)
+		case 968: // Linedef executor (NiGHTS Mare)
 		case 969: // Super Sonic Transform
 		case 972: // Linedef executor
 		case 974: // Linedef executor
@@ -3331,7 +3377,10 @@ void P_SpawnSpecials(void)
 				break;
 
 			case 55: // Bustable block
-				P_AddFakeFloorsByLine(i, FF_EXISTS|FF_SOLID|FF_RENDERALL|FF_BUSTUP);
+				if(lines[i].flags & ML_NOCLIMB)
+					P_AddFakeFloorsByLine(i, FF_EXISTS|FF_SOLID|FF_RENDERALL|FF_BUSTUP|FF_ONLYKNUX);
+				else
+					P_AddFakeFloorsByLine(i, FF_EXISTS|FF_SOLID|FF_RENDERALL|FF_BUSTUP);
 				break;
 
 			case 56: // Quicksand
@@ -4289,8 +4338,6 @@ void T_Pusher(pusher_t* p)
 	boolean touching;
 	boolean foundfloor = false;
 
-	inFOF = touching = false;
-
 	xspeed = yspeed = 0;
 
 	sec = sectors + p->affectee;
@@ -4368,6 +4415,7 @@ void T_Pusher(pusher_t* p)
 	node = sec->touching_thinglist; // things touching this sector
 	for(; node; node = node->m_snext)
 	{
+		inFOF = touching = false;
 		thing = node->m_thing;
 		if(thing->flags & (MF_NOGRAVITY | MF_NOCLIP))
 			continue;

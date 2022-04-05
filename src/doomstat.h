@@ -163,6 +163,7 @@ typedef struct
 	boolean nozone;       ///< True to hide "Zone" in level name.
 	boolean hideinmenu;   ///< True to hide in the multiplayer menu.
 	boolean nossmusic;    ///< True to disable Super Sonic music in this level.
+	boolean noreload;     ///< True to retain level state when you die in single player
 } mapheader_t;
 
 extern mapheader_t mapheaderinfo[NUMMAPS];

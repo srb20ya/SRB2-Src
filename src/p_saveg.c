@@ -2247,6 +2247,10 @@ static void P_NetArchiveMisc(void)
 	WRITEULONG(save_p, countdowntimer);
 	WRITEBYTE(save_p, countdowntimeup);
 
+	WRITEBYTE(save_p, xmasmode);
+	WRITEBYTE(save_p, xmasoverride);
+	WRITEBYTE(save_p, eastermode);
+
 	WRITEBYTE(save_p, P_GetRandIndex());
 }
 
@@ -2291,6 +2295,10 @@ static boolean P_NetUnArchiveMisc(void)
 
 	countdowntimer = READULONG(save_p);
 	countdowntimeup = READBYTE(save_p);
+
+	xmasmode = READBYTE(save_p);
+	xmasoverride = READBYTE(save_p);
+	eastermode = READBYTE(save_p);
 
 	P_SetRandIndex(READBYTE(save_p));
 

@@ -110,15 +110,21 @@
 // ==========================================================================
 
 void Flush(void);
-int  isExtAvailable(const char *extension);
+int isExtAvailable(const char *extension, const GLubyte *start);
 boolean SetupPixelFormat(int WantColorBits, int WantStencilBits, int WantDepthBits);
 void SetModelView(GLint w, GLint h);
 void SetStates(void);
 float byteasfloat(byte fbyte);
 #ifdef USE_PALETTED_TEXTURE
 extern PFNGLCOLORTABLEEXTPROC glColorTableEXT;
-extern GLboolean              usePalettedTexture;
 extern GLubyte                palette_tex[256*3];
+#endif
+
+#ifdef USE_WGL_SWAP
+typedef void (APIENTRY *PFNWGLEXTSWAPCONTROLPROC) (int);
+typedef int (*PFNWGLEXTGETSWAPINTERVALPROC) (void);
+extern PFNWGLEXTSWAPCONTROLPROC wglSwapIntervalEXT;
+extern PFNWGLEXTGETSWAPINTERVALPROC wglGetSwapIntervalEXT;
 #endif
 
 // ==========================================================================

@@ -106,7 +106,7 @@ extern int logstream;
 #endif
 
 #define VERSION 109 // Game version
-#define VERSIONSTRING " v1.09.1 (BETA3)"
+#define VERSIONSTRING " v1.09.1 (BETA4)"
 
 // some tests, enable or disable it if it run or not
 #define SPLITSCREEN

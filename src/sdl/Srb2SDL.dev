@@ -4,7 +4,7 @@ Name=Srb2SDL
 Ver=1
 IsCpp=0
 Type=1
-Compiler=-D_M_IX86=500_@@_-DSTDC_HEADERS_@@_-Wall_@@_-DSDL_@@_-DHAVE_MIXER_@@_-DHWRENDER_@@_-DDIRECTFULLSCREEN_@@_-DHW3SOUND_@@_-DUSEASM_@@_-Os_@@_-ffloat-store_@@_-fomit-frame-pointer_@@_
+Compiler=-D_M_IX86=500_@@_-DSTDC_HEADERS_@@_-Wall_@@_-DSDL_@@_-DHAVE_MIXER_@@_-DHWRENDER_@@_-DUSE_WGL_SWAP_@@_-DUSE_PALETTED_TEXTURE_@@_-DDIRECTFULLSCREEN_@@_-DHW3SOUND_@@_-DUSEASM_@@_-Os_@@_-ffloat-store_@@_-fomit-frame-pointer_@@_
 CppCompiler=-Os_@@_
 Includes=
 Linker=-lSDL_@@_-lSDL_Mixer_@@_-lwsock32_@@_-lopengl32_@@_-lglu32_@@_-luuid_@@_-ldsound_@@_

@@ -63,8 +63,6 @@ typedef struct
 	short ticdup;
 	/// Flag: 1 = send a backup tic in every packet.
 	short extratics;
-	/// deathmatch type \deprecated obsolete
-	short deathmatch;
 	/// kind of game
 	short gametype;
 	/// Flag: -1 = new game, 0-5 = load savegame

@@ -733,7 +733,7 @@ void HU_Drawer(void)
 	if(chat_on)
 		HU_DrawChat();
 
-	if(gamestate == GS_INTERMISSION || gamestate == GS_CUTSCENE)
+	if(gamestate == GS_INTERMISSION || gamestate == GS_CUTSCENE || gamestate == GS_CREDITS)
 		return;
 
 	// draw multiplayer rankings

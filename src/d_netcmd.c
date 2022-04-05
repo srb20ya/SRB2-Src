@@ -99,6 +99,7 @@ static void Command_Timedemo_f(void);
 static void Command_Stopdemo_f(void);
 static void Command_Map_f(void);
 static void Command_Teleport_f(void);
+static void Command_RTeleport_f(void);
 
 static void Command_OrderPizza_f(void);
 
@@ -118,6 +119,7 @@ static void Command_Tunes_f(void);
 static void Command_Skynum_f(void);
 
 static void Command_ExitLevel_f(void);
+static void Command_Showmap_f(void);
 static void Command_Load_f(void);
 static void Command_Save_f(void);
 
@@ -204,6 +206,8 @@ consvar_t cv_autoaim2 = {"autoaim2", "Off", CV_CALL|CV_NOINIT, CV_OnOff, SendWea
 consvar_t cv_playername2 = {"name2", "Tails", CV_CALL|CV_NOINIT, NULL, SendNameAndColor2, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_playercolor2 = {"color2", "Orange", CV_CALL|CV_NOINIT, Color_cons_t, SendNameAndColor2, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_skin2 = {"skin2", "Tails", CV_CALL|CV_NOINIT, NULL, Skin2_OnChange, 0, NULL, NULL, 0, 0, NULL};
+
+consvar_t cv_skipmapcheck = {"skipmapcheck", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 boolean cv_debug;
 
@@ -368,6 +372,7 @@ void D_RegisterServerCommands(void)
 
 	COM_AddCommand("exitgame", Command_ExitGame_f);
 	COM_AddCommand("exitlevel", Command_ExitLevel_f);
+	COM_AddCommand("showmap", Command_Showmap_f);
 
 	COM_AddCommand("addfile", Command_Addfile);
 	COM_AddCommand("runsoc", Command_RunSOC);
@@ -475,6 +480,7 @@ void D_RegisterServerCommands(void)
 	CV_RegisterVar(&cv_objflags);
 	CV_RegisterVar(&cv_mapthingnum);
 	CV_RegisterVar(&cv_grid);
+	CV_RegisterVar(&cv_skipmapcheck);
 
 	CV_RegisterVar(&cv_sleep);
 
@@ -507,6 +513,7 @@ void D_RegisterClientCommands(void)
 	COM_AddCommand("timedemo", Command_Timedemo_f);
 	COM_AddCommand("stopdemo", Command_Stopdemo_f);
 	COM_AddCommand("teleport", Command_Teleport_f);
+	COM_AddCommand("rteleport", Command_RTeleport_f);
 	COM_AddCommand("playintro", Command_Playintro_f);
 	COM_AddCommand("writethings", Command_Writethings_f);
 
@@ -1041,6 +1048,73 @@ static void Got_PizzaOrder(char** cp, int playernum)
 	CONS_Printf("%s has ordered a pizza.\n", player_names[playernum]);
 }
 
+static void Command_RTeleport_f(void)
+{
+	int intx, inty, intz;
+	size_t i;
+	player_t* p = &players[consoleplayer];
+	subsector_t* ss;
+
+	if(!(cv_debug || devparm))
+		return;
+
+	if(COM_Argc() < 3 || COM_Argc() > 7)
+	{
+		CONS_Printf("rteleport -x <value> -y <value> -z <value> : relative teleport to a location\n");
+		return;
+	}
+
+	if(netgame)
+	{
+		CONS_Printf("You can't teleport while in a netgame!\n");
+		return;
+	}
+
+	if(!p->mo)
+	{
+		CONS_Printf("Player is dead, etc.\n");
+		return;
+	}
+
+	i = COM_CheckParm("-x");
+	if(i)
+		intx = atoi(COM_Argv(i + 1));
+	else
+		intx = 0;
+
+	i = COM_CheckParm("-y");
+	if(i)
+		inty = atoi(COM_Argv(i + 1));
+	else
+		inty = 0;
+
+	ss = R_IsPointInSubsector(p->mo->x + intx*FRACUNIT, p->mo->y + inty*FRACUNIT);
+	if(!ss || ss->sector->ceilingheight - ss->sector->floorheight < p->mo->height)
+	{
+		CONS_Printf("Not a valid location\n");
+		return;
+	}
+	i = COM_CheckParm("-z");
+	if(i)
+	{
+		intz = atoi(COM_Argv(i + 1));
+		intz <<= FRACBITS;
+		if(intz < ss->sector->floorheight)
+			intz = ss->sector->floorheight;
+		if(intz > ss->sector->ceilingheight - p->mo->height)
+			intz = ss->sector->ceilingheight - p->mo->height;
+	}
+	else
+		intz = ss->sector->floorheight;
+
+	CONS_Printf("Teleporting by %d, %d, %d...", intx, inty, intz>>FRACBITS);
+
+	if(!P_TeleportMove(p->mo, p->mo->x+intx*FRACUNIT, p->mo->y+inty*FRACUNIT, p->mo->z+intz))
+		CONS_Printf("Unable to teleport to that spot!\n");
+	else
+		S_StartSound(p->mo, sfx_mixup);
+}
+
 static void Command_Teleport_f(void)
 {
 	int intx, inty, intz;
@@ -1053,13 +1127,19 @@ static void Command_Teleport_f(void)
 
 	if(COM_Argc() < 3 || COM_Argc() > 7)
 	{
-		CONS_Printf("teleport -x <value> -y <value> : teleport to a location\n");
+		CONS_Printf("teleport -x <value> -y <value> -z <value> : teleport to a location\n");
 		return;
 	}
 
 	if(netgame)
 	{
 		CONS_Printf("You can't teleport while in a netgame!\n");
+		return;
+	}
+
+	if(!p->mo)
+	{
+		CONS_Printf("Player is dead, etc.\n");
 		return;
 	}
 
@@ -1081,7 +1161,7 @@ static void Command_Teleport_f(void)
 		return;
 	}
 
-	ss = R_IsPointInSubsector(intx, inty);
+	ss = R_IsPointInSubsector(intx*FRACUNIT, inty*FRACUNIT);
 	if(!ss || ss->sector->ceilingheight - ss->sector->floorheight < p->mo->height)
 	{
 		CONS_Printf("Not a valid location\n");
@@ -1355,7 +1435,7 @@ static void Command_Map_f(void)
 	}
 
 	// don't use a gametype the map doesn't support
-	if(cv_debug || COM_CheckParm("-force"))
+	if(cv_debug || COM_CheckParm("-force") || cv_skipmapcheck.value)
 		;
 	else if(multiplayer)
 	{
@@ -1945,7 +2025,7 @@ static void Command_RunSOC(void)
 	else
 		fn = COM_Argv(1);
 
-	if(netgame && !(server || adminplayer))
+	if(netgame && !(server || consoleplayer == adminplayer))
 	{
 		CONS_Printf("Sorry, only the server can do this.\n");
 		return;
@@ -2038,7 +2118,7 @@ static void Command_Addfile(void)
 	else
 		fn = COM_Argv(1);
 
-	if(netgame && !(server || adminplayer))
+	if(netgame && !(server || consoleplayer == adminplayer))
 	{
 		CONS_Printf("Sorry, only the server can do this.\n");
 		return;
@@ -2550,6 +2630,14 @@ static void Startrings_OnChange(void)
 				players[i].mo->health = cv_startrings.value + 1;
 				players[i].health = players[i].mo->health;
 			}
+
+		if(!modifiedgame || savemoddata)
+		{
+			modifiedgame = true;
+			savemoddata = false;
+			if(!(netgame || multiplayer))
+				CONS_Printf("WARNING: Game must be restarted to record statistics.\n");
+		}
 	}
 }
 
@@ -2568,6 +2656,14 @@ static void Startlives_OnChange(void)
 		for(i = 0; i < MAXPLAYERS; i++)
 			if(playeringame[i])
 				players[i].lives = cv_startlives.value;
+
+		if(!modifiedgame || savemoddata)
+		{
+			modifiedgame = true;
+			savemoddata = false;
+			if(!(netgame || multiplayer))
+				CONS_Printf("WARNING: Game must be restarted to record statistics.\n");
+		}
 	}
 }
 
@@ -2586,12 +2682,21 @@ static void Startcontinues_OnChange(void)
 		for(i = 0; i < MAXPLAYERS; i++)
 			if(playeringame[i])
 				players[i].continues = cv_startcontinues.value;
+
+		if(!modifiedgame || savemoddata)
+		{
+			modifiedgame = true;
+			savemoddata = false;
+			if(!(netgame || multiplayer))
+				CONS_Printf("WARNING: Game must be restarted to record statistics.\n");
+		}
 	}
 }
 
 static void Gravity_OnChange(void)
 {
-	if((grade&7) < 2 && !netgame)
+	if((grade&7) < 2 && !netgame
+		&& strcmp(cv_gravity.string, cv_gravity.defaultvalue))
 	{
 		CONS_Printf("You haven't earned this yet.\n");
 		CV_StealthSet(&cv_gravity, cv_gravity.defaultvalue);
@@ -2599,6 +2704,14 @@ static void Gravity_OnChange(void)
 	}
 
 	gravity = cv_gravity.value;
+}
+
+static void Command_Showmap_f(void)
+{
+	if(gamestate == GS_LEVEL)
+		CONS_Printf("MAP %d: %s %d\n", gamemap, mapheaderinfo[gamemap-1].lvlttl, mapheaderinfo[gamemap-1].actnum);
+	else
+		CONS_Printf("You must be in a level to use this.\n");
 }
 
 static void Command_ExitLevel_f(void)

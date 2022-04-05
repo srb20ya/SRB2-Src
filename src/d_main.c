@@ -342,6 +342,8 @@ static void D_Display(void)
 
 		case GS_CREDITS:
 			F_CreditDrawer();
+			HU_Erase();
+			HU_Drawer();
 			break;
 
 		case GS_TITLESCREEN:

@@ -789,7 +789,8 @@ static void CL_ConnectToServer(void)
 			key = I_GetKey();
 			if(key == KEY_ESCAPE)
 			{
-				M_StartMessage("Network game synchronization aborted.\n\nPress ESC\n", NULL, MM_NOTHING);
+				CONS_Printf("Network game synchronization aborted.\n");
+//				M_StartMessage("Network game synchronization aborted.\n\nPress ESC\n", NULL, MM_NOTHING);
 				CL_Reset();
 				D_StartTitle();
 				return;

@@ -304,11 +304,11 @@ ifdef MINGW
 all_dll: opengl_dll minigl_dll ds3d_dll fmod_dll openal_dll
 opengl_dll : $(OBJDIR)/r_opengl.o $(OBJDIR)/ogl_win.o hardware/r_mingw.def
 	@echo Linking R_OpenGL.dll...
-	$(DLLWRAP) --def hardware/r_mingw.def $(OBJDIR)/r_opengl.o $(OBJDIR)/ogl_win.o -lopengl32 -lglu32 -lgdi32 -mwindows $(M5) $(CFLAGS) -o $(BIN)/r_opengl.dll
+	$(DLLWRAP) --def hardware/r_mingw.def $(OBJDIR)/r_opengl.o $(OBJDIR)/ogl_win.o -lopengl32 -lglu32 -lgdi32 -mwindows $(M5) $(CFLAGS) -DUSE_WGL_SWAP -DUSE_PALETTED_TEXTURE -o $(BIN)/r_opengl.dll
 
 minigl_dll: $(OBJDIR)/r_minigl.o hardware/r_mingw.def
 	@echo Linking R_MiniGL.dll...
-	$(DLLWRAP) --def hardware/r_mingw.def $(OBJDIR)/r_minigl.o -lopengl32 -lglu32 -lgdi32 -mwindows $(M5) $(CFLAGS) -o $(BIN)/r_minigl.dll
+	$(DLLWRAP) --def hardware/r_mingw.def $(OBJDIR)/r_minigl.o -lopengl32 -lglu32 -lgdi32 -mwindows $(M5) $(CFLAGS) -DUSE_WGL_SWAP -o $(BIN)/r_minigl.dll
 
 ds3d_dll: $(OBJDIR)/s_ds3d.o hardware/s_mingw.def
 	@echo Linking S_DS3d.dll...

@@ -56,6 +56,11 @@ static  HWND    hWnd  = NULL;
 static  BOOL    WasFullScreen = FALSE;
 static void UnSetRes(void);
 
+#ifdef USE_WGL_SWAP
+PFNWGLEXTSWAPCONTROLPROC wglSwapIntervalEXT = NULL;
+PFNWGLEXTGETSWAPINTERVALPROC wglGetSwapIntervalEXT = NULL;
+#endif
+
 #define MAX_VIDEO_MODES   32
 static  vmode_t     video_modes[MAX_VIDEO_MODES];
 int     oglflags = 0;
@@ -289,12 +294,9 @@ static int SetRes( viddef_t *lvid, vmode_t *pcurrentmode )
     DBG_Printf("d3dflags   : 0x%X\n", oglflags );
 
 #ifdef USE_PALETTED_TEXTURE
-    usePalettedTexture = isExtAvailable("GL_EXT_paletted_texture");
-    if( usePalettedTexture )
+    if( isExtAvailable("GL_EXT_paletted_texture") )
     {
         glColorTableEXT=(PFNGLCOLORTABLEEXTPROC)wd3GetProcAddress("glColorTableEXT");
-        if (glColorTableEXT==NULL)
-            usePalettedTexture = 0;
     }
 #endif
 
@@ -473,14 +475,30 @@ EXPORT void HWRAPI( Shutdown ) ( void )
 // -----------------+
 EXPORT void HWRAPI( FinishUpdate ) ( int waitvbl )
 {
-    // DBG_Printf ("FinishUpdate()\n");
-#ifdef DEBUG_TO_FILE
-    if( (++nb_frames)==2 )  // on ne commence pas à la première frame
-        my_clock = clock();
+#ifdef USE_WGL_SWAP
+	int oldwaitvbl = 0;
+#else
+	waitvbl = 0;
 #endif
-	 waitvbl = 0;
-    // TODO: implement waitvbl
-    SwapBuffers( hDC );
+	// DBG_Printf ("FinishUpdate()\n");
+#ifdef DEBUG_TO_FILE
+	if( (++nb_frames)==2 )  // on ne commence pas à la première frame
+		my_clock = clock();
+#endif
+
+#ifdef USE_WGL_SWAP
+	if(wglGetSwapIntervalEXT)
+		oldwaitvbl = wglGetSwapIntervalEXT();
+	if(oldwaitvbl != waitvbl && wglSwapIntervalEXT)
+		wglSwapIntervalEXT(waitvbl);
+#endif
+	
+	SwapBuffers( hDC );
+
+#ifdef USE_WGL_SWAP
+	if(oldwaitvbl != waitvbl && wglSwapIntervalEXT)
+		wglSwapIntervalEXT(oldwaitvbl);
+#endif
 }
 
 
@@ -500,7 +518,7 @@ EXPORT void HWRAPI( SetPalette ) ( RGBA_t* pal, RGBA_t *gamma )
         myPaletteData[i].s.alpha = pal[i].s.alpha; 
     }
 #ifdef USE_PALETTED_TEXTURE
-    if (usePalettedTexture)
+    if (glColorTableEXT)
     {
         for (i=0; i<256; i++)
         {

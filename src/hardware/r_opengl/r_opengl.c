@@ -260,7 +260,6 @@ static GLint       viewport[4];
 
 #ifdef USE_PALETTED_TEXTURE
 	PFNGLCOLORTABLEEXTPROC  glColorTableEXT = NULL;
-	GLboolean               usePalettedTexture = 0;
 	GLubyte                 palette_tex[256*3];
 #endif
 
@@ -493,18 +492,15 @@ void Flush( void )
 // isExtAvailable   : Look if an OpenGL extension is available
 // Returns          : true if extension available
 // -----------------+
-int isExtAvailable(const char *extension)
+int isExtAvailable(const char *extension, const GLubyte *start)
 {
-	const GLubyte   *start;
 	GLubyte         *where, *terminator;
 
-	if(!extension) return 0;
+	if(!extension || !start) return 0;
 	where = (GLubyte *) strchr(extension, ' ');
 	if (where || *extension == '\0')
 		return 0;
 
-	if(!gl_extensions) return 0;
-	start = gl_extensions;
 	for (;;)
 	{
 		where = (GLubyte *) strstr((const char *) start, extension);
@@ -841,7 +837,7 @@ EXPORT void HWRAPI( SetTexture ) ( FTextureInfo *pTexInfo )
 		h = pTexInfo->height;
 
 #ifdef USE_PALETTED_TEXTURE
-		if( usePalettedTexture && glColorTableEXT &&
+		if( glColorTableEXT &&
 			(pTexInfo->grInfo.format==GR_TEXFMT_P_8) &&
 			!(pTexInfo->flags & TF_CHROMAKEYED) )
 		{
@@ -935,7 +931,7 @@ EXPORT void HWRAPI( SetTexture ) ( FTextureInfo *pTexInfo )
 #else
 #ifdef USE_PALETTED_TEXTURE
 			//Hurdler: not really supported and not tested recently
-		if( usePalettedTexture && glColorTableEXT &&
+		if( glColorTableEXT &&
 			(pTexInfo->grInfo.format==GR_TEXFMT_P_8) &&
 			!(pTexInfo->flags & TF_CHROMAKEYED) )
 		{

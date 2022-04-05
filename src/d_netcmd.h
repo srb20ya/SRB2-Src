@@ -106,6 +106,8 @@ extern consvar_t cv_chaos_eggmobile1, cv_chaos_eggmobile2, cv_chaos_skim;
 
 extern consvar_t cv_solidspectator;
 
+extern consvar_t cv_skipmapcheck;
+
 extern consvar_t cv_sleep, cv_screenshot_option, cv_screenshot_folder;
 
 typedef enum

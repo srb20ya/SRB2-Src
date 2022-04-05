@@ -235,7 +235,7 @@ void R_DrawShadeColumn_8(void)
 */
 void R_DrawTranslucentColumn_8(void)
 {
-	register int count;
+	register int count, ccount;
 	register byte* dest;
 	register fixed_t frac, fracstep;
 
@@ -243,6 +243,8 @@ void R_DrawTranslucentColumn_8(void)
 
 	if(count <= 0) // Zero length, column does not exceed a pixel.
 		return;
+
+	ccount = count;
 
 #ifdef RANGECHECK
 	if((unsigned)dc_x >= (unsigned)vid.width || dc_yl < 0 || dc_yh >= vid.height)
@@ -261,6 +263,8 @@ void R_DrawTranslucentColumn_8(void)
 
 	{
 		register const byte* source = dc_source;
+		register const byte* transmap = dc_transmap;
+		register const lighttable_t* colormap = dc_colormap;
 		register int heightmask = dc_texheight - 1;
 		if(dc_texheight & heightmask)
 		{
@@ -279,7 +283,7 @@ void R_DrawTranslucentColumn_8(void)
 				// Re-map color indices from wall texture column
 				// using a lighting/special effects LUT.
 				// heightmask is the Tutti-Frutti fix
-				*dest = dc_colormap[*(dc_transmap + (source[frac>>FRACBITS]<<8) + (*dest))];
+				*dest = colormap[*(transmap + (source[frac>>FRACBITS]<<8) + (*dest))];
 				dest += vid.width;
 				if((frac += fracstep) >= heightmask)
 					frac -= heightmask;
@@ -290,15 +294,15 @@ void R_DrawTranslucentColumn_8(void)
 		{
 			while((count -= 2) >= 0) // texture height is a power of 2
 			{
-				*dest = dc_colormap[*(dc_transmap + (source[frac>>FRACBITS]<<8) + (*dest))];
+				*dest = colormap[*(transmap + ((source[(frac>>FRACBITS)&heightmask]<<8)) + (*dest))];
 				dest += vid.width;
 				frac += fracstep;
-				*dest = dc_colormap[*(dc_transmap + (source[frac>>FRACBITS]<<8) + (*dest))];
+				*dest = colormap[*(transmap + ((source[(frac>>FRACBITS)&heightmask]<<8)) + (*dest))];
 				dest += vid.width;
 				frac += fracstep;
 			}
 			if(count & 1)
-				*dest = dc_colormap[*(dc_transmap + (source[frac>>FRACBITS]<<8) + (*dest))];
+				*dest = colormap[*(transmap + ((source[(frac>>FRACBITS)&heightmask]<<8)) + (*dest))];
 		}
 	}
 }

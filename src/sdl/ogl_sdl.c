@@ -59,6 +59,15 @@
 #endif
 #endif
 
+#ifdef USE_WGL_SWAP
+PFNWGLEXTSWAPCONTROLPROC wglSwapIntervalEXT = NULL;
+PFNWGLEXTGETSWAPINTERVALPROC wglGetSwapIntervalEXT = NULL;
+#endif
+
+#ifdef GLX_EXTENSIONS /// todo: include X11 stuff?
+static const GLubyte *glx_extensions = NULL;
+#endif
+
 /**	\brief SDL video display surface
 */
 SDL_Surface *vidSurface = NULL;
@@ -77,7 +86,8 @@ int oglflags = 0;
 boolean OglSdlSurface(int w, int h, boolean isFullscreen)
 {
 	int cbpp;
-	char *glvendor, *glrenderer, *glversion;
+	const GLvoid *glvendor = NULL, *glrenderer = NULL, *glversion = NULL;
+
 	cbpp = (cv_scr_depth.value<16)?16:cv_scr_depth.value;
 
 	if(vidSurface)
@@ -96,27 +106,26 @@ boolean OglSdlSurface(int w, int h, boolean isFullscreen)
 	if(!vidSurface)
 		return false;
 
-#ifdef __CYGWIN__
-	glvendor = "";
-	glrenderer = "";
-	glversion = "";
-	gl_extensions = "";
-#else
-	glvendor = strdup((const char *)glGetString(GL_VENDOR));
+	glvendor = glGetString(GL_VENDOR);
 	// Get info and extensions.
 	//BP: why don't we make it earlier ?
 	//Hurdler: we cannot do that before intialising gl context
-	glrenderer = strdup((const char *)glGetString(GL_RENDERER));
-	glversion = strdup((const char *)glGetString(GL_VERSION));
+	glrenderer = glGetString(GL_RENDERER);
+	glversion = glGetString(GL_VERSION);
 	gl_extensions = glGetString(GL_EXTENSIONS);
+#ifdef GLX_EXTENSIONS
+	glx_extensions = glGetString(GLX_EXTENSIONS);
 #endif
-	DBG_Printf("Vendor     : %s\n", glvendor );
-	DBG_Printf("Renderer   : %s\n", glrenderer );
-	DBG_Printf("Version    : %s\n", glversion );
-	DBG_Printf("Extensions : %s\n", gl_extensions );
+
+	DBG_Printf("Vendor         : %s\n", glvendor );
+	DBG_Printf("Renderer       : %s\n", glrenderer );
+	DBG_Printf("Version        : %s\n", glversion );
+	DBG_Printf("Extensions     : %s\n", gl_extensions );
+#ifdef GLX_EXTENSIONS
+	DBG_Printf("X11 Extensions : %s\n", glx_extensions );
+#endif
 	oglflags = 0;
 
-#ifndef __CYGWIN__
 #if defined(_WIN32) || defined(_WIN64)
 	// BP: disable advenced feature that don't work on somes hardware
 	// Hurdler: Now works on G400 with bios 1.6 and certified drivers 6.04
@@ -126,26 +135,20 @@ boolean OglSdlSurface(int w, int h, boolean isFullscreen)
 	if( strstr(glrenderer, "G200" ) )   oglflags |= GLF_NOTEXENV;
 	if( strstr(glrenderer, "G400" ) )   oglflags |= GLF_NOTEXENV;
 #endif
-	free(glvendor);
-	free(glrenderer);
-	free(glversion);
-#endif
 	DBG_Printf("oglflags   : 0x%X\n", oglflags );
 
 #ifdef USE_PALETTED_TEXTURE
-	usePalettedTexture = isExtAvailable("GL_EXT_paletted_texture");
-	if(usePalettedTexture)
+	if(isExtAvailable("GL_EXT_paletted_texture",gl_extensions))
 	{
-		glColorTableEXT=(PFNGLCOLORTABLEEXTPROC)SDL_GL_GetProcAddress("glColorTableEXT");
-		if (glColorTableEXT==NULL)
-			usePalettedTexture = 0;
-		else
-			usePalettedTexture = 1;
+		glColorTableEXT = SDL_GL_GetProcAddress("glColorTableEXT");
 	}
-#ifdef PARANOIA
-	if(usePalettedTexture)
-		I_OutputMsg("r_opengl.c: USE_PALETED_TEXTURE works\n");
 #endif
+#ifdef USE_WGL_SWAP
+	if(isExtAvailable("WGL_EXT_swap_control",gl_extensions))
+	{
+		wglSwapIntervalEXT = SDL_GL_GetProcAddress("wglSwapIntervalEXT");
+		wglGetSwapIntervalEXT = SDL_GL_GetProcAddress("wglGetSwapIntervalEXT");
+	}
 #endif
 
 	SetModelView(w, h);
@@ -173,10 +176,32 @@ boolean OglSdlSurface(int w, int h, boolean isFullscreen)
 
 	
 */
-void OglSdlFinishUpdate(boolean vidwait)
+void OglSdlFinishUpdate(boolean waitvbl)
 {
-	vidwait = 0;
+#ifdef USE_WGL_SWAP
+	int oldwaitvbl = 0;
+#endif
+
+#ifdef USE_WGL_SWAP
+	if(wglGetSwapIntervalEXT)
+		oldwaitvbl = wglGetSwapIntervalEXT();
+	if(oldwaitvbl != waitvbl && wglSwapIntervalEXT)
+		wglSwapIntervalEXT(waitvbl);
+#endif
+#ifdef GLX_EXTENSIONS
+	glXSwapIntervalSGI(waitvbl);
+#endif
+
 	SDL_GL_SwapBuffers();
+
+#ifdef USE_WGL_SWAP
+	if(oldwaitvbl != waitvbl && wglSwapIntervalEXT)
+		wglSwapIntervalEXT(oldwaitvbl);
+#endif
+#ifdef GLX_EXTENSIONS
+	glXSwapIntervalSGI(0);
+#endif
+	waitvbl = 0;
 }
 
 /**	\brief Shutdown OpenGL/SDL system
@@ -204,7 +229,7 @@ EXPORT void HWRAPI( OglSdlSetPalette) (RGBA_t *palette, RGBA_t *gamma)
 		myPaletteData[i].s.alpha = palette[i].s.alpha;
 	}
 #ifdef USE_PALETTED_TEXTURE
-	if (usePalettedTexture && glColorTableEXT)
+	if (glColorTableEXT)
 	{
 		for (i=0; i<256; i++)
 		{

@@ -4,7 +4,7 @@ Name=r_opengl
 Ver=1
 IsCpp=1
 Type=3
-Compiler=-D_M_IX86=500_@@_-Wall_@@_-D_WINDOWS_@@_-Os_@@_-fomit-frame-pointer_@@_
+Compiler=-D_M_IX86=500_@@_-Wall_@@_-D_WINDOWS_@@_-DUSE_WGL_SWAP_@@_-DUSE_PALETTED_TEXTURE_@@_-Os_@@_-fomit-frame-pointer_@@_
 CppCompiler=
 Includes=
 Linker=--def ../r_mingw.def_@@_-lopengl32_@@_-lglu32_@@_-lgdi32_@@_

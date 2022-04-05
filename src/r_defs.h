@@ -133,6 +133,7 @@ typedef enum
 	FF_PLATFORM          = 0x1000000, ///< You can jump up through this to the top.
 	FF_SHATTER           = 0x2000000, ///< Used with ::FF_BUSTUP. Thinks everyone's Knuckles.
 	FF_SPINBUST          = 0x4000000, ///< Used with ::FF_BUSTUP. Jump or fall onto it while curled in a ball.
+	FF_ONLYKNUX          = 0x8000000, ///< Used with ::FF_BUSTUP. Only Knuckles can break this rock.
 } ffloortype_e;
 
 typedef struct ffloor_s

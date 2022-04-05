@@ -1213,7 +1213,7 @@ void CON_Drawer(void)
 
 	if(con_curlines > 0)
 		CON_DrawConsole();
-	else if(gamestate == GS_LEVEL || gamestate == GS_INTERMISSION || gamestate == GS_CUTSCENE)
+	else if(gamestate == GS_LEVEL || gamestate == GS_INTERMISSION || gamestate == GS_CUTSCENE || gamestate == GS_CREDITS)
 		CON_DrawHudlines();
 
 	hu_font['I'-HU_FONTSTART]->leftoffset = 0;

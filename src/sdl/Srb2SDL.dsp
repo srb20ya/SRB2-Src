@@ -45,7 +45,7 @@ MTL=midl.exe
 # ADD BASE MTL /nologo /D "NDEBUG" /mktyplib203 /win32
 # ADD MTL /nologo /D "NDEBUG" /mktyplib203 /win32
 # ADD BASE CPP /nologo /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /YX /FD /c
-# ADD CPP /nologo /G5 /W3 /GX /Zi /Ot /Og /Oi /Op /Oy /Ob1 /D "NDEBUG" /D "WIN32" /D "_CONSOLE" /D "_MBCS" /D "SDL" /D "HAVE_MIXER" /D "DIRECTFULLSCREEN" /D "HWRENDER" /D "HW3SOUND" /D "__WIN32__" /D "__MSC__" /D "USEASM" /D "SDLMAIN" /D "NO_STDIO_REDIRECT" /FD /GF /c
+# ADD CPP /nologo /G5 /W3 /GX /Zi /Ot /Og /Oi /Op /Oy /Ob1 /D "NDEBUG" /D "SDLMAIN" /D "NO_STDIO_REDIRECT" /D "WIN32" /D "_CONSOLE" /D "_MBCS" /D "SDL" /D "HAVE_MIXER" /D "DIRECTFULLSCREEN" /D "HWRENDER" /D "HW3SOUND" /D "__WIN32__" /D "__MSC__" /D "USE_PALETTED_TEXTURE" /D "USE_WGL_SWAP" /D "USEASM" /FD /GF /c
 # ADD BASE RSC /l 0x409 /d "NDEBUG"
 # ADD RSC /l 0x409 /d "NDEBUG"
 # SUBTRACT RSC /x
@@ -72,7 +72,7 @@ LINK32=link.exe
 # PROP Target_Dir ""
 MTL=midl.exe
 # ADD BASE CPP /nologo /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /YX /FD /GZ /c
-# ADD CPP /nologo /G6 /W4 /Gm /GX /ZI /Od /Op /D "_DEBUG" /D "WIN32" /D "_CONSOLE" /D "_MBCS" /D "SDL" /D "HAVE_MIXER" /D "DIRECTFULLSCREEN" /D "HWRENDER" /D "HW3SOUND" /D "__WIN32__" /D "__MSC__" /D "USEASM" /FD /GZ /c
+# ADD CPP /nologo /G6 /W4 /Gm /GX /ZI /Od /Op /D "_DEBUG" /D "WIN32" /D "_CONSOLE" /D "_MBCS" /D "SDL" /D "HAVE_MIXER" /D "DIRECTFULLSCREEN" /D "HWRENDER" /D "HW3SOUND" /D "__WIN32__" /D "__MSC__" /D "USE_PALETTED_TEXTURE" /D "USE_WGL_SWAP" /D "USEASM" /FD /GZ /c
 # SUBTRACT CPP /YX
 # ADD BASE RSC /l 0x409 /d "_DEBUG"
 # ADD RSC /l 0x409 /d "_DEBUG"

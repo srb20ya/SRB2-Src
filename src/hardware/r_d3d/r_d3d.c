@@ -96,7 +96,6 @@ static GLint       viewport[4];
 
 #ifdef USE_PALETTED_TEXTURE
     PFNGLCOLORTABLEEXTPROC  glColorTableEXT = NULL;
-    GLboolean               usePalettedTexture = 0;
     GLubyte                 palette_tex[256*3];
 #endif
 
@@ -641,7 +640,7 @@ EXPORT void HWRAPI( SetTexture ) ( FTextureInfo *pTexInfo )
         h = pTexInfo->height;
 
 #ifdef USE_PALETTED_TEXTURE
-        if( usePalettedTexture && glColorTableEXT &&
+        if( glColorTableEXT &&
             (pTexInfo->grInfo.format==GR_TEXFMT_P_8) &&
             !(pTexInfo->flags & TF_CHROMAKEYED) )
         {
@@ -732,7 +731,7 @@ EXPORT void HWRAPI( SetTexture ) ( FTextureInfo *pTexInfo )
 #else
 #ifdef USE_PALETTED_TEXTURE
             //Hurdler: not really supported and not tested recently
-        if( usePalettedTexture && glColorTableEXT &&
+        if( glColorTableEXT &&
             (pTexInfo->grInfo.format==GR_TEXFMT_P_8) &&
             !(pTexInfo->flags & TF_CHROMAKEYED) )
         {

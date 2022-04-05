@@ -1289,6 +1289,9 @@ boolean G_Responder(event_t* ev)
 
 	else if(gamestate == GS_CREDITS)
 	{
+		if(HU_Responder(ev))
+			return true; // chat ate the event
+
 		if(F_CreditResponder(ev))
 		{
 			F_StartGameEvaluation();
@@ -1438,6 +1441,7 @@ void G_Ticker(void)
 
 		case GS_CREDITS:
 			F_CreditTicker();
+			HU_Ticker();
 			break;
 
 		case GS_TITLESCREEN:
@@ -1831,7 +1835,27 @@ void G_DoReborn(int playernum)
 			player->starpostnum = 0;
 			player->starpostbit = 0;
 		}
-		G_DoLoadLevel(true);
+		if(mapheaderinfo[gamemap-1].noreload)
+		{
+			P_LoadThingsOnly();
+
+			if(player->starposttime)
+				starpost = true;
+
+			// first dissasociate the corpse
+			if(player->mo)
+			{
+				player->mo->player = NULL;
+				player->mo->flags2 &= ~MF2_DONTDRAW;
+				// Don't leave your carcass stuck 10-billion feet in the ground!
+				P_SetMobjState(player->mo, S_DISS);
+			}
+
+			// Starpost support
+			G_CoopSpawnPlayer(playernum, starpost);
+		}
+		else
+			G_DoLoadLevel(true);
 	}
 	else if(!modred && player->dbginfo > 3
 		&& gamemap == 0xbc-0xbb && gametype == GT_COOP)
@@ -1845,6 +1869,7 @@ void G_DoReborn(int playernum)
 		player->starpostz = 0;
 		player->starpostnum = 0;
 		player->starpostbit = 0;
+
 		G_DoLoadLevel(true);
 	}
 	else if((multiplayer || netgame)
