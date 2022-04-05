@@ -140,7 +140,7 @@ void D_RegisterClientCommands(void);
 void D_SendPlayerConfig(void);
 void Command_ExitGame_f(void);
 void D_GameTypeChanged(int lastgametype); // not a real _OnChange function anymore
-void D_MapChange(int mapnum, int gametype, skill_t skill, int resetplayers, int delay, boolean skipprecutscene);
+void D_MapChange(int mapnum, int gametype, skill_t skill, int resetplayers, int delay, boolean skipprecutscene, boolean fromlevelselect);
 void ObjectPlace_OnChange(void);
 
 #endif

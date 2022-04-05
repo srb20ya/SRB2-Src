@@ -1990,6 +1990,7 @@ static void Sk_SetDefaultValue(skin_t* skin)
 	strcpy(skin->endtranscolor, "127");
 	strcpy(skin->prefcolor, "7");
 	strcpy(skin->normalspeed, "36");
+	strcpy(skin->runspeed, "28");
 	strcpy(skin->thrustfactor, "5");
 	strcpy(skin->accelstart, "64");
 	strcpy(skin->acceleration, "40");
@@ -2102,6 +2103,7 @@ void SetPlayerSkinByNum(int playernum, int skinnum)
 		players[playernum].charspin = atoi(skins[skinnum].spin);
 
 		players[playernum].normalspeed = atoi(skins[skinnum].normalspeed);
+		players[playernum].runspeed = atoi(skins[skinnum].runspeed);
 		players[playernum].thrustfactor = atoi(skins[skinnum].thrustfactor);
 		players[playernum].accelstart = atoi(skins[skinnum].accelstart);
 		players[playernum].acceleration = atoi(skins[skinnum].acceleration);
@@ -2371,6 +2373,11 @@ void R_AddSkins(int wadnum)
 			{
 				strncpy(skins[numskins].ability, value, 1);
 				strupr(skins[numskins].ability);
+			}
+			else if(!stricmp(token, "runspeed"))
+			{
+				strncpy(skins[numskins].runspeed, value, 2);
+				strupr(skins[numskins].runspeed);
 			}
 			else if(!stricmp(token, "normalspeed"))
 			{

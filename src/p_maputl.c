@@ -824,19 +824,24 @@ static boolean earlyout;
 //SoM: 4/6/2000: Remove limit on intercepts.
 static void P_CheckIntercepts(void)
 {
-  static size_t max_intercepts = 0;
-  size_t count = intercept_p - intercepts;
+	static size_t max_intercepts = 0;
+	size_t count = intercept_p - intercepts;
 
-  if(max_intercepts <= count)
-  {
-    if(!max_intercepts)
-      max_intercepts = 128;
-    else
-      max_intercepts = max_intercepts * 2;
+	if(max_intercepts <= count)
+	{
+		if(!max_intercepts)
+		{
+			max_intercepts = 128;
+			intercepts = malloc(sizeof(intercept_t) * max_intercepts);
+		}
+		else
+		{
+			max_intercepts = max_intercepts * 2;
+			intercepts = realloc(intercepts, sizeof(intercept_t) * max_intercepts);
+		}
 
-    intercepts = realloc(intercepts, sizeof(intercept_t) * max_intercepts);
-    intercept_p = intercepts + count;
-  }
+		intercept_p = intercepts + count;
+	}
 }
 
 //

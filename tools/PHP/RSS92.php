@@ -14,7 +14,7 @@ echo '    <link>http://srb2.servegame.org/srb2ms_status.php</link>';
 echo "\n";
 echo '    <language>en-us</language>';
 echo "\n";
-        $fd = fsockopen("srb2.servegame.org", 28910, $errno, $errstr, 5);
+        $fd = fsockopen("srb2.servegame.org", 28900, $errno, $errstr, 5);
 	if ($fd)
 	{
 		$buff = "000012380000";

@@ -591,9 +591,7 @@ static void VID_Command_Mode_f (void)
 		setmodeneeded = modenum+1; // request vid mode change
 }
 
-#if defined(_XBOX) || defined(_WIN32_WCE) || defined(_arch_dreamcast)
-static inline void I_GetConsoleEvents(void) {}
-#elif  defined(_WIN32) || defined(_WIN64)
+#if (defined(_WIN32) || defined(_WIN64)) && !(defined(_XBOX) || defined(_WIN32_WCE))
 static inline BOOL I_ReadyConsole(HANDLE ci)
 {
 	DWORD gotinput;
@@ -650,7 +648,8 @@ static inline VOID I_GetConsoleEvents(VOID)
 		}
 	}
 }
-#else
+#elif defined(LINUX) && !defined(_arch_dreamcast)
+#include <termios.h>
 #include "kbhit.c"
 static inline void I_GetConsoleEvents(void)
 {
@@ -668,6 +667,8 @@ static inline void I_GetConsoleEvents(void)
 	}
 	set_tty_cooked();
 }
+#else
+static inline void I_GetConsoleEvents(void) {}
 #endif
 
 void I_GetEvent(void)

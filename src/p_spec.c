@@ -1017,9 +1017,11 @@ void P_LinedefExecute(int tag, mobj_t* actor, sector_t* caller)
 		if(lines[masterline].tag != tag)
 			continue;
 
-		if(!(lines[masterline].special == 96
+		if(!(lines[masterline].special == 95
+			|| lines[masterline].special == 96
 			|| lines[masterline].special == 97
-			|| lines[masterline].special == 98))
+			|| lines[masterline].special == 98
+			|| lines[masterline].special == 99))
 			continue;
 
 		specialtype = lines[masterline].special;
@@ -1027,7 +1029,31 @@ void P_LinedefExecute(int tag, mobj_t* actor, sector_t* caller)
 		// Special handling for some executors
 		if(caller)
 		{
-			if(caller->special == 967)
+			if(actor->player && (specialtype == 95
+				|| specialtype == 99))
+			{
+				int dist;
+				int rings = actor->health-1;
+
+				dist = P_AproxDistance(lines[masterline].dx, lines[masterline].dy)>>FRACBITS;
+
+				if(lines[masterline].flags & ML_NOCLIMB)
+				{
+					if(!(rings <= dist))
+						return;
+				}
+				else if(lines[masterline].flags & ML_BLOCKMONSTERS)
+				{
+					if(!(rings >= dist))
+						return;
+				}
+				else
+				{
+					if(!(rings == dist))
+						return;
+				}				
+			}
+			else if(caller->special == 967)
 			{
 				if(lines[masterline].flags & ML_NOCLIMB)
 				{
@@ -1077,7 +1103,7 @@ void P_LinedefExecute(int tag, mobj_t* actor, sector_t* caller)
 		if(lines[masterline].flags & ML_ALLTRIGGER) // disregard order for efficiency
 		{
 			for(i = 0; i < linecnt; i++)
-				if(ctlsector->lines[i]->special > 98)
+				if(ctlsector->lines[i]->special > 99)
 				{
 					if(ctlsector->lines[i]->flags & ML_DONTPEGTOP)
 						P_AddExecutorDelay(ctlsector->lines[i], actor);
@@ -1161,7 +1187,7 @@ void P_LinedefExecute(int tag, mobj_t* actor, sector_t* caller)
 				if(i == masterlineindex)
 					break;
 
-				if(ctlsector->lines[i]->special > 98)
+				if(ctlsector->lines[i]->special > 99)
 				{
 					if(ctlsector->lines[i]->flags & ML_DONTPEGTOP)
 						P_AddExecutorDelay(ctlsector->lines[i], actor);
@@ -1171,8 +1197,8 @@ void P_LinedefExecute(int tag, mobj_t* actor, sector_t* caller)
 			}
 		}
 
-		// Special type 98 only works once
-		if(specialtype == 98)
+		// Special type 98 & 99 only work once
+		if(specialtype == 98 || specialtype == 99)
 		{
 			lines[masterline].special = 0; // Clear it out
 			if(caller && ((caller->special >= 971 && caller->special <= 975) || caller->special == 967 || caller->special == 968))
@@ -1700,6 +1726,11 @@ void P_ProcessLineSpecial(line_t* line, mobj_t* mo)
 		case 125: // Calls P_SetMobjState on calling mobj
 			if(mo)
 				P_SetMobjState(mo, P_AproxDistance(line->dx, line->dy) >> FRACBITS);
+			break;
+
+		case 126: // Awards points if the mobj is a player
+			if(mo && mo->player)
+				P_AddPlayerScore(mo->player, line->frontsector->floorheight>>FRACBITS);
 			break;
 
 		default:
@@ -2803,6 +2834,70 @@ static void P_AddBlockThinker(sector_t* sec, sector_t* actionsector, line_t* sou
 	return;
 }
 
+/** Adds a raise thinker.
+  * A raise thinker checks to see if the
+  * player is standing on its 3D Floor,
+  * and if so, raises the platform towards
+  * it's destination. Otherwise, it lowers
+  * to the lowest nearby height if not
+  * there already.
+  *
+  * \param sec          Control sector.
+  * \param actionsector Target sector.
+  * \param sourceline   Control linedef.
+  * \sa P_SpawnSpecials, T_RaiseSector
+  * \author SSNTails <http://www.ssntails.org>
+  */
+static inline void P_AddRaiseThinker(sector_t* sec, sector_t* actionsector, line_t* sourceline)
+{
+	elevator_t* elevator;
+
+	// You *probably* already have one in this sector. If you've combined it with something
+	// else that uses the floordata/ceilingdata, you must be weird.
+	if(sec->floordata || sec->ceilingdata)
+		return;
+
+	// create and initialize new elevator thinker
+	elevator = Z_Malloc(sizeof(*elevator), PU_LEVSPEC, NULL);
+	P_AddThinker(&elevator->thinker);
+
+	elevator->thinker.function.acp1 = (actionf_p1)T_RaiseSector;
+	elevator->type = elevateBounce; // Unused here but we set it anyway.
+
+	// set up the fields according to the type of elevator action
+	elevator->sector = sec;
+	elevator->actionsector = actionsector;
+	elevator->floorwasheight = elevator->sector->floorheight;
+	elevator->ceilingwasheight = elevator->sector->ceilingheight;
+
+	if(sourceline->flags & ML_NOCLIMB)
+		elevator->distance = 1;
+	else
+		elevator->distance = 0;
+
+	elevator->origspeed = P_AproxDistance(sourceline->dx, sourceline->dy);
+	elevator->origspeed = FixedDiv(elevator->origspeed,NEWTICRATERATIO*4*FRACUNIT);
+	elevator->speed = elevator->origspeed;
+
+	elevator->ceilingdestheight = P_FindHighestCeilingSurrounding(sec);
+	elevator->floordestheight = elevator->ceilingdestheight
+		- (sec->ceilingheight - sec->floorheight);
+	
+	elevator->ceilingwasheight = P_FindLowestCeilingSurrounding(sec);
+	elevator->floorwasheight = elevator->ceilingwasheight
+		- (sec->ceilingheight - sec->floorheight);
+
+	// Maybe for some future feature?
+	// If so, don't forget to add it
+	// to the save game snapshot!
+//	elevator->sourceline = sourceline;
+
+	elevator->sector->floordata = elevator;
+	elevator->sector->ceilingdata = elevator;
+
+	return;
+}
+
 /** Adds a thwomp thinker.
   * Even thwomps need to think!
   *
@@ -3607,9 +3702,69 @@ void P_SpawnSpecials(void)
 				EV_DoContinuousFall(lines[i].frontsector, lines[i].backsector->floorheight, P_AproxDistance(lines[i].dx, lines[i].dy));
 				break;
 
+			case 89: // FOF (solid, opaque, shadows)
+				P_AddFakeFloorsByLine(i, FF_EXISTS|FF_SOLID|FF_RENDERALL|FF_CUTLEVEL);
+
+				sec = (int)(sides[*lines[i].sidenum].sector - sectors);
+				for(s = -1; (s = P_FindSectorFromLineTag(lines + i, s)) >= 0;)
+					P_AddRaiseThinker(&sectors[sec], &sectors[s], &lines[i]);
+				break;
+
+			case 90: // FOF (solid, opaque, no shadows)
+				P_AddFakeFloorsByLine(i, FF_EXISTS|FF_SOLID|FF_RENDERALL|FF_NOSHADE|FF_CUTLEVEL);
+
+				sec = (int)(sides[*lines[i].sidenum].sector - sectors);
+				for(s = -1; (s = P_FindSectorFromLineTag(lines + i, s)) >= 0;)
+					P_AddRaiseThinker(&sectors[sec], &sectors[s], &lines[i]);
+				break;
+
+			case 91: // TL block: FOF (solid, translucent)
+				P_AddFakeFloorsByLine(i, FF_EXISTS|FF_SOLID|FF_RENDERALL|FF_NOSHADE|FF_TRANSLUCENT|FF_EXTRA|FF_CUTEXTRA);
+
+				sec = (int)(sides[*lines[i].sidenum].sector - sectors);
+				for(s = -1; (s = P_FindSectorFromLineTag(lines + i, s)) >= 0;)
+					P_AddRaiseThinker(&sectors[sec], &sectors[s], &lines[i]);
+				break;
+
+			case 92: // 'Platform' - You can jump up through it
+				// If line has no-climb set, don't give it shadows, otherwise do
+				ffloorflags = FF_EXISTS|FF_SOLID|FF_RENDERALL|FF_CUTLEVEL|FF_PLATFORM|FF_BOTHPLANES|FF_ALLSIDES;
+				if(lines[i].flags & ML_NOCLIMB)
+					ffloorflags |= FF_NOSHADE;
+
+				P_AddFakeFloorsByLine(i, ffloorflags);
+
+				sec = (int)(sides[*lines[i].sidenum].sector - sectors);
+				for(s = -1; (s = P_FindSectorFromLineTag(lines + i, s)) >= 0;)
+					P_AddRaiseThinker(&sectors[sec], &sectors[s], &lines[i]);
+				break;
+
+			case 93: // Translucent "platform"
+				// If line has no-climb set, don't give it shadows, otherwise do
+				ffloorflags = FF_EXISTS|FF_SOLID|FF_RENDERALL|FF_CUTLEVEL|FF_PLATFORM|FF_TRANSLUCENT|FF_BOTHPLANES|FF_ALLSIDES;
+				if(lines[i].flags & ML_NOCLIMB)
+					ffloorflags |= FF_NOSHADE;
+
+				P_AddFakeFloorsByLine(i, ffloorflags);
+
+				sec = (int)(sides[*lines[i].sidenum].sector - sectors);
+				for(s = -1; (s = P_FindSectorFromLineTag(lines + i, s)) >= 0;)
+					P_AddRaiseThinker(&sectors[sec], &sectors[s], &lines[i]);
+				break;
+
+			case 94: // FOF (solid, invisible)
+				P_AddFakeFloorsByLine(i, FF_EXISTS|FF_SOLID|FF_NOSHADE);
+
+				sec = (int)(sides[*lines[i].sidenum].sector - sectors);
+				for(s = -1; (s = P_FindSectorFromLineTag(lines + i, s)) >= 0;)
+					P_AddRaiseThinker(&sectors[sec], &sectors[s], &lines[i]);
+				break;
+
+			case 95:
 			case 96: // Linedef executor (combines with sector special 974/975) and commands
 			case 97:
 			case 98:
+			case 99:
 			// 100 is used for a scroller
 			case 101:
 			case 102:

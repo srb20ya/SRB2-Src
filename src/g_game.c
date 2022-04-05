@@ -1503,6 +1503,7 @@ void G_PlayerReborn(int player)
 	int xtralife;
 	int charability;
 	int normalspeed;
+	int runspeed;
 	int thrustfactor;
 	int accelstart;
 	int acceleration;
@@ -1553,6 +1554,7 @@ void G_PlayerReborn(int player)
 	autoaim = players[player].autoaim_toggle;
 	charability = players[player].charability;
 	normalspeed = players[player].normalspeed;
+	runspeed = players[player].runspeed;
 	thrustfactor = players[player].thrustfactor;
 	accelstart = players[player].accelstart;
 	acceleration = players[player].acceleration;
@@ -1593,6 +1595,7 @@ void G_PlayerReborn(int player)
 	players[player].autoaim_toggle = autoaim;
 	players[player].charability = charability;
 	players[player].normalspeed = normalspeed;
+	players[player].runspeed = runspeed;
 	players[player].thrustfactor = thrustfactor;
 	players[player].accelstart = accelstart;
 	players[player].acceleration = acceleration;
@@ -1839,17 +1842,11 @@ void G_DoReborn(int playernum)
 		{
 			P_LoadThingsOnly();
 
+			// Do a wipe
+			wipegamestate = -1;
+
 			if(player->starposttime)
 				starpost = true;
-
-			// first dissasociate the corpse
-			if(player->mo)
-			{
-				player->mo->player = NULL;
-				player->mo->flags2 &= ~MF2_DONTDRAW;
-				// Don't leave your carcass stuck 10-billion feet in the ground!
-				P_SetMobjState(player->mo, S_DISS);
-			}
 
 			// Starpost support
 			G_CoopSpawnPlayer(playernum, starpost);
@@ -2112,10 +2109,10 @@ static void G_DoWorldDone(void)
 
 		if(gametype == GT_COOP && nextgametype == GT_COOP)
 			// don't reset player between maps
-			D_MapChange(nextmap+1, nextgametype, gameskill, 0, 0, false);
+			D_MapChange(nextmap+1, nextgametype, gameskill, 0, 0, false, false);
 		else
 			// resetplayer in match/chaos/tag/CTF/race for more equality
-			D_MapChange(nextmap+1, nextgametype, gameskill, 1, 0, false);
+			D_MapChange(nextmap+1, nextgametype, gameskill, 1, 0, false, false);
 	}
 
 	gameaction = ga_nothing;
@@ -2441,7 +2438,7 @@ void G_DoSaveGame(unsigned int savegameslot, char* savedescription)
 // Can be called by the startup code or the menu task,
 // consoleplayer, displayplayer, playeringame[] should be set.
 //
-void G_DeferedInitNew(skill_t skill, char* mapname, int pickedchar, boolean StartSplitScreenGame)
+void G_DeferedInitNew(skill_t skill, char* mapname, int pickedchar, boolean StartSplitScreenGame, boolean fromlevelselect)
 {
 	paused = false;
 
@@ -2457,7 +2454,7 @@ void G_DeferedInitNew(skill_t skill, char* mapname, int pickedchar, boolean Star
 	SetSavedSkin(0, pickedchar, atoi(skins[pickedchar].prefcolor));
 
 	if(mapname)
-		D_MapChange(M_MapNumber(mapname[3], mapname[4]), gametype, skill, 1, 1, false);
+		D_MapChange(M_MapNumber(mapname[3], mapname[4]), gametype, skill, 1, 1, false, fromlevelselect);
 }
 
 //
@@ -2490,12 +2487,6 @@ void G_InitNew(skill_t skill, char* mapname, boolean resetplayer, boolean skippr
 		// Clear a bunch of variables
 		lastmap = tokenlist = token = sstimer = redscore = bluescore = 0;
 		countdown = countdown2 = 0;
-
-		// Give them all the emeralds if they've already earned them.
-		if(!(netgame || multiplayer) && (grade & 8))
-			emeralds = EMERALD1+EMERALD2+EMERALD3+EMERALD4+EMERALD5+EMERALD6+EMERALD7;
-		else
-			emeralds = 0;
 
 		for(i = 0; i < MAXPLAYERS; i++)
 		{

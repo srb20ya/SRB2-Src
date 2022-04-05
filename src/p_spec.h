@@ -340,6 +340,7 @@ void T_FloatSector(elevator_t* elevator);
 void T_MarioBlockChecker(elevator_t* elevator);
 void T_ThwompSector(elevator_t* elevator);
 void T_CameraScanner(elevator_t* elevator);
+void T_RaiseSector(elevator_t* elevator);
 
 typedef struct
 {

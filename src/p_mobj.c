@@ -1248,11 +1248,11 @@ static void P_PlayerZMovement(mobj_t* mo)
 	}
 
 	// adjust height
-	if(mo->pmomz && mo->z > mo->floorz && !mo->player->mfjumped)
+/*	if(mo->pmomz && mo->z > mo->floorz && !mo->player->mfjumped)
 	{
 		mo->momz += mo->pmomz;
 		mo->pmomz = 0;
-	}
+	}*/
 	mo->z += mo->momz;
 
 	// Have player fall through floor?
@@ -1331,11 +1331,9 @@ static void P_PlayerZMovement(mobj_t* mo)
 				{
 					if(!mo->player->mfspinning || !mo->player->usedown || mo->player->mfjumped)
 					{
-						const int runspeed = 28;
-
 						if(mo->player->cmomx || mo->player->cmomy)
 						{
-							if(mo->player->speed > runspeed && !mo->player->running)
+							if(mo->player->speed > mo->player->runspeed && !mo->player->running)
 								P_SetPlayerMobjState(mo, S_PLAY_SPD1);
 							else if((mo->player->rmomx > STOPSPEED
 								|| mo->player->rmomy > STOPSPEED) && !mo->player->walking)
@@ -1349,7 +1347,7 @@ static void P_PlayerZMovement(mobj_t* mo)
 						}
 						else
 						{
-							if(mo->player->speed > runspeed && !mo->player->running)
+							if(mo->player->speed > mo->player->runspeed && !mo->player->running)
 								P_SetPlayerMobjState(mo, S_PLAY_SPD1);
 							else if((mo->momx || mo->momy) && !mo->player->walking)
 								P_SetPlayerMobjState(mo, S_PLAY_RUN1);
@@ -3078,6 +3076,16 @@ void P_MobjThinker(mobj_t* mobj)
 	if(mobj->flags & MF_NOTHINK)
 		return;
 
+	// 970 allows ANY mobj to trigger a linedef exec
+	if(mobj->subsector->sector->special == 970)
+	{
+		sector_t* sec2;
+
+		sec2 = P_ThingOnSpecial3DFloor(mobj);
+		if(sec2 && sec2->special == 971)
+			P_LinedefExecute(sec2->tag, mobj, sec2);
+	}
+
 	// Special thinker for scenery objects
 	if(mobj->flags & MF_SCENERY)
 	{
@@ -3384,7 +3392,6 @@ void P_MobjThinker(mobj_t* mobj)
 			break;
 		case MT_PLAYER:
 			P_PlayerMobjThinker(mobj);
-			mobj->pmomz = 0; // Needs reset here (fixes bug)
 			return;
 		case MT_FAN: // Fans spawn bubbles underwater
 			// check mobj against possible water content
@@ -4390,7 +4397,7 @@ static inline boolean P_ObjectInWater(sector_t* sector, fixed_t z)
 
 void P_SpawnPrecipitation(void)
 {
-	const int preloop = 32768;
+	const int preloop = 1048576;
 	int i = 0;
 	fixed_t x = 0, y = 0, height;
 	boolean heightonly = false;

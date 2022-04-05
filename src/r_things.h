@@ -77,6 +77,8 @@ typedef struct
 
 	char normalspeed[3]; // Normal ground
 
+	char runspeed[3]; // Speed that you break into your run animation
+
 	char accelstart[4]; // Acceleration if speed = 0
 	char acceleration[3]; // Acceleration
 	char thrustfactor[2]; // Thrust = thrustfactor * acceleration

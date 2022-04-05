@@ -707,6 +707,7 @@ void HWR_FreeExtraSubsectors (void)
 {
 	if (extrasubsectors)
 		free(extrasubsectors);
+	extrasubsectors = NULL;
 }
 
 #define MAXDIST   (1.5f)

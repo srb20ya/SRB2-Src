@@ -87,7 +87,7 @@ void G_InitNew(skill_t skill, char* mapname, boolean resetplayer, boolean skippr
 
 // Can be called by the startup code or M_Responder.
 // A normal game starts at map 1, but a warp test can start elsewhere
-void G_DeferedInitNew(skill_t skill, char* mapname, int pickedchar, boolean StartSplitScreenGame); // Tails 03-02-2002
+void G_DeferedInitNew(skill_t skill, char* mapname, int pickedchar, boolean StartSplitScreenGame, boolean fromlevelselect); // Tails 03-02-2002
 void G_DoLoadLevel(boolean resetplayer);
 
 void G_DeferedPlayDemo(char* demo);

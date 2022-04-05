@@ -1281,10 +1281,10 @@ int mapchangepending = 0;
   * \sa D_GameTypeChanged, Command_Map_f
   * \author Graue <graue@oceanbase.org>
   */
-void D_MapChange(int mapnum, int gametype, skill_t skill, int resetplayers, int delay, boolean skipprecutscene)
+void D_MapChange(int mapnum, int gametype, skill_t skill, int resetplayers, int delay, boolean skipprecutscene, boolean fromlevelselect)
 {
-	static char buf[MAX_WADPATH+1+4];
-#define MAPNAME &buf[4]
+	static char buf[MAX_WADPATH+1+5];
+#define MAPNAME &buf[5]
 
 	if(devparm)
 		CONS_Printf("Map change: mapnum=%d gametype=%d skill=%d resetplayers=%d delay=%d skipprecutscene=%d\n",
@@ -1323,6 +1323,8 @@ void D_MapChange(int mapnum, int gametype, skill_t skill, int resetplayers, int 
 		}
 
 		buf[3] = (char)skipprecutscene;
+
+		buf[4] = (char)fromlevelselect;
 
 		SendNetXCmd(XD_MAP, buf, 4+strlen(MAPNAME)+1);
 	}
@@ -1476,7 +1478,8 @@ static void Command_Map_f(void)
 		return;
 	}
 
-	D_MapChange(newmapnum, newgametype, newskill, newresetplayers, 0, false);
+	fromlevelselect = false;
+	D_MapChange(newmapnum, newgametype, newskill, newresetplayers, 0, false, false);
 }
 
 /** Receives a map command and changes the map.
@@ -1493,7 +1496,7 @@ static void Got_Mapcmd(char** cp, int playernum)
 {
 	char mapname[MAX_WADPATH];
 	int skill, resetplayer = 1, lastgametype;
-	boolean skipprecutscene;
+	boolean skipprecutscene, fromlevelselect;
 
 	if(playernum != serverplayer && playernum != adminplayer)
 	{
@@ -1539,6 +1542,8 @@ static void Got_Mapcmd(char** cp, int playernum)
 
 	skipprecutscene = READBYTE(*cp);
 
+	fromlevelselect = READBYTE(*cp);
+
 	strcpy(mapname, *cp);
 	*cp += strlen(mapname) + 1;
 
@@ -1550,6 +1555,15 @@ static void Got_Mapcmd(char** cp, int playernum)
 	}
 	if(demoplayback && !timingdemo)
 		precache = false;
+
+	if(resetplayer)
+	{
+		if(!(netgame || multiplayer) && fromlevelselect && (grade & 8))
+			emeralds = EMERALD1+EMERALD2+EMERALD3+EMERALD4+EMERALD5+EMERALD6+EMERALD7;
+		else
+			emeralds = 0;
+	}
+
 	G_InitNew(skill, mapname, resetplayer, skipprecutscene);
 	if(demoplayback && !timingdemo)
 		precache = true;

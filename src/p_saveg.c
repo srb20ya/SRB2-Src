@@ -885,6 +885,7 @@ typedef enum
 	tc_laserflash,
 	tc_lightfade,
 	tc_executor,
+	tc_raisesector,
 	tc_end
 } specials_e;
 
@@ -1201,6 +1202,18 @@ static void P_NetArchiveThinkers(void)
 			elevator->sector = (sector_t*)(elevator->sector - sectors);
 			elevator->actionsector = (sector_t*)(elevator->actionsector - sectors);
 			elevator->sourceline = (line_t*)(elevator->sourceline - lines);
+			continue;
+		}
+		else if(th->function.acp1 == (actionf_p1)T_RaiseSector)
+		{
+			elevator_t* elevator;
+			WRITEBYTE(save_p, tc_raisesector);
+			PADSAVEP();
+			elevator = (elevator_t*)save_p;
+			memcpy(elevator, th, sizeof(*elevator));
+			save_p += sizeof(*elevator);
+			elevator->sector = (sector_t*)(elevator->sector - sectors);
+			elevator->actionsector = (sector_t*)(elevator->actionsector - sectors);
 			continue;
 		}
 		else if(th->function.acp1 == (actionf_p1)T_CameraScanner)
@@ -1744,6 +1757,23 @@ static void P_NetUnArchiveThinkers(void)
 					elevator->sector->floordata = elevator;
 					elevator->sector->ceilingdata = elevator;
 					elevator->thinker.function.acp1 = (actionf_p1)T_ThwompSector;
+					P_AddThinker(&elevator->thinker);
+				}
+				break;
+
+			case tc_raisesector:
+				PADSAVEP();
+				{
+					elevator_t* elevator;
+
+					elevator = Z_Malloc(sizeof(elevator_t), PU_LEVEL, NULL);
+					memcpy(elevator, save_p, sizeof(elevator_t));
+					save_p += sizeof(elevator_t);
+					elevator->sector = &sectors[(size_t)elevator->sector];
+					elevator->actionsector = &sectors[(size_t)elevator->actionsector];
+					elevator->sector->floordata = elevator;
+					elevator->sector->ceilingdata = elevator;
+					elevator->thinker.function.acp1 = (actionf_p1)T_RaiseSector;
 					P_AddThinker(&elevator->thinker);
 				}
 				break;

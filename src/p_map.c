@@ -1049,7 +1049,7 @@ boolean P_CheckPosition(mobj_t* thing, fixed_t x, fixed_t y)
 			if(!(rover->flags & FF_SOLID))
 			{
 				if(!(thing->player && !thing->player->nightsmode && (thing->player->skin == 1 || thing->player->powers[pw_super])
-					&& !thing->player->mfspinning && thing->player->speed > 28
+					&& !thing->player->mfspinning && thing->player->speed > thing->player->runspeed
 /*					&& thing->ceilingz - *rover->topheight >= thing->height*/
 					&& thing->z < *rover->topheight + 30*FRACUNIT
 					&& thing->z > *rover->topheight - 30*FRACUNIT
@@ -1598,11 +1598,6 @@ static boolean P_ThingHeightClip(mobj_t* thing)
 
 	// what about stranding a monster partially off an edge?
 
-	thing->floorz = tmfloorz;
-	thing->floorff = tmfloorff;
-	thing->ceilingz = tmceilingz;
-	thing->ceilingff = tmceilingff;
-
 	switch(thing->type)
 	{
 		case MT_RING:
@@ -1623,6 +1618,11 @@ static boolean P_ThingHeightClip(mobj_t* thing)
 		default:
 			break;
 	}
+
+	thing->floorz = tmfloorz;
+	thing->floorff = tmfloorff;
+	thing->ceilingz = tmceilingz;
+	thing->ceilingff = tmceilingff;
 
 	// Have player fall through floor?
 	if(thing->player && thing->player->playerstate == PST_DEAD)
@@ -2237,15 +2237,15 @@ stairstep:
 
 	P_HitSlideLine(bestslideline); // clip the moves
 
-	if(!twodlevel)
+	if(twodlevel && mo->player)
 	{
 		mo->momx = tmxmove;
-		mo->momy = tmymove;
+		tmymove = 0;
 	}
 	else
 	{
 		mo->momx = tmxmove;
-		tmymove = 0;
+		mo->momy = tmymove;
 	}
 
 	if(!P_TryMove(mo, mo->x + tmxmove, mo->y + tmymove, true))

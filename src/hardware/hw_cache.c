@@ -619,6 +619,7 @@ void HWR_MakePatch (const patch_t* patch, GlidePatch_t* grPatch, GlideMipmap_t *
 
 	if( grMipmap->grInfo.data != NULL )
 		Z_Free(grMipmap->grInfo.data);
+	grMipmap->grInfo.data = NULL;
 
 	block = MakeBlock(grMipmap);
 
@@ -682,6 +683,11 @@ void HWR_FreeTextureCache (void)
 	// free references to the textures
 	HWD.pfnClearMipMapCache ();
 
+	// free all hardware-converted graphics cached in the heap
+	// our gool is only the textures since user of the texture is the texture cache
+	if(Z_TagUsage(PU_HWRCACHE)) Z_FreeTags (PU_HWRCACHE, PU_HWRCACHE);
+	// Alam: free the Z_Blocks before freeing it's users
+
 	// free all skin after each level: must be done after pfnClearMipMapCache!
 	for (j=0; j<numwadfiles; j++)
 		for (i=0; i<wadfiles[j]->numlumps; i++)
@@ -695,14 +701,11 @@ void HWR_FreeTextureCache (void)
 			}
 		}
 
-	// free all hardware-converted graphics cached in the heap
-	// our gool is only the textures since user of the texture is the texture cache
-	if(Z_TagUsage(PU_HWRCACHE)) Z_FreeTags (PU_HWRCACHE, PU_HWRCACHE);
-
 	// now the heap don't have any 'user' pointing to our
 	// texturecache info, we can free it
 	if (gr_textures)
 		free (gr_textures);
+	gr_textures = NULL;
 }
 
 void HWR_PrepLevelCache (int numtextures)

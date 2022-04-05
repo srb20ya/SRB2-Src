@@ -62,10 +62,9 @@
 #ifdef USE_WGL_SWAP
 PFNWGLEXTSWAPCONTROLPROC wglSwapIntervalEXT = NULL;
 PFNWGLEXTGETSWAPINTERVALPROC wglGetSwapIntervalEXT = NULL;
-#endif
-
-#ifdef GLX_EXTENSIONS /// todo: include X11 stuff?
-static const GLubyte *glx_extensions = NULL;
+#else
+typedef int (*PFNGLXSWAPINTERVALPROC) (int);
+PFNGLXSWAPINTERVALPROC glXSwapIntervalSGIEXT = NULL;
 #endif
 
 /**	\brief SDL video display surface
@@ -113,17 +112,11 @@ boolean OglSdlSurface(int w, int h, boolean isFullscreen)
 	glrenderer = glGetString(GL_RENDERER);
 	glversion = glGetString(GL_VERSION);
 	gl_extensions = glGetString(GL_EXTENSIONS);
-#ifdef GLX_EXTENSIONS
-	glx_extensions = glGetString(GLX_EXTENSIONS);
-#endif
 
 	DBG_Printf("Vendor         : %s\n", glvendor );
 	DBG_Printf("Renderer       : %s\n", glrenderer );
 	DBG_Printf("Version        : %s\n", glversion );
 	DBG_Printf("Extensions     : %s\n", gl_extensions );
-#ifdef GLX_EXTENSIONS
-	DBG_Printf("X11 Extensions : %s\n", glx_extensions );
-#endif
 	oglflags = 0;
 
 #if defined(_WIN32) || defined(_WIN64)
@@ -149,6 +142,8 @@ boolean OglSdlSurface(int w, int h, boolean isFullscreen)
 		wglSwapIntervalEXT = SDL_GL_GetProcAddress("wglSwapIntervalEXT");
 		wglGetSwapIntervalEXT = SDL_GL_GetProcAddress("wglGetSwapIntervalEXT");
 	}
+#else
+	glXSwapIntervalSGIEXT = SDL_GL_GetProcAddress("glXSwapIntervalSGI");
 #endif
 
 	SetModelView(w, h);
@@ -187,9 +182,9 @@ void OglSdlFinishUpdate(boolean waitvbl)
 		oldwaitvbl = wglGetSwapIntervalEXT();
 	if(oldwaitvbl != waitvbl && wglSwapIntervalEXT)
 		wglSwapIntervalEXT(waitvbl);
-#endif
-#ifdef GLX_EXTENSIONS
-	glXSwapIntervalSGI(waitvbl);
+#else
+	if(glXSwapIntervalSGIEXT)
+		glXSwapIntervalSGIEXT(waitvbl);
 #endif
 
 	SDL_GL_SwapBuffers();
@@ -197,11 +192,10 @@ void OglSdlFinishUpdate(boolean waitvbl)
 #ifdef USE_WGL_SWAP
 	if(oldwaitvbl != waitvbl && wglSwapIntervalEXT)
 		wglSwapIntervalEXT(oldwaitvbl);
+#else
+	if(glXSwapIntervalSGIEXT)
+		glXSwapIntervalSGIEXT(0);
 #endif
-#ifdef GLX_EXTENSIONS
-	glXSwapIntervalSGI(0);
-#endif
-	waitvbl = 0;
 }
 
 /**	\brief Shutdown OpenGL/SDL system

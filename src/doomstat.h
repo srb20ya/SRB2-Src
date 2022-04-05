@@ -55,6 +55,7 @@ extern boolean addedtogame; // true after the server has added you
 extern boolean multiplayer;
 
 extern int gametype;
+extern boolean fromlevelselect;
 extern boolean cv_debug;
 
 // ========================================

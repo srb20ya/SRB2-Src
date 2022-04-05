@@ -222,7 +222,7 @@ class SRB2MS_BOT
 
 	function ListGamesPM(&$irc, &$data)
 	{
-		$fd = fsockopen("srb2.servegame.org", 28910, $errno, $errstr, 5);
+		$fd = fsockopen("srb2.servegame.org", 28900, $errno, $errstr, 5);
 		if ($fd)
 		{
 			$buff = "000012360000";
@@ -247,7 +247,7 @@ class SRB2MS_BOT
 	{
 		global $lastlisttime;
 		$today = getdate();
-		$fd = fsockopen("srb2.servegame.org", 28910, $errno, $errstr, 5);
+		$fd = fsockopen("srb2.servegame.org", 28900, $errno, $errstr, 5);
 		if ($fd)
 		{
 			$buff = "000012360000";
@@ -429,7 +429,7 @@ class SRB2MS_BOT
 	function Gettextfromserver()
 	{
 		$content = "";
-		$fd = fsockopen("srb2.servegame.org", 28910, $errno, $errstr, 5);
+		$fd = fsockopen("srb2.servegame.org", 28900, $errno, $errstr, 5);
 		if ($fd)
 		{
 			$buff = "000012400000";

@@ -1701,94 +1701,15 @@ static char* maplumpname;
 int lastloadedmaplumpnum; // for comparative savegame
 
 //
-// P_LoadThingsOnly
+// P_LevelInitStuff
 //
-// "Reloads" a level, but only reloads all of the mobjs.
+// Some player initialization for map start.
 //
-void P_LoadThingsOnly(void)
+static void P_LevelInitStuff(void)
 {
-	// Search through all the thinkers.
-	mobj_t* mo;
-	thinker_t* think;
-
-	for(think = thinkercap.next; think != &thinkercap; think = think->next)
-	{
-		if(think->function.acp1 != (actionf_p1)P_MobjThinker)
-			continue; // not a mobj thinker
-
-		mo = (mobj_t*)think;
-
-		if(mo)
-			P_RemoveMobj(mo);
-	}
-
-	P_LoadThings(lastloadedmaplumpnum + ML_THINGS);
-
-	P_SpawnSecretItems(true);
-}
-
-/** Loads a level from a lump or external wad.
-  *
-  * \param map     Map number.
-  * \param skill   Skill level.
-  * \param wadname Name of an external wadfile to load on the fly, or "\2" to
-  *                not spawn precipitation.
-  * \todo Clean up, refactor, split up; get rid of the bloat.
-  * \todo Remove ugly wadname "\2" hack for not spawning precipitation. The
-  *       hack is used by P_NetUnArchiveMisc() to avoid precipitation getting
-  *       clobbered during a net savegame. After this hack is removed, the
-  *       wadname parameter will no longer be necessary.
-  */
-boolean P_SetupLevel(int map, skill_t skill, const char* wadname) // for wad files
-{
-	int i, loadprecip = 1;
-	int loademblems = 1;
-	boolean loadedbm = false;
-
-	// This is needed. Don't touch.
-	maptol = mapheaderinfo[gamemap-1].typeoflevel;
-
-	skill = 0; //gameskill?
-	HU_clearChatChars();
-
-	CON_Drawer(); // let the user know what we are going to do
-	I_FinishUpdate(); // page flip or blit buffer
-
-	// Initialize sector node list.
-	P_Initsecnode();
+	int i;
 
 	totalitems = totalrings = timeinmap = 0;
-
-	if(netgame || multiplayer)
-		cv_debug = 0;
-
-	mapmusic = mapheaderinfo[gamemap-1].musicslot;
-
-	if(cv_runscripts.value && mapheaderinfo[gamemap-1].scriptname[0] != '#')
-	{
-		if(mapheaderinfo[gamemap-1].scriptislump)
-		{
-			int lumpnum;
-			char newname[9];
-
-			strncpy(newname, mapheaderinfo[gamemap-1].scriptname, 8);
-
-			newname[8] = '\0';
-
-			lumpnum = W_CheckNumForName(newname);
-
-			if(lumpnum == -1 || W_LumpLength(lumpnum) <= 0)
-			{
-				CONS_Printf("SOC Error: script lump %s not found/not valid.\n", newname);
-				goto noscript;
-			}
-
-			COM_BufInsertText(W_CacheLumpNum(lumpnum, PU_CACHE));
-		}
-		else
-			COM_BufAddText(va("exec %s\n", mapheaderinfo[gamemap-1].scriptname));
-	}
-noscript:
 
 	for(i = 0; i < MAXPLAYERS; i++)
 	{
@@ -1841,6 +1762,106 @@ noscript:
 	}
 
 	hunt1 = hunt2 = hunt3 = NULL;
+
+	leveltime = 0;
+
+	if(mapheaderinfo[gamemap-1].countdown)
+		countdowntimer = mapheaderinfo[gamemap-1].countdown * TICRATE;
+
+	countdowntimeup = false; // DuuuuuuuuuhhhH!H!H!!
+}
+
+//
+// P_LoadThingsOnly
+//
+// "Reloads" a level, but only reloads all of the mobjs.
+//
+void P_LoadThingsOnly(void)
+{
+	// Search through all the thinkers.
+	mobj_t* mo;
+	thinker_t* think;
+
+	for(think = thinkercap.next; think != &thinkercap; think = think->next)
+	{
+		if(think->function.acp1 != (actionf_p1)P_MobjThinker)
+			continue; // not a mobj thinker
+
+		mo = (mobj_t*)think;
+
+		if(mo)
+			P_RemoveMobj(mo);
+	}
+
+	P_LevelInitStuff();
+
+	P_LoadThings(lastloadedmaplumpnum + ML_THINGS);
+
+	P_SpawnSecretItems(true);
+}
+
+/** Loads a level from a lump or external wad.
+  *
+  * \param map     Map number.
+  * \param skill   Skill level.
+  * \param wadname Name of an external wadfile to load on the fly, or "\2" to
+  *                not spawn precipitation.
+  * \todo Clean up, refactor, split up; get rid of the bloat.
+  * \todo Remove ugly wadname "\2" hack for not spawning precipitation. The
+  *       hack is used by P_NetUnArchiveMisc() to avoid precipitation getting
+  *       clobbered during a net savegame. After this hack is removed, the
+  *       wadname parameter will no longer be necessary.
+  */
+boolean P_SetupLevel(int map, skill_t skill, const char* wadname) // for wad files
+{
+	int i, loadprecip = 1;
+	int loademblems = 1;
+	boolean loadedbm = false;
+
+	// This is needed. Don't touch.
+	maptol = mapheaderinfo[gamemap-1].typeoflevel;
+
+	skill = 0; //gameskill?
+	HU_clearChatChars();
+
+	CON_Drawer(); // let the user know what we are going to do
+	I_FinishUpdate(); // page flip or blit buffer
+
+	// Initialize sector node list.
+	P_Initsecnode();
+
+	if(netgame || multiplayer)
+		cv_debug = 0;
+
+	mapmusic = mapheaderinfo[gamemap-1].musicslot;
+
+	if(cv_runscripts.value && mapheaderinfo[gamemap-1].scriptname[0] != '#')
+	{
+		if(mapheaderinfo[gamemap-1].scriptislump)
+		{
+			int lumpnum;
+			char newname[9];
+
+			strncpy(newname, mapheaderinfo[gamemap-1].scriptname, 8);
+
+			newname[8] = '\0';
+
+			lumpnum = W_CheckNumForName(newname);
+
+			if(lumpnum == -1 || W_LumpLength(lumpnum) <= 0)
+			{
+				CONS_Printf("SOC Error: script lump %s not found/not valid.\n", newname);
+				goto noscript;
+			}
+
+			COM_BufInsertText(W_CacheLumpNum(lumpnum, PU_CACHE));
+		}
+		else
+			COM_BufAddText(va("exec %s\n", mapheaderinfo[gamemap-1].scriptname));
+	}
+noscript:
+
+	P_LevelInitStuff();
 
 	if(mapheaderinfo[gamemap-1].forcecharacter != 255)
 	{
@@ -1959,13 +1980,6 @@ noscript:
 		// internal game map
 		lastloadedmaplumpnum = W_GetNumForName(maplumpname = G_BuildMapName(map));
 	}
-
-	leveltime = 0;
-
-	if(mapheaderinfo[gamemap-1].countdown)
-		countdowntimer = mapheaderinfo[gamemap-1].countdown * TICRATE;
-
-	countdowntimeup = false; // DuuuuuuuuuhhhH!H!H!!
 
 	R_ClearColormaps();
 

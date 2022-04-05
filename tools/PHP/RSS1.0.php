@@ -22,7 +22,7 @@ echo '    <description>Playing around with RSS</description>';
 echo "\n";
 echo '    <language>en-us</language>';
 echo "\n";
-        $fd = fsockopen("srb2.servegame.org", 28910, $errno, $errstr, 5);
+        $fd = fsockopen("srb2.servegame.org", 28900, $errno, $errstr, 5);
 //        $fd = 0;
 	if ($fd)
 	{

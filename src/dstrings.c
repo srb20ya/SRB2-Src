@@ -241,7 +241,7 @@ if that explosion I saw is anything to go by."
 	SAVEGAMENAME"%u.ssg",
 
 	//BP: here is special dehacked handling, include centering and version
-	"Sonic Robo Blast 2: v1.09.1",
+	"Sonic Robo Blast 2: v1.09.2",
 };
 
 char savegamename[256];

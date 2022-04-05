@@ -1312,6 +1312,115 @@ void T_ThwompSector(elevator_t* elevator)
 	P_RecalcPrecipInSector(elevator->actionsector);
 }
 
+//
+// T_RaiseSector
+//
+// Rises up to its topmost position when a
+// player steps on it. Lowers otherwise.
+//
+void T_RaiseSector(elevator_t* elevator)
+{
+	msecnode_t* node;
+	mobj_t* thing;
+	boolean playeronme = false;
+	fixed_t ceilingdestination, floordestination;
+	result_e res = 0;
+
+	// Is a player standing on me?
+	for(node = elevator->actionsector->touching_thinglist; node; node = node->m_snext)
+	{
+		thing = node->m_thing;
+
+		if(!thing->player)
+			continue;
+
+		// Option to require spindashing.
+		if(elevator->distance && !thing->player->mfstartdash)
+			continue;
+
+		if(!(thing->z == elevator->sector->ceilingheight))
+			continue;
+
+		playeronme = true;
+		break;
+	}
+
+	if(playeronme)
+	{
+		if(elevator->sector->ceilingheight >= elevator->ceilingdestheight)
+		{
+			elevator->sector->ceilingheight = elevator->ceilingdestheight;
+			return;
+		}
+
+		elevator->speed = elevator->origspeed;
+		elevator->direction = 1;
+		ceilingdestination = elevator->ceilingdestheight;
+		floordestination = elevator->floordestheight;
+	}
+	else
+	{
+		if(elevator->sector->ceilingheight <= elevator->ceilingwasheight)
+		{
+			elevator->sector->ceilingheight = elevator->ceilingwasheight;
+			return;
+		}
+
+		elevator->speed = elevator->origspeed/2;
+		elevator->direction = -1;
+		ceilingdestination = elevator->ceilingwasheight;
+		floordestination = elevator->floorwasheight;
+	}
+
+	if((elevator->sector->ceilingheight - elevator->ceilingwasheight)
+		< (elevator->ceilingdestheight - elevator->sector->ceilingheight))
+	{
+		fixed_t origspeed = elevator->speed;
+
+		// Slow down as you get closer to the bottom
+		elevator->speed = FixedMul(elevator->speed,FixedDiv(elevator->sector->ceilingheight - elevator->ceilingwasheight, (elevator->ceilingdestheight - elevator->ceilingwasheight)>>5));
+
+		if(elevator->speed <= origspeed/16)
+			elevator->speed = origspeed/16;
+		else if(elevator->speed > origspeed)
+			elevator->speed = origspeed;
+	}
+	else
+	{
+		fixed_t origspeed = elevator->speed;
+		// Slow down as you get closer to the top
+		elevator->speed = FixedMul(elevator->speed,FixedDiv(elevator->ceilingdestheight - elevator->sector->ceilingheight, (elevator->ceilingdestheight - elevator->ceilingwasheight)>>5));
+
+		if(elevator->speed <= origspeed/16)
+			elevator->speed = origspeed/16;
+		else if(elevator->speed > origspeed)
+			elevator->speed = origspeed;
+	}
+
+	res = T_MovePlane
+	(
+		elevator->sector,         // sector
+		elevator->speed,          // speed
+		ceilingdestination, // dest
+		0,                        // crush
+		1,                        // floor or ceiling (1 for ceiling)
+		elevator->direction       // direction
+	);
+
+	if(res == ok || res == pastdest)
+		T_MovePlane
+		(
+			elevator->sector,           // sector
+			elevator->speed,            // speed
+			floordestination, // dest
+			0,                          // crush
+			0,                          // floor or ceiling (0 for floor)
+			elevator->direction         // direction
+		);
+
+	P_RecalcPrecipInSector(elevator->actionsector);
+}
+
 void T_CameraScanner(elevator_t* elevator)
 {
 	// leveltime is compared to make multiple scanners in one map function correctly.

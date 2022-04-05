@@ -931,7 +931,7 @@ static void HWR_SetLight( void )
 	if (!lightmappatch.mipmap.downloaded && !lightmappatch.mipmap.grInfo.data)
 	{
 
-		USHORT *Data = Z_Malloc( 128*128*sizeof(USHORT), PU_HWRCACHE, &lightmappatch.mipmap.grInfo.data );
+		USHORT *Data = Z_Malloc( 129*128*sizeof(USHORT), PU_HWRCACHE, &lightmappatch.mipmap.grInfo.data );
 				
 		for( i=0; i<128; i++ )
 		{

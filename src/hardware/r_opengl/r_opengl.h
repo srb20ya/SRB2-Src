@@ -122,7 +122,7 @@ extern GLubyte                palette_tex[256*3];
 
 #ifdef USE_WGL_SWAP
 typedef void (APIENTRY *PFNWGLEXTSWAPCONTROLPROC) (int);
-typedef int (*PFNWGLEXTGETSWAPINTERVALPROC) (void);
+typedef int (APIENTRY *PFNWGLEXTGETSWAPINTERVALPROC) (void);
 extern PFNWGLEXTSWAPCONTROLPROC wglSwapIntervalEXT;
 extern PFNWGLEXTGETSWAPINTERVALPROC wglGetSwapIntervalEXT;
 #endif

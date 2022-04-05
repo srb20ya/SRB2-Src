@@ -2227,7 +2227,7 @@ void TryRunTics(tic_t realtics)
 	{
 		COM_BufExecute();
 		if(mapchangepending)
-			D_MapChange(-1, 0, 0, 0, 2, false); // finish the map change
+			D_MapChange(-1, 0, 0, 0, 2, false, fromlevelselect); // finish the map change
 	}
 
 	NetUpdate();

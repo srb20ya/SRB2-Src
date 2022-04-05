@@ -1437,7 +1437,6 @@ static void P_MovePlayer(player_t* player)
 	fixed_t tempx, tempy;
 	angle_t tempangle;
 	msecnode_t* node;
-	const int runspeed = 28;
 	camera_t* thiscam;
 
 	if(countdowntimeup)
@@ -3328,7 +3327,7 @@ static void P_MovePlayer(player_t* player)
 	{
 		// If the player is moving fast enough,
 		// break into a run!
-		if((player->speed > runspeed) && player->walking && (onground || player->powers[pw_super]))
+		if((player->speed > player->runspeed) && player->walking && (onground || player->powers[pw_super]))
 			P_SetPlayerMobjState (player->mo, S_PLAY_SPD1);
 
 		// Otherwise, just walk.
@@ -3384,7 +3383,7 @@ static void P_MovePlayer(player_t* player)
 
 	// If your running animation is playing, and you're
 	// going too slow, switch back to the walking frames.
-	if(player->running && !(player->speed > runspeed))
+	if(player->running && !(player->speed > player->runspeed))
 		P_SetPlayerMobjState(player->mo, S_PLAY_RUN1);
 
 	// If Springing, but travelling DOWNWARD, change back!
@@ -3481,7 +3480,7 @@ static void P_MovePlayer(player_t* player)
 	}
 
 	// If you're running fast enough, you can create splashes as you run in shallow water.
-	if(player->mo->z + player->mo->info->height >= player->mo->watertop && player->mo->z <= player->mo->watertop && player->speed > runspeed && leveltime % 5 == 1 && player->mo->momz == 0)
+	if(player->mo->z + player->mo->info->height >= player->mo->watertop && player->mo->z <= player->mo->watertop && player->speed > player->runspeed && leveltime % 5 == 1 && player->mo->momz == 0)
 		S_StartSound(P_SpawnMobj(player->mo->x, player->mo->y, player->mo->watertop, MT_SPLISH), sfx_wslap);
 
 //////////////////////////
@@ -6315,9 +6314,6 @@ void P_ResetCamera(player_t* player, camera_t* thiscam)
 	y = player->mo->y;
 	z = player->mo->z + (cv_viewheight.value<<FRACBITS);
 
-	// hey we should make sure that the sounds are heard from the camera
-	// instead of the marine's head : TO DO and FIXTHIS
-
 	// set bits for the camera
 	thiscam->x = x;
 	thiscam->y = y;
@@ -7137,5 +7133,7 @@ void P_PlayerThink(player_t* player)
 
 	if(gametype == GT_CTF && !player->ctfteam && !cv_solidspectator.value)
 		player->mo->flags2 |= MF2_SHADOW;
+
+	player->mo->pmomz = 0;
 }
 

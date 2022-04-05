@@ -193,10 +193,10 @@ int SetupPixelFormat( int WantColorBits, int WantStencilBits, int WantDepthBits 
 // -----------------+
 static int SetRes( viddef_t *lvid, vmode_t *pcurrentmode )
 {
-    char *renderer;
+    LPCVOID *renderer;
     BOOL WantFullScreen = !(lvid->u.windowed);  //(lvid->u.windowed ? 0 : CDS_FULLSCREEN );
 
-	 pcurrentmode = NULL;
+    pcurrentmode = NULL;
     DBG_Printf ("SetMode(): %dx%d %d bits (%s)\n",
                 lvid->width, lvid->height, lvid->bpp*8,
                 WantFullScreen ? "fullscreen" : "windowed");
@@ -281,7 +281,7 @@ static int SetRes( viddef_t *lvid, vmode_t *pcurrentmode )
     // Get info and extensions.
     //BP: why don't we make it earlier ?
     //Hurdler: we cannot do that before intialising gl context
-    renderer = strdup((const char *)glGetString(GL_RENDERER));
+    renderer = glGetString(GL_RENDERER);
     DBG_Printf("Vendor     : %s\n", glGetString(GL_VENDOR) );
     DBG_Printf("Renderer   : %s\n", renderer );
     DBG_Printf("Version    : %s\n", glGetString(GL_VERSION) );
@@ -290,7 +290,6 @@ static int SetRes( viddef_t *lvid, vmode_t *pcurrentmode )
     // BP: disable advenced feature that don't work on somes hardware
     // Hurdler: Now works on G400 with bios 1.6 and certified drivers 6.04
     if( strstr(renderer, "810" ) )   oglflags |= GLF_NOZBUFREAD;
-    free(renderer);
     DBG_Printf("d3dflags   : 0x%X\n", oglflags );
 
 #ifdef USE_PALETTED_TEXTURE

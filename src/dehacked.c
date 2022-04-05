@@ -1205,9 +1205,9 @@ static void DEH_LoadDehackedFile(MYFILE* f)
 				else if(!strcmp(word, "SRB2"))
 				{
 					int ver = searchvalue(strtok(NULL, "\n"));
-					if(ver != 11)
+					if(ver != 109)
 						deh_error("Warning: patch from a different SRB2 version (%d), "
-							"only version 1.1 is supported\n", ver);
+							"only version 1.09 is supported\n", ver);
 				}
 				else
 					deh_error("Unknown word: %s\n", word);

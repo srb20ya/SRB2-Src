@@ -1604,6 +1604,8 @@ static void ST_overlayDrawer(void)
 					boolean done;
 					// Force a screen wipe
 
+					S_ChangeMusic(mus_contsc, false);
+
 					if(rendermode == render_soft)
 					{
 						// First, read the current screen
@@ -1620,8 +1622,6 @@ static void ST_overlayDrawer(void)
 
 						// Now, read the end screen we want to fade to.
 						F_WipeEndScreen(0, 0, vid.width, vid.height);
-
-						S_ChangeMusic(mus_contsc, false);
 
 						// Do the wipe-io!
 						wipestart = I_GetTime() - 1;
@@ -1642,7 +1642,31 @@ static void ST_overlayDrawer(void)
 							I_FinishUpdate(); // page flip or blit buffer
 						} while(!done && I_GetTime() < (unsigned)y);
 					}
+#ifdef HWRENDER
+					else if(rendermode != render_none) // Delay the hardware modes as well
+					{
+						tic_t nowtime, tics, wipestart, y;
+
+						wipestart = I_GetTime() - 1;
+						y = wipestart + 32; // init a timeout
+						do
+						{
+							do
+							{
+								nowtime = I_GetTime();
+								tics = nowtime - wipestart;
+								if(!tics) I_Sleep();
+							} while(!tics);
+
+							I_OsPolling();
+							I_UpdateNoBlit();
+							M_Drawer(); // menu is drawn even on top of wipes
+							I_FinishUpdate(); // page flip or blit buffer
+						} while(I_GetTime() < y);
+					}
+#endif
 				}
+
 				V_DrawFill(0, 0, vid.width, vid.height, 0);
 				V_DrawString(128, 128, 0, "CONTINUE?");
 				// Draw a Sonic!

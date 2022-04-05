@@ -85,6 +85,7 @@
 // -1 = no quicksave slot picked!
 static int quickSaveSlot = -1;
 boolean menuactive = false;
+boolean fromlevelselect = false;
 
 static int lastmapnum;
 static int oldlastmapnum;
@@ -1830,7 +1831,7 @@ static void M_StartServer(int choice)
 	{
 		if(demoplayback)
 			COM_BufAddText("stopdemo\n");
-		D_MapChange(cv_nextmap.value, cv_newgametype.value, cv_skill.value, 1, 1, false);
+		D_MapChange(cv_nextmap.value, cv_newgametype.value, cv_skill.value, 1, 1, false, false);
 		COM_BufAddText("dummyconsvar 1\n");
 	}
 	else // split screen
@@ -1842,7 +1843,7 @@ static void M_StartServer(int choice)
 		SV_StartSinglePlayerServer();
 		if(!cv_splitscreen.value)
 			CV_SetValue(&cv_splitscreen, 1);
-		D_MapChange(cv_nextmap.value, cv_newgametype.value, cv_skill.value, 1, 1, false);
+		D_MapChange(cv_nextmap.value, cv_newgametype.value, cv_skill.value, 1, 1, false, false);
 	}
 
 	M_ClearMenus(true);
@@ -3211,6 +3212,8 @@ static void M_DrawStats5(void)
 static void M_NewGame(int choice)
 {
 	choice = 0;
+	fromlevelselect = false;
+
 	if(netgame && Playing())
 	{
 		M_StartMessage(NEWGAME,M_ExitGameResponse,MM_YESNO);
@@ -3331,7 +3334,7 @@ static void M_ChoosePlayer(int choice)
 
 	skinnum = R_SkinAvailable(description[choice].skinname);
 
-	G_DeferedInitNew(skillnum, G_BuildMapName(startmap), skinnum, StartSplitScreenGame);
+	G_DeferedInitNew(skillnum, G_BuildMapName(startmap), skinnum, StartSplitScreenGame, fromlevelselect);
 	COM_BufAddText("dummyconsvar 1\n"); // G_DeferedInitNew doesn't do this
 	//M_ClearMenus(true);
 }
@@ -3541,6 +3544,8 @@ static void M_LevelSelectWarp (int choice)
 		NewGameMenu[ultimate].status = IT_DISABLED;
 
 	startmap = choice+1;
+
+	fromlevelselect = true;
 
 	M_SetupNextMenu(&NewDef);
 

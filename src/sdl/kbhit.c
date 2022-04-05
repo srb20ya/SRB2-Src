@@ -55,9 +55,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#if !(defined(_XBOX) || defined(_WIN32_WCE) || defined(_arch_dreamcast))
-#include <termios.h>
-#endif
+//#include <termios.h>
 #include <unistd.h>
 #include <errno.h>
 

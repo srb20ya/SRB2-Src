@@ -29,7 +29,7 @@ class SRB2MS_BOT
 
 	function ListGamesPM(&$irc, &$data)
 	{
-		$fd = fsockopen("srb2.servegame.org", 28910, $errno, $errstr, 5);
+		$fd = fsockopen("srb2.servegame.org", 28900, $errno, $errstr, 5);
 		if ($fd)
 		{
 			$buff = "000012360000";
@@ -52,7 +52,7 @@ class SRB2MS_BOT
 
 	function ListGamesChan(&$irc, &$data)
 	{
-		$fd = fsockopen("192.168.0.2", 28910, $errno, $errstr, 5);
+		$fd = fsockopen("192.168.0.2", 28900, $errno, $errstr, 5);
 		if ($fd)
 		{
 			$buff = "000012360000";

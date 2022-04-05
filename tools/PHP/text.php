@@ -2,8 +2,8 @@
 
 <?php
 	header("Content-type: text/plain; charset=ISO-8859-1");
-        $host_addr = "Alam_GBC's box (srb2.servegame.org : 28910)";
-        $fd = fsockopen("srb2.servegame.org", 28910, $errno, $errstr, 5);
+        $host_addr = "Alam_GBC's box (srb2.servegame.org : 28900)";
+        $fd = fsockopen("srb2.servegame.org", 28900, $errno, $errstr, 5);
 	if ($fd)
 	{
 		echo "SRB2 Master Server Status\nCurrent host: $host_addr\n";

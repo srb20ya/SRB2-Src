@@ -140,7 +140,7 @@ static int inet_aton(const char* hostname, struct in_addr* addr)
 
 static void Command_Listserv_f(void);
 
-#define DEF_PORT "28910"
+#define DEF_PORT "28900"
 consvar_t cv_internetserver = {"internetserver", "No", 0, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL};
 /// \todo when we change the port or ip, unregister to the old master server, register to new one
 consvar_t cv_masterserver = {"masterserver", "srb2.servegame.org:"DEF_PORT, CV_SAVE, NULL, NULL, 0, NULL, NULL, 0, 0, NULL};
@@ -540,7 +540,7 @@ const char* GetMasterServerIP(void)
 	static char str_ip[64];
 	char* t = str_ip;
 
-	if(strstr(cv_masterserver.string, "srb2.ssntails.org:28910"))
+	if(strstr(cv_masterserver.string, "srb2.ssntails.org:28910") || strstr(cv_masterserver.string, "srb2.servegame.org:28910"))
 	{
 		// replace it with the current default one
 		CV_Set(&cv_masterserver, cv_masterserver.defaultvalue);

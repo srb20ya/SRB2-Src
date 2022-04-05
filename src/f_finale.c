@@ -2768,7 +2768,7 @@ void F_EndCutScene(void)
 {
 	if(runningprecutscene && server)
 	{
-		D_MapChange(gamemap, gametype, gameskill, precutresetplayer, 0, true);
+		D_MapChange(gamemap, gametype, gameskill, precutresetplayer, 0, true, false);
 	}
 	else
 	{

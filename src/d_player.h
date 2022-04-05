@@ -162,6 +162,8 @@ typedef struct player_s
 
 	int normalspeed; // Normal ground
 
+	int runspeed; // Speed you break into the run animation
+
 	int thrustfactor; // Thrust = thrustfactor * acceleration
 	int accelstart; // Starting acceleration if speed = 0.
 	int acceleration; // Acceleration
