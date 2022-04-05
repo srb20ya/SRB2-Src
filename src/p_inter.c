@@ -988,8 +988,8 @@ void P_TouchSpecialThing(mobj_t* special, mobj_t* toucher, boolean heightcheck)
 			if(player->ctfteam == 1) // Player is on the Red Team
 			{
 				if(special->x != special->spawnpoint->x << FRACBITS
-				   && special->y != special->spawnpoint->y << FRACBITS
-				   && special->z != special->spawnpoint->z << FRACBITS)
+				   || special->y != special->spawnpoint->y << FRACBITS
+				   || special->z != special->spawnpoint->z << FRACBITS)
 				{
 					special->fuse = 1;
 	
@@ -1015,8 +1015,8 @@ void P_TouchSpecialThing(mobj_t* special, mobj_t* toucher, boolean heightcheck)
 			if(player->ctfteam == 2) // Player is on the Blue Team
 			{
 				if(special->x != special->spawnpoint->x << FRACBITS
-				   && special->y != special->spawnpoint->y << FRACBITS
-				   && special->z != special->spawnpoint->z << FRACBITS)
+				   || special->y != special->spawnpoint->y << FRACBITS
+				   || special->z != special->spawnpoint->z << FRACBITS)
 					{
 						special->fuse = 1;
 	

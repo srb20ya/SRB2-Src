@@ -3211,7 +3211,7 @@ static void M_DrawStats5(void)
 static void M_NewGame(int choice)
 {
 	choice = 0;
-	if(netgame)
+	if(netgame && Playing())
 	{
 		M_StartMessage(NEWGAME,M_ExitGameResponse,MM_YESNO);
 		return;
@@ -3239,7 +3239,7 @@ static void M_NewGame(int choice)
 static void M_AdventureGame(int choice)
 {
 	choice = 0;
-	if(netgame)
+	if(netgame && Playing())
 	{
 		M_StartMessage(NEWGAME,M_ExitGameResponse,MM_YESNO);
 		return;
@@ -3260,7 +3260,7 @@ static void M_AdventureGame(int choice)
 static void M_ChristmasGame(int choice)
 {
 	choice = 0;
-	if(netgame)
+	if(netgame && Playing())
 	{
 		M_StartMessage(NEWGAME,M_ExitGameResponse,MM_YESNO);
 		return;
@@ -3281,7 +3281,7 @@ static void M_ChristmasGame(int choice)
 static void M_NightsGame(int choice)
 {
 	choice = 0;
-	if(netgame)
+	if(netgame && Playing())
 	{
 		M_StartMessage(NEWGAME,M_ExitGameResponse,MM_YESNO);
 		return;
@@ -3302,7 +3302,7 @@ static void M_NightsGame(int choice)
 static void M_MarioGame(int choice)
 {
 	choice = 0;
-	if(netgame)
+	if(netgame && Playing())
 	{
 		M_StartMessage(NEWGAME,M_ExitGameResponse,MM_YESNO);
 		return;
@@ -3529,7 +3529,7 @@ static void M_LevelSelect (int choice)
 
 static void M_LevelSelectWarp (int choice)
 {
-	if(netgame)
+	if(netgame && Playing())
 	{
 		M_StartMessage(NEWGAME,M_ExitGameResponse,MM_YESNO);
 		return;

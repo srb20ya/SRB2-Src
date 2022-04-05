@@ -89,6 +89,7 @@ void ASMCALL MMX_PatchRowBytes(int rowbytes);
 //  Short and Tall sky drawer, for the current color mode
 void (*skydrawerfunc)(void);
 
+static boolean R_ASM = true; //R_DrawColumn8_ASM
 static boolean R_486 = false; //R_DrawColumn8_NOMMX
 static boolean R_586 = false; //R_DrawColumn8_Pentium
 static boolean R_MMX = false; //R_DrawColumn8_K6_MMX
@@ -119,10 +120,13 @@ void SCR_SetMode(void)
 		fuzzcolfunc = R_DrawTranslucentColumn_8;
 		skydrawerfunc = R_DrawSkyColumn_8; // tall sky
 #ifdef RUSEASM
-		//colfunc = basecolfunc = R_DrawColumn_8_ASM;
-		shadecolfunc = R_DrawShadeColumn_8_ASM;
-		fuzzcolfunc = R_DrawTranslucentColumn_8_ASM;
-		//skydrawerfunc = R_DrawSkyColumn_8_ASM;
+		if(R_ASM)
+		{
+			//colfunc = basecolfunc = R_DrawColumn_8_ASM;
+			shadecolfunc = R_DrawShadeColumn_8_ASM;
+			fuzzcolfunc = R_DrawTranslucentColumn_8_ASM;
+			//skydrawerfunc = R_DrawSkyColumn_8_ASM;
+		}
 		if(R_486)
 		{
 			colfunc = basecolfunc = R_DrawColumn_8_NOMMX;
@@ -178,6 +182,8 @@ void SCR_Startup(void)
 			R_MMX = true;
 	}
 #endif
+	if(!M_CheckParm("-noASM"))
+		R_ASM = false;
 	if(M_CheckParm("-486"))
 		R_486 = true;
 	if(M_CheckParm("-586"))
@@ -202,7 +208,9 @@ void SCR_Startup(void)
 	vid.baseratio = FRACUNIT;
 
 #ifdef RUSEASM
+	if(R_ASM)
 		MMX_PatchRowBytes(vid.rowbytes);
+	if(R_486 || R_586 || R_MMX)
 		ASM_PatchRowBytes(vid.rowbytes);
 #endif
 
@@ -232,8 +240,10 @@ void SCR_Recalc(void)
 
 	// patch the asm code depending on vid buffer rowbytes
 #ifdef RUSEASM
-	ASM_PatchRowBytes(vid.rowbytes);
-	MMX_PatchRowBytes(vid.rowbytes);
+	if(R_ASM)
+		MMX_PatchRowBytes(vid.rowbytes);
+	if(R_486 || R_586 || R_MMX)
+		ASM_PatchRowBytes(vid.rowbytes);
 #endif
 
 	// toggle off automap because some screensize-dependent values will

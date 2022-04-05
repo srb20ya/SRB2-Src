@@ -168,7 +168,7 @@ int main(int argc, char **argv)
 	{
 		// Disable write-protection of code segment
 		DWORD OldRights;
-		BYTE *pBaseOfImage = (BYTE *)GetModuleHandle(0);
+		BYTE *pBaseOfImage = (BYTE *)GetModuleHandle(NULL);
 		IMAGE_OPTIONAL_HEADER *pHeader = (IMAGE_OPTIONAL_HEADER *)
 			(pBaseOfImage + ((IMAGE_DOS_HEADER*)pBaseOfImage)->e_lfanew +
 			sizeof(IMAGE_NT_SIGNATURE) + sizeof(IMAGE_FILE_HEADER));
